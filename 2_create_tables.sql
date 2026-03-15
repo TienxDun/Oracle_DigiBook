@@ -1,6 +1,6 @@
 /*
 ================================================================================
-  📦 BƯỚC 2: TẠO LƯỢC ĐỒ & RÀNG BUỘC (DDL) — DigiBook Database
+    📦 BƯỚC 2: TẠO LƯỢC ĐỒ và RÀNG BUỘC (DDL) — DigiBook Database
 ================================================================================
   Chủ đề  : Website bán sách DigiBook
   DBMS    : Oracle 19c
@@ -12,6 +12,8 @@
      Các bảng cha (không phụ thuộc FK) được tạo trước, bảng con tạo sau.
 ================================================================================
 */
+
+SET DEFINE OFF;
 
 -- ============================================================================
 -- 🗑️ PHẦN 0: XÓA CÁC ĐỐI TƯỢNG CŨ (NẾU TỒN TẠI) — ĐỂ CHẠY LẠI AN TOÀN
@@ -31,6 +33,8 @@ BEGIN EXECUTE IMMEDIATE 'DROP TRIGGER trg_books_auto_id';           EXCEPTION WH
 BEGIN EXECUTE IMMEDIATE 'DROP TRIGGER trg_publishers_auto_id';      EXCEPTION WHEN OTHERS THEN NULL; END;
 /
 BEGIN EXECUTE IMMEDIATE 'DROP TRIGGER trg_authors_auto_id';         EXCEPTION WHEN OTHERS THEN NULL; END;
+/
+BEGIN EXECUTE IMMEDIATE 'DROP TRIGGER trg_authors_birth_date_chk';  EXCEPTION WHEN OTHERS THEN NULL; END;
 /
 BEGIN EXECUTE IMMEDIATE 'DROP TRIGGER trg_categories_auto_id';      EXCEPTION WHEN OTHERS THEN NULL; END;
 /
@@ -156,11 +160,7 @@ CREATE TABLE AUTHORS (
     author_name     NVARCHAR2(150)  NOT NULL,       -- Tên tác giả (bắt buộc)
     biography       NCLOB,                          -- Tiểu sử (text dài)
     birth_date      DATE,                           -- Ngày sinh
-    nationality     NVARCHAR2(50),                  -- Quốc tịch
-
-    -- Ràng buộc CHECK: Ngày sinh phải trước ngày hiện tại
-    CONSTRAINT chk_authors_birth_date
-        CHECK (birth_date IS NULL OR birth_date < SYSDATE)
+    nationality     NVARCHAR2(50)                   -- Quốc tịch
 );
 
 COMMENT ON TABLE AUTHORS IS 'Bảng tác giả - Lưu thông tin người viết sách';
@@ -395,7 +395,7 @@ PROMPT ✅ Tạo bảng ORDER_DETAILS thành công!
 -- ────────────────────────────────────────────────────────────────────────────
 -- 1.9. Bảng REVIEWS — Đánh giá sách
 -- Phụ trách: PHÁT
--- Mô tả   : Lưu đánh giá & bình luận của khách hàng cho sách
+-- Mô tả   : Lưu đánh giá và bình luận của khách hàng cho sách
 --            Mỗi khách chỉ được đánh giá 1 lần cho mỗi sách (UNIQUE)
 -- ────────────────────────────────────────────────────────────────────────────
 CREATE TABLE REVIEWS (
@@ -404,7 +404,7 @@ CREATE TABLE REVIEWS (
     customer_id     NUMBER          NOT NULL,       -- FK: Mã khách hàng (bắt buộc)
     book_id         NUMBER          NOT NULL,       -- FK: Mã sách (bắt buộc)
     rating          NUMBER(1)       NOT NULL,       -- Số sao 1-5 (bắt buộc)
-    comment         NCLOB,                          -- Nội dung bình luận
+    review_comment  NCLOB,                          -- Nội dung bình luận
     review_date     DATE            DEFAULT SYSDATE,-- Ngày đánh giá
 
     -- Ràng buộc CHECK: Rating từ 1 đến 5
@@ -426,12 +426,12 @@ CREATE TABLE REVIEWS (
         ON DELETE CASCADE
 );
 
-COMMENT ON TABLE REVIEWS IS 'Bảng đánh giá - Bình luận & chấm điểm sách của khách hàng';
+COMMENT ON TABLE REVIEWS IS 'Bảng đánh giá - Bình luận và chấm điểm sách của khách hàng';
 COMMENT ON COLUMN REVIEWS.review_id IS 'Mã đánh giá - Khóa chính, tự động tăng';
 COMMENT ON COLUMN REVIEWS.customer_id IS 'FK - Mã khách hàng đánh giá';
 COMMENT ON COLUMN REVIEWS.book_id IS 'FK - Mã sách được đánh giá';
 COMMENT ON COLUMN REVIEWS.rating IS 'Số sao đánh giá (1 đến 5)';
-COMMENT ON COLUMN REVIEWS.comment IS 'Nội dung bình luận chi tiết';
+COMMENT ON COLUMN REVIEWS.review_comment IS 'Nội dung bình luận chi tiết';
 COMMENT ON COLUMN REVIEWS.review_date IS 'Ngày viết đánh giá';
 
 PROMPT ✅ Tạo bảng REVIEWS thành công!
@@ -508,12 +508,13 @@ PROMPT ✅ HOÀN TẤT TẠO 8 SEQUENCES!
 PROMPT ================================================
 
 -- ============================================================================
--- ⚡ PHẦN 3: TẠO TRIGGERS AUTO-INCREMENT — Gán PK tự động trước khi INSERT
+-- ⚡ PHẦN 3: TẠO TRIGGERS — Auto-increment và Trigger kiểm tra dữ liệu
 -- ============================================================================
 -- Ghi chú: Sử dụng BEFORE INSERT trigger kết hợp Sequence
 -- Đây là phương pháp chuẩn trên Oracle (trước 12c dùng IDENTITY).
 -- Chọn Sequence + Trigger để tương thích đồ án và minh họa rõ cơ chế.
 -- Mỗi trigger kiểm tra nếu PK chưa được gán thì mới lấy từ Sequence.
+-- Bổ sung 01 trigger nghiệp vụ kiểm tra birth_date của AUTHORS.
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- 3.1. Trigger Auto-ID cho bảng CUSTOMERS
@@ -556,6 +557,20 @@ BEGIN
     -- Nếu chưa gán author_id thì tự động lấy giá trị tiếp theo từ Sequence
     IF :NEW.author_id IS NULL THEN
         :NEW.author_id := seq_authors.NEXTVAL;
+    END IF;
+END;
+/
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 3.3a. Trigger Validate Birth Date cho bảng AUTHORS
+-- Phụ trách: NAM
+-- ────────────────────────────────────────────────────────────────────────────
+CREATE OR REPLACE TRIGGER trg_authors_birth_date_chk
+    BEFORE INSERT OR UPDATE OF birth_date ON AUTHORS
+    FOR EACH ROW
+BEGIN
+    IF :NEW.birth_date IS NOT NULL AND :NEW.birth_date >= TRUNC(SYSDATE) THEN
+        RAISE_APPLICATION_ERROR(-20031, 'Ngày sinh tác giả phải nhỏ hơn ngày hiện tại');
     END IF;
 END;
 /
@@ -636,7 +651,7 @@ END;
 /
 
 PROMPT ================================================
-PROMPT ✅ HOÀN TẤT TẠO 8 TRIGGERS AUTO-INCREMENT!
+PROMPT ✅ HOÀN TẤT TẠO 9 TRIGGERS (8 AUTO-INCREMENT + 1 VALIDATION)!
 PROMPT ================================================
 
 -- ============================================================================
@@ -670,7 +685,7 @@ PROMPT
 PROMPT ⚡ DANH SÁCH CÁC TRIGGERS ĐÃ TẠO:
 SELECT trigger_name, table_name, triggering_event, trigger_type, status
 FROM user_triggers
-WHERE trigger_name LIKE 'TRG_%_AUTO_ID'
+WHERE trigger_name LIKE 'TRG_%'
 ORDER BY trigger_name;
 
 -- Liệt kê tất cả các Constraints
@@ -686,11 +701,11 @@ ORDER BY table_name, constraint_type;
 
 PROMPT
 PROMPT ================================================================
-PROMPT 🎉 BƯỚC 2 HOÀN TẤT — TẠO LƯỢC ĐỒ & RÀNG BUỘC THÀNH CÔNG!
+PROMPT 🎉 BƯỚC 2 HOÀN TẤT — TẠO LƯỢC ĐỒ và RÀNG BUỘC THÀNH CÔNG!
 PROMPT ================================================================
 PROMPT    📦 9 Tables created
 PROMPT    🔢 8 Sequences created  
-PROMPT    ⚡ 8 Auto-increment Triggers created
+PROMPT    ⚡ 9 Triggers created (8 Auto-increment + 1 Validation)
 PROMPT    🔒 Constraints: PK, FK, UNIQUE, CHECK, NOT NULL
 PROMPT    📝 Comments on all tables and columns
 PROMPT ================================================================

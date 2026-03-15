@@ -155,7 +155,7 @@ Hệ thống DigiBook bao gồm **9 thực thể chính** (vượt mức tối t
 | `customer_id` | `NUMBER` | **FK** → `CUSTOMERS(customer_id)`, `NOT NULL` | Mã khách hàng |
 | `book_id` | `NUMBER` | **FK** → `BOOKS(book_id)`, `NOT NULL` | Mã sách |
 | `rating` | `NUMBER(1)` | `NOT NULL`, `CHECK (rating BETWEEN 1 AND 5)` | Số sao (1-5) |
-| `comment` | `NCLOB` | — | Nội dung bình luận |
+| `review_comment` | `NCLOB` | — | Nội dung bình luận |
 | `review_date` | `DATE` | `DEFAULT SYSDATE` | Ngày đánh giá |
 
 > **Ràng buộc bổ sung:** Thêm `UNIQUE(customer_id, book_id)` để đảm bảo mỗi khách hàng chỉ được đánh giá **một lần** cho mỗi cuốn sách.
@@ -323,7 +323,7 @@ erDiagram
         NUMBER customer_id FK "Mã khách hàng"
         NUMBER book_id FK "Mã sách"
         NUMBER rating "Số sao 1-5"
-        NCLOB comment "Bình luận"
+        NCLOB review_comment "Bình luận"
         DATE review_date "Ngày đánh giá"
     }
 

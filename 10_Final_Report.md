@@ -42,7 +42,7 @@
 |--------|---------|
 | Tổng số bảng dữ liệu | **10** (9 bảng chính + 1 bảng AUDIT_LOG) |
 | Tổng số Sequences | **9** |
-| Tổng số Triggers | **11** (8 auto-ID + 3 nghiệp vụ) |
+| Tổng số Triggers | **12** (8 auto-ID + 1 validation + 3 nghiệp vụ) |
 | Tổng số Stored Procedures | **4** |
 | Tổng số Views | **2** (Standard Views) |
 | Tổng số Materialized Views | **1** |
@@ -60,7 +60,7 @@
 DigiBook_Database/
 ├── ai_execution_plan.md         ← Kế hoạch thực thi tổng thể
 ├── 1_Database_Design.md         ← Bước 1: Thiết kế CSDL + ERD (Mermaid)
-├── 2_create_tables.sql          ← Bước 2: DDL — Tạo bảng, Sequences, Triggers auto-ID
+├── 2_create_tables.sql          ← Bước 2: DDL — Tạo bảng, Sequences, Triggers (auto-ID + validation)
 ├── 3_insert_data.sql            ← Bước 3: DML — Dữ liệu mẫu (111 bản ghi)
 ├── 4_procedures.sql             ← Bước 4: 4 Stored Procedures PL/SQL
 ├── 5_triggers.sql               ← Bước 5: 3 Triggers nghiệp vụ + bảng AUDIT_LOG
@@ -89,7 +89,7 @@ DigiBook_Database/
 
 | Thứ tự | File | Mô tả | Lưu ý |
 |--------|------|-------|-------|
-| 1 | `2_create_tables.sql` | Tạo 9 bảng, 8 sequences, 8 triggers auto-ID | Chạy dưới schema chính |
+| 1 | `2_create_tables.sql` | Tạo 9 bảng, 8 sequences, 9 triggers (8 auto-ID + 1 validation) | Chạy dưới schema chính |
 | 2 | `3_insert_data.sql` | Chèn 111 bản ghi dữ liệu mẫu | `SET DEFINE OFF` đã có trong file |
 | 3 | `4_procedures.sql` | Tạo 4 Stored Procedures | `SET SERVEROUTPUT ON` để xem kết quả test |
 | 4 | `5_triggers.sql` | Tạo bảng AUDIT_LOG + 3 triggers nghiệp vụ | File đã tự tạo bảng AUDIT_LOG |
@@ -162,6 +162,7 @@ Thiết kế **9 thực thể** (vượt mức tối thiểu 6), đạt chuẩn 
 | Tables | 9 |
 | Sequences | 8 |
 | Triggers Auto-ID | 8 |
+| Trigger Validation | 1 |
 | PRIMARY KEY | 9 |
 | FOREIGN KEY | 9 |
 | UNIQUE constraints | 6 |

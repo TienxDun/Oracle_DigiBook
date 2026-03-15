@@ -175,16 +175,16 @@ INSERT INTO ORDER_DETAILS (order_id, book_id, quantity, unit_price) VALUES (10, 
 
 PROMPT Đang chèn dữ liệu bảng REVIEWS (Phát)...
 -- [1-10] 10 Đánh giá
-INSERT INTO REVIEWS (customer_id, book_id, rating, comment, review_date) VALUES (1, 1, 5, 'Sách quá hay, Nguyễn Nhật Ánh muôn năm!', SYSDATE - 5);
-INSERT INTO REVIEWS (customer_id, book_id, rating, comment, review_date) VALUES (1, 5, 4, 'Sách cung cấp nhiều kiến thức lịch sử sâu sắc.', SYSDATE - 2);
-INSERT INTO REVIEWS (customer_id, book_id, rating, comment, review_date) VALUES (2, 8, 5, 'Truyện rất tuổi thơ, giao hàng nhanh.', SYSDATE - 3);
-INSERT INTO REVIEWS (customer_id, book_id, rating, comment, review_date) VALUES (3, 4, 5, 'Đọc xong nhà giả kim, tôi đã tìm ra sứ mệnh đời mình.', SYSDATE - 1);
-INSERT INTO REVIEWS (customer_id, book_id, rating, comment, review_date) VALUES (5, 5, 4, 'Đáng đọc, tuy nhiên hơi khó hiểu ở một số phần.', SYSDATE - 1);
-INSERT INTO REVIEWS (customer_id, book_id, rating, comment, review_date) VALUES (7, 12, 5, 'Tác giả viết rất thực tế về văn hóa mạng.', SYSDATE - 1);
-INSERT INTO REVIEWS (customer_id, book_id, rating, comment, review_date) VALUES (10, 2, 4, 'Truyện dễ thương, nhớ quá kỉ niệm tuổi nhóc tì.', SYSDATE);
-INSERT INTO REVIEWS (customer_id, book_id, rating, comment, review_date) VALUES (2, 9, 5, 'Tác phẩm kinh điển đáng suy ngẫm.', SYSDATE);
-INSERT INTO REVIEWS (customer_id, book_id, rating, comment, review_date) VALUES (8, 1, 5, 'Tôi đã khóc khi đọc chương cuối.', SYSDATE);
-INSERT INTO REVIEWS (customer_id, book_id, rating, comment, review_date) VALUES (9, 17, 5, 'Ghiền Harry Potter từ xưa giờ.', SYSDATE);
+INSERT INTO REVIEWS (customer_id, book_id, rating, review_comment, review_date) VALUES (1, 1, 5, 'Sách quá hay, Nguyễn Nhật Ánh muôn năm!', SYSDATE - 5);
+INSERT INTO REVIEWS (customer_id, book_id, rating, review_comment, review_date) VALUES (1, 5, 4, 'Sách cung cấp nhiều kiến thức lịch sử sâu sắc.', SYSDATE - 2);
+INSERT INTO REVIEWS (customer_id, book_id, rating, review_comment, review_date) VALUES (2, 8, 5, 'Truyện rất tuổi thơ, giao hàng nhanh.', SYSDATE - 3);
+INSERT INTO REVIEWS (customer_id, book_id, rating, review_comment, review_date) VALUES (3, 4, 5, 'Đọc xong nhà giả kim, tôi đã tìm ra sứ mệnh đời mình.', SYSDATE - 1);
+INSERT INTO REVIEWS (customer_id, book_id, rating, review_comment, review_date) VALUES (5, 5, 4, 'Đáng đọc, tuy nhiên hơi khó hiểu ở một số phần.', SYSDATE - 1);
+INSERT INTO REVIEWS (customer_id, book_id, rating, review_comment, review_date) VALUES (7, 12, 5, 'Tác giả viết rất thực tế về văn hóa mạng.', SYSDATE - 1);
+INSERT INTO REVIEWS (customer_id, book_id, rating, review_comment, review_date) VALUES (10, 2, 4, 'Truyện dễ thương, nhớ quá kỉ niệm tuổi nhóc tì.', SYSDATE);
+INSERT INTO REVIEWS (customer_id, book_id, rating, review_comment, review_date) VALUES (2, 9, 5, 'Tác phẩm kinh điển đáng suy ngẫm.', SYSDATE);
+INSERT INTO REVIEWS (customer_id, book_id, rating, review_comment, review_date) VALUES (8, 1, 5, 'Tôi đã khóc khi đọc chương cuối.', SYSDATE);
+INSERT INTO REVIEWS (customer_id, book_id, rating, review_comment, review_date) VALUES (9, 17, 5, 'Ghiền Harry Potter từ xưa giờ.', SYSDATE);
 
 PROMPT ================================================
 PROMPT ✅ HOÀN TẤT CHÈN 111 BẢN GHI DỮ LIỆU MẪU!

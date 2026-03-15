@@ -21,8 +21,9 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE;
 -- ============================================================================
 -- ✅ PHẦN TIỀN KIỂM TRA MÔI TRƯỜNG THỰC THI
 -- ============================================================================
--- Bắt buộc chạy trong PDB (không chạy ở CDB$ROOT), và tự động trỏ CURRENT_SCHEMA
--- về schema đang chứa các object DigiBook để lệnh GRANT không bị ORA-00942.
+-- Mục tiêu:
+-- 1) Nếu đang ở CDB$ROOT thì tự chuyển sang PDB chứa bảng CUSTOMERS.
+-- 2) Trỏ CURRENT_SCHEMA về owner của bộ bảng DigiBook để GRANT đúng đối tượng.
 DECLARE
   v_con_name   VARCHAR2(128);
   v_target_pdb VARCHAR2(128);
@@ -35,21 +36,29 @@ BEGIN
       SELECT name
         INTO v_target_pdb
         FROM (
-              SELECT name
-                FROM v$pdbs
-               WHERE open_mode = 'READ WRITE'
-               ORDER BY CASE WHEN UPPER(name) = 'XEPDB1' THEN 0 ELSE 1 END, name
+          SELECT p.name
+            FROM v$pdbs p
+           WHERE p.open_mode = 'READ WRITE'
+             AND EXISTS (
+               SELECT 1
+                 FROM cdb_tables t
+                WHERE t.con_id = p.con_id
+                  AND t.table_name = 'CUSTOMERS'
+                  AND t.owner NOT IN ('SYS', 'SYSTEM', 'XDB', 'MDSYS', 'CTXSYS')
              )
+           ORDER BY CASE WHEN UPPER(p.name) IN ('ORCLPDB', 'XEPDB1') THEN 0 ELSE 1 END,
+                    p.name
+        )
        WHERE ROWNUM = 1;
 
       EXECUTE IMMEDIATE 'ALTER SESSION SET CONTAINER = ' || DBMS_ASSERT.SIMPLE_SQL_NAME(v_target_pdb);
       SELECT SYS_CONTEXT('USERENV', 'CON_NAME') INTO v_con_name FROM dual;
-      DBMS_OUTPUT.PUT_LINE('ℹ️ Dang chay o CDB$ROOT -> da tu dong chuyen sang PDB: ' || v_con_name);
+      DBMS_OUTPUT.PUT_LINE('ℹ️ Da tu dong chuyen tu CDB$ROOT sang PDB: ' || v_con_name);
     EXCEPTION
       WHEN NO_DATA_FOUND THEN
         RAISE_APPLICATION_ERROR(
           -20081,
-          'Dang o CDB$ROOT va khong co PDB nao mo READ WRITE. Hay mo PDB (vd: XEPDB1) hoac CONNECT truc tiep vao service PDB roi chay lai.'
+          'Dang o CDB$ROOT nhung khong tim thay PDB nao (READ WRITE) chua bang CUSTOMERS. Hay connect truc tiep vao PDB dung (vd ORCLPDB/XEPDB1) roi chay lai.'
         );
     END;
   END IF;
@@ -61,8 +70,9 @@ BEGIN
         FROM dba_tables
        WHERE table_name = 'CUSTOMERS'
          AND owner NOT IN ('SYS', 'SYSTEM', 'XDB', 'MDSYS', 'CTXSYS')
-       ORDER BY CASE WHEN owner = 'DIGIBOOK' THEN 0 ELSE 1 END, owner
-       )
+       ORDER BY CASE WHEN owner = 'DIGIBOOK' THEN 0 ELSE 1 END,
+                owner
+    )
    WHERE ROWNUM = 1;
 
   EXECUTE IMMEDIATE 'ALTER SESSION SET CURRENT_SCHEMA = ' || v_owner;
@@ -72,7 +82,7 @@ EXCEPTION
   WHEN NO_DATA_FOUND THEN
     RAISE_APPLICATION_ERROR(
       -20082,
-      'Khong tim thay bang CUSTOMERS trong PDB hien tai. Hay chay 2_create_tables.sql truoc, sau do chay lai file nay.'
+      'Khong tim thay bang CUSTOMERS trong container hien tai. Hay chay buoc 2->7 bang user DIGIBOOK trong cung PDB, sau do chay lai buoc 8.'
     );
 END;
 /
@@ -81,17 +91,13 @@ END;
 -- 🗑️ PHẦN 0: XÓA CÁC ĐỐI TƯỢNG CŨ (NẾU TỒN TẠI)
 -- ============================================================================
 BEGIN
-    -- Xóa Users
-    FOR r IN (SELECT username FROM dba_users WHERE username IN ('DB_ADMIN_USER', 'DB_STAFF_USER', 'DB_GUEST_USER')) LOOP
-        EXECUTE IMMEDIATE 'DROP USER ' || r.username || ' CASCADE';
-    END LOOP;
-    
-    -- Xóa Roles
-    FOR r IN (SELECT role FROM dba_roles WHERE role IN ('DIGIBOOK_ADMIN', 'DIGIBOOK_STAFF', 'DIGIBOOK_GUEST')) LOOP
-        EXECUTE IMMEDIATE 'DROP ROLE ' || r.role;
-    END LOOP;
-EXCEPTION
-    WHEN OTHERS THEN NULL;
+  BEGIN EXECUTE IMMEDIATE 'DROP USER DB_ADMIN_USER CASCADE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  BEGIN EXECUTE IMMEDIATE 'DROP USER DB_STAFF_USER CASCADE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  BEGIN EXECUTE IMMEDIATE 'DROP USER DB_GUEST_USER CASCADE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+
+  BEGIN EXECUTE IMMEDIATE 'DROP ROLE DIGIBOOK_ADMIN'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  BEGIN EXECUTE IMMEDIATE 'DROP ROLE DIGIBOOK_STAFF'; EXCEPTION WHEN OTHERS THEN NULL; END;
+  BEGIN EXECUTE IMMEDIATE 'DROP ROLE DIGIBOOK_GUEST'; EXCEPTION WHEN OTHERS THEN NULL; END;
 END;
 /
 
@@ -220,20 +226,25 @@ PROMPT ================================================================
 DECLARE
   v_count NUMBER;
 BEGIN
-  DBMS_OUTPUT.PUT_LINE('1. Danh sách Roles đã tạo:');
-  v_count := 0;
-  FOR r IN (
-    SELECT role
-    FROM dba_roles
-    WHERE role LIKE 'DIGIBOOK%'
-    ORDER BY role
-  ) LOOP
-    v_count := v_count + 1;
-    DBMS_OUTPUT.PUT_LINE('   - ' || r.role);
-  END LOOP;
-  IF v_count = 0 THEN
-    DBMS_OUTPUT.PUT_LINE('   (không có dữ liệu)');
-  END IF;
+  BEGIN
+    DBMS_OUTPUT.PUT_LINE('1. Danh sách Roles đã tạo:');
+    v_count := 0;
+    FOR r IN (
+      SELECT role
+      FROM dba_roles
+      WHERE role LIKE 'DIGIBOOK%'
+      ORDER BY role
+    ) LOOP
+      v_count := v_count + 1;
+      DBMS_OUTPUT.PUT_LINE('   - ' || r.role);
+    END LOOP;
+    IF v_count = 0 THEN
+      DBMS_OUTPUT.PUT_LINE('   (không có dữ liệu)');
+    END IF;
+  EXCEPTION
+    WHEN OTHERS THEN
+      DBMS_OUTPUT.PUT_LINE('   (khong the doc danh sach role: ' || SQLERRM || ')');
+  END;
 
   DBMS_OUTPUT.PUT_LINE('2. Danh sách quyền của Role DIGIBOOK_STAFF trên các bảng:');
   v_count := 0;
@@ -250,20 +261,25 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('   (không có dữ liệu)');
   END IF;
 
-  DBMS_OUTPUT.PUT_LINE('3. Danh sách Users đã gán Role:');
-  v_count := 0;
-  FOR r IN (
-    SELECT grantee, granted_role
-    FROM dba_role_privs
-    WHERE granted_role LIKE 'DIGIBOOK%'
-    ORDER BY grantee, granted_role
-  ) LOOP
-    v_count := v_count + 1;
-    DBMS_OUTPUT.PUT_LINE('   - ' || RPAD(r.grantee, 20) || ' -> ' || r.granted_role);
-  END LOOP;
-  IF v_count = 0 THEN
-    DBMS_OUTPUT.PUT_LINE('   (không có dữ liệu)');
-  END IF;
+  BEGIN
+    DBMS_OUTPUT.PUT_LINE('3. Danh sách Users đã gán Role:');
+    v_count := 0;
+    FOR r IN (
+      SELECT grantee, granted_role
+      FROM dba_role_privs
+      WHERE granted_role LIKE 'DIGIBOOK%'
+      ORDER BY grantee, granted_role
+    ) LOOP
+      v_count := v_count + 1;
+      DBMS_OUTPUT.PUT_LINE('   - ' || RPAD(r.grantee, 20) || ' -> ' || r.granted_role);
+    END LOOP;
+    IF v_count = 0 THEN
+      DBMS_OUTPUT.PUT_LINE('   (không có dữ liệu)');
+    END IF;
+  EXCEPTION
+    WHEN OTHERS THEN
+      DBMS_OUTPUT.PUT_LINE('   (khong the doc DBA_ROLE_PRIVS: can quyen DBA/SELECT_CATALOG_ROLE)');
+  END;
 END;
 /
 

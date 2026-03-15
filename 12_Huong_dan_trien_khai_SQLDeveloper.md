@@ -46,6 +46,37 @@ Lưu ý:
 - Nên dùng `F5` thay vì `Ctrl+Enter` vì các file có nhiều lệnh PL/SQL, `PROMPT`, `BEGIN ... END;`, `/`.
 - Sau khi chạy xong từng file, thực hiện ngay phần `Kiểm tra kết quả` bên dưới.
 
+### 3.3. Cách chạy nhanh bằng menu tự động
+
+Đã bổ sung file menu để chạy nhanh các script theo số:
+
+- `run_menu.sql`: Hiển thị menu và cho phép chọn file cần chạy.
+- `run_all.sql`: Chạy tự động từ bước `2` đến bước `7`, sau đó dừng để chạy bước `8` bằng tài khoản `SYS`.
+
+Cách dùng:
+
+1. Mở `run_menu.sql` trong SQL Developer.
+2. Đảm bảo đang dùng đúng connection `DIGIBOOK`.
+3. Nhấn `F5` (`Run Script`).
+4. Nhập lựa chọn từ `0` đến `9` khi được hỏi.
+
+Ý nghĩa lựa chọn:
+
+- `0`: Chạy reset schema (`0_reset_schema.sql`).
+- `1` đến `8`: Chạy từng file chức năng tương ứng.
+- `9`: Chạy nhanh bước `2` đến bước `7` theo đúng thứ tự.
+
+### 3.4. Bắt buộc chạy riêng bước 8 bằng SYS
+
+Để đúng kế hoạch và tránh lỗi quyền, bước bảo mật phải chạy riêng:
+
+1. Chạy `run_menu.sql` và chọn `9` để hoàn tất bước `2 -> 7`.
+2. Ngắt connection hiện tại, đăng nhập bằng `SYS AS SYSDBA` (hoặc user có quyền DBA tương đương).
+3. Chạy `8_security_roles.sql` bằng `F5`.
+4. Kết nối lại user `DIGIBOOK`, chạy tiếp `9_transaction_demo.sql` (chọn `8` trong menu).
+
+Lưu ý: Đây là luồng đúng theo kế hoạch triển khai: `2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 (SYS) -> 9`.
+
 ## 4. Kiểm tra nhanh trước khi triển khai
 
 Chạy các câu lệnh sau bằng connection `DIGIBOOK`:

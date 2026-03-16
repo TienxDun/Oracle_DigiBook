@@ -10,8 +10,6 @@ const statusDot = document.getElementById('statusDot');
 const statsContainer = document.getElementById('stats');
 const recentOrdersContainer = document.getElementById('recentOrders');
 const tableTabs = document.getElementById('tableTabs');
-const tableTabsPrev = document.getElementById('tableTabsPrev');
-const tableTabsNext = document.getElementById('tableTabsNext');
 const tableTabSearch = document.getElementById('tableTabSearch');
 const tableTabCount = document.getElementById('tableTabCount');
 const tableContainer = document.getElementById('tableContainer');
@@ -243,8 +241,6 @@ function renderTabs() {
     empty.style.padding = '8px 10px';
     empty.textContent = 'Không có bảng phù hợp bộ lọc.';
     tableTabs.appendChild(empty);
-    tableTabsPrev.disabled = true;
-    tableTabsNext.disabled = true;
     return;
   }
 
@@ -252,7 +248,15 @@ function renderTabs() {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `tab${table.key === state.currentTable ? ' active' : ''}`;
-    button.textContent = `${table.label} (${formatNumber(table.totalRows)})`;
+    button.setAttribute('role', 'tab');
+    button.setAttribute('aria-selected', table.key === state.currentTable ? 'true' : 'false');
+    const label = document.createElement('span');
+    label.className = 'tab-label';
+    label.textContent = table.label;
+    const badge = document.createElement('span');
+    badge.className = 'tab-badge';
+    badge.textContent = formatNumber(table.totalRows);
+    button.append(label, badge);
     button.addEventListener('click', async () => {
       state.currentTable = table.key;
       renderTabs();
@@ -263,28 +267,8 @@ function renderTabs() {
 
   const activeTab = tableTabs.querySelector('.tab.active');
   if (activeTab) {
-    activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
   }
-
-  updateTabsNavState();
-}
-
-function updateTabsNavState() {
-  const canScroll = tableTabs.scrollWidth > tableTabs.clientWidth + 2;
-
-  if (!canScroll) {
-    tableTabsPrev.disabled = true;
-    tableTabsNext.disabled = true;
-    return;
-  }
-
-  tableTabsPrev.disabled = tableTabs.scrollLeft <= 0;
-  tableTabsNext.disabled = tableTabs.scrollLeft + tableTabs.clientWidth >= tableTabs.scrollWidth - 1;
-}
-
-function scrollTabs(direction) {
-  const offset = Math.max(140, Math.floor(tableTabs.clientWidth * 0.45));
-  tableTabs.scrollBy({ left: direction * offset, behavior: 'smooth' });
 }
 
 async function loadSummary() {
@@ -348,10 +332,6 @@ async function searchBooks(term) {
 
 reloadButton.addEventListener('click', loadTable);
 limitSelect.addEventListener('change', loadTable);
-tableTabsPrev.addEventListener('click', () => scrollTabs(-1));
-tableTabsNext.addEventListener('click', () => scrollTabs(1));
-tableTabs.addEventListener('scroll', updateTabsNavState);
-window.addEventListener('resize', updateTabsNavState);
 
 tableTabSearch.addEventListener('input', () => {
   state.tableFilter = tableTabSearch.value;

@@ -200,7 +200,19 @@ h1 {
 }
 
 .card-table-workspace {
+  min-width: 0;
+}
+
+.table-zone {
   grid-area: table;
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.card-table-sidebar {
+  padding: 18px;
 }
 
 .card {
@@ -387,16 +399,22 @@ button:hover {
 }
 
 .tabs-panel {
-  width: min(760px, 100%);
+  width: 100%;
   display: grid;
   gap: 8px;
 }
 
+.table-sidebar {
+  position: sticky;
+  top: 14px;
+  align-self: start;
+}
+
 .tabs-tools {
-  display: grid;
-  grid-template-columns: minmax(150px, 1fr) auto auto auto;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
-  align-items: center;
+  align-items: stretch;
 }
 
 .tabs-tools input {
@@ -416,42 +434,46 @@ button:hover {
   white-space: nowrap;
 }
 
-.tab-nav {
-  border: 1px solid var(--line);
-  background: #fffdf8;
-  color: var(--text);
-  border-radius: 10px;
-  min-width: 36px;
-  min-height: 36px;
-  padding: 0;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.tab-nav:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
 .tabs {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 8px;
-  overflow-x: auto;
-  overflow-y: hidden;
+  display: grid;
+  gap: 6px;
+  max-height: none;
+  overflow: visible;
   padding: 2px;
-  scroll-behavior: smooth;
 }
 
 .tab {
-  flex: 0 0 auto;
-  padding: 10px 14px;
-  border-radius: 999px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 11px;
+  border-radius: 12px;
   background: transparent;
   border: 1px solid var(--line);
   color: var(--text);
   font-weight: 500;
+  text-align: left;
+}
+
+.tab-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.tab-badge {
+  flex: 0 0 auto;
+  min-width: 34px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(29, 42, 36, 0.08);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
 }
 
 .tab:hover {
@@ -463,6 +485,11 @@ button:hover {
   background: var(--accent-soft);
   color: var(--accent-strong);
   border-color: rgba(15, 118, 110, 0.35);
+}
+
+.tab.active .tab-badge {
+  background: rgba(15, 118, 110, 0.18);
+  color: var(--accent-strong);
 }
 
 .toolbar {
@@ -602,6 +629,15 @@ tbody tr:hover {
   .panel-note {
     max-width: none;
   }
+
+  .table-zone {
+    grid-template-columns: 1fr;
+  }
+
+  .table-sidebar {
+    position: static;
+  }
+
 }
 
 @media (max-width: 640px) {
@@ -613,6 +649,10 @@ tbody tr:hover {
   .hero {
     padding: 18px;
     border-radius: 22px;
+  }
+
+  .card-table-sidebar {
+    padding: 14px;
   }
 
   .search-form,
@@ -642,12 +682,4 @@ tbody tr:hover {
     gap: 10px;
   }
 
-  .tabs-tools {
-    grid-template-columns: 1fr auto auto;
-  }
-
-  .tabs-count {
-    grid-column: 1 / -1;
-    justify-self: start;
-  }
 }

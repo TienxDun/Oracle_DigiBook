@@ -75,36 +75,37 @@
           <div id="recentOrders" class="table-wrap table-wrap-compact"></div>
         </section>
 
-        <section class="card card-table-workspace">
-          <div class="section-head section-head-wrap">
-            <div>
-              <p class="section-kicker">Dữ liệu chi tiết</p>
-              <h2>Bảng được hỗ trợ</h2>
-            </div>
-            <div class="tabs-panel">
-              <div class="tabs-tools">
-                <input id="tableTabSearch" type="text" placeholder="Lọc bảng..." aria-label="Lọc bảng dữ liệu" />
-                <span id="tableTabCount" class="tabs-count">0/0 bảng</span>
-                <button id="tableTabsPrev" class="tab-nav" type="button" aria-label="Cuộn tab sang trái">◀</button>
-                <button id="tableTabsNext" class="tab-nav" type="button" aria-label="Cuộn tab sang phải">▶</button>
+        <section class="table-zone">
+          <aside class="card card-table-sidebar tabs-panel table-sidebar">
+            <div class="section-head section-head-wrap compact-head">
+              <div>
+                <p class="section-kicker">Dữ liệu chi tiết</p>
+                <h2>Bảng được hỗ trợ</h2>
               </div>
-              <div id="tableTabs" class="tabs"></div>
             </div>
-          </div>
-          <div class="toolbar toolbar-workspace">
-            <label>
-              Số dòng
-              <select id="limitSelect">
-                <option value="10">10</option>
-                <option value="25" selected>25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-              </select>
-            </label>
-            <button id="reloadButton" type="button">Tải lại bảng</button>
-          </div>
-          <div id="tableMeta" class="table-meta"></div>
-          <div id="tableContainer" class="table-wrap table-wrap-workspace"></div>
+            <div class="tabs-tools">
+              <input id="tableTabSearch" type="text" placeholder="Lọc bảng..." aria-label="Lọc bảng dữ liệu" />
+              <span id="tableTabCount" class="tabs-count">0/0 bảng</span>
+            </div>
+            <div id="tableTabs" class="tabs" role="tablist" aria-label="Danh sách bảng dữ liệu"></div>
+          </aside>
+
+          <section class="card card-table-workspace">
+            <div class="toolbar toolbar-workspace">
+              <label>
+                Số dòng
+                <select id="limitSelect">
+                  <option value="10">10</option>
+                  <option value="25" selected>25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </label>
+              <button id="reloadButton" type="button">Tải lại bảng</button>
+            </div>
+            <div id="tableMeta" class="table-meta"></div>
+            <div id="tableContainer" class="table-wrap table-wrap-workspace"></div>
+          </section>
         </section>
       </main>
     </div>

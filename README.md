@@ -36,12 +36,48 @@ Oracle DigiBook là dự án mẫu quản lý nhà sách trên Oracle Database, 
 ## Yêu cầu môi trường
 
 - Node.js 20+.
-- Oracle DB đang chạy và có schema DigiBook.
-- User Oracle có quyền truy vấn các bảng DigiBook.
+- Oracle DB đang chạy (ưu tiên Oracle 19c/PDB).
+
+## Thiết lập user DIGIBOOK từ đầu
+
+Nếu bạn bắt đầu từ môi trường Oracle mới, chạy các lệnh dưới đây bằng tài khoản có quyền DBA (`SYS` hoặc `SYSTEM`).
+
+1. Kết nối Oracle bằng tài khoản quản trị:
+
+   ```sql
+   sqlplus sys/<SYS_PASSWORD>@localhost:1521/orclpdb as sysdba
+   ```
+
+2. (Tùy môi trường CDB/PDB) chuyển vào đúng PDB trước khi tạo user:
+
+   ```sql
+   ALTER SESSION SET CONTAINER = ORCLPDB;
+   ```
+
+3. Tạo user và cấp quota:
+
+   ```sql
+   CREATE USER DIGIBOOK IDENTIFIED BY Digibook123;
+   ALTER USER DIGIBOOK QUOTA UNLIMITED ON USERS;
+   ```
+
+4. Cấp quyền tối thiểu để khởi tạo schema và dữ liệu:
+
+   ```sql
+   GRANT CREATE SESSION TO DIGIBOOK;
+   GRANT CREATE TABLE, CREATE VIEW, CREATE SEQUENCE, CREATE TRIGGER TO DIGIBOOK;
+   GRANT CREATE PROCEDURE, CREATE TYPE TO DIGIBOOK;
+   ```
+
+5. Kết nối bằng user mới tạo:
+
+   ```sql
+   CONNECT DIGIBOOK/Digibook123@localhost:1521/orclpdb
+   ```
 
 ## Khởi tạo database
 
-Chạy script theo đúng thứ tự:
+Chạy script theo đúng thứ tự dưới user `DIGIBOOK`:
 
 1. `2_create_tables.sql`
 2. `3_insert_data.sql`
@@ -73,7 +109,7 @@ Lưu ý quan trọng: chạy lệnh Node.js trong thư mục `web-ui`, không ch
    ```env
    PORT=3000
    ORACLE_USER=digibook
-   ORACLE_PASSWORD=your_password
+   ORACLE_PASSWORD=Digibook123
    ORACLE_CONNECTION_STRING=localhost:1521/orclpdb
    ```
 

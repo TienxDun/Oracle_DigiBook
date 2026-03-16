@@ -107,7 +107,6 @@ CREATE TABLE books (
     description        NCLOB,
     publication_year   NUMBER(4),
     page_count         NUMBER,
-    cover_image_url    VARCHAR2(500),
     category_id        NUMBER,
     publisher_id       NUMBER,
     created_at         DATE DEFAULT SYSDATE,

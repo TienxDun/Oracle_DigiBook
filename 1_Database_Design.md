@@ -17,6 +17,7 @@
 6. [Phân công công việc](#6-phân-công-công-việc)
 7. [ERD — Entity Relationship Diagram (Mermaid)](#7-erd--entity-relationship-diagram-mermaid)
 8. [Tóm tắt thiết kế](#8-tóm-tắt-thiết-kế)
+9. [Technical Debt — Những vấn đề tích lũy cần khắc phục](#9-technical-debt--những-vấn-đề-tích-lũy-cần-khắc-phục)
 
 ---
 
@@ -179,7 +180,6 @@ Hệ thống DigiBook bao gồm **15 thực thể**:
 | `description` | `NCLOB` | — | Mô tả sách |
 | `publication_year` | `NUMBER(4)` | `CHECK (publication_year >= 1900 AND publication_year <= 2100)` | Năm xuất bản |
 | `page_count` | `NUMBER` | `CHECK (page_count > 0)` | Số trang |
-| `cover_image_url` | `VARCHAR2(500)` | — | **[LEGACY — chỉ ghi khi INSERT]** Source of truth là `BOOK_IMAGES WHERE is_primary = 1`. Không cập nhật cột này sau khi insert để tránh phân kỳ dữ liệu. |
 | `category_id` | `NUMBER` | **FK** → `CATEGORIES(category_id)` | Mã danh mục |
 | `publisher_id` | `NUMBER` | **FK** → `PUBLISHERS(publisher_id)` | Mã NXB |
 | `created_at` | `DATE` | `DEFAULT SYSDATE` | Ngày thêm vào hệ thống |
@@ -510,7 +510,6 @@ erDiagram
         NCLOB description "Mô tả sách"
         NUMBER publication_year "Năm xuất bản"
         NUMBER page_count "Số trang"
-        VARCHAR2 cover_image_url "Link ảnh bìa (cũ)"
         NUMBER category_id FK "Mã danh mục"
         NUMBER publisher_id FK "Mã NXB"
         DATE created_at "Ngày thêm"
@@ -642,5 +641,201 @@ erDiagram
 | Quan hệ N:N | **1** (`BOOKS` ↔ `AUTHORS`) |
 | Chuẩn hóa | **3NF** ✅ |
 | Virtual Column | **1** (`ORDER_DETAILS.subtotal`) |
+
+---
+
+## 9. Technical Debt — Những vấn đề tích lũy cần khắc phục
+
+Dưới đây là danh sách **Technical Debt** được xác định từ thiết kế database và triển khai web UI. Các vấn đề này **không ảnh hưởng** tới khả năng hoạt động hiện tại (beta) nhưng **bắt buộc** phải giải quyết trước khi production hoặc scale-up có traffic thực.
+
+### 9.1. Race Condition trong `COUPONS.used_count` ⚠️
+
+| Mục | Chi tiết |
+|-----|----------|
+| **Vấn đề** | Khi hai (hoặc nhiều) phiên đồng thời áp dụng cùng một coupon, cả hai đều vượt qua kiểm tra `used_count < max_uses` trước khi trigger cập nhật, dẫn tới `used_count` bị undercounted hoặc vượt quá `max_uses`. |
+| **Tác động** | Cho phép nhiều khách hàng sử dụng coupon hơn giới hạn; doanh thu giảm không đúng kế hoạch. |
+| **Nguyên nhân gốc** | Thiếu locking (pessimistic lock) trong quá trình kiểm tra và cập nhật trạng thái coupon. |
+| **Giải pháp** | Triển khai **Stored Procedure** để áp dụng coupon với `SELECT ... FOR UPDATE` lock row `COUPONS` trong quá trình kiểm tra:  ```sql SELECT used_count INTO v_count FROM COUPONS WHERE coupon_id = :p_id FOR UPDATE; IF v_count >= max_uses THEN   RAISE_APPLICATION_ERROR(-20001, 'Coupon used up'); END IF; UPDATE COUPONS SET used_count = used_count + 1 WHERE coupon_id = :p_id; ``` |
+| **Thời hạn** | **Bắt buộc** trước khi beta có traffic > 10 concurrent orders/min. |
+| **Ước lượng effort** | 2-3 ngày (viết & test stored procedure, cập nhật application logic). |
+
+### 9.2. Giới hạn ngữ nghĩa `changed_by` trong `ORDER_STATUS_HISTORY` ⚠️
+
+| Mục | Chi tiết |
+|-----|----------|
+| **Vấn đề** | `changed_by` là FK tới `CUSTOMERS`, nhưng khi admin (staff) thay đổi trạng thái đơn hàng, không có admin record để tham chiếu. Mô hình hiện tại không phân biệt rõ actor (khách hàng vs. admin). |
+| **Tác động** | Audit trail không chính xác khi staff thao tác; khó theo dõi người chịu trách nhiệm thực tế. |
+| **Nguyên nhân gốc** | Thiết kế đơn giản hóa cho beta, không dự tính bảng admin/staff riêng. |
+| **Giải pháp** | **Phase 1 (Beta):** Chấp nhận giới hạn: `changed_source = 'SYSTEM'` → `changed_by = NULL`, `changed_source = 'CUSTOMER'` → `changed_by = customer_id` cụ thể.  **Phase 2 (Scale):** Tách bảng `ADMIN_USERS` với cấu trúc giống `CUSTOMERS`, sau đó thay thế `changed_by` bằng `UNION` view hoặc cột mới `actor_type` + `actor_id` để generic. |
+| **Thời hạn** | **Optional** trong beta; **bắt buộc** trước khi có team nội bộ quản lý đơn. |
+| **Ước lượng effort** | 3-5 ngày (thêm ADMIN_USERS, migration data, update triggers & views). |
+
+### 9.3. Cột legacy `BOOKS.cover_image_url` ✅ [FIXED]
+
+| Mục | Chi tiết |
+|-----|----------|
+| **Status** | ✅ **RESOLVED** — Cột đã được xóa hoàn toàn khỏi table BOOKS. |
+| **Giải pháp thực hiện** | **DDL Migration:** Xóa cột `cover_image_url` từ bảng `BOOKS` trong `2_create_tables.sql`.  **Data Migration:** Cột đã loại bỏ từ tất cả INSERT statements trong `3_insert_data.sql` (20 records books).  **Code Update:** Backend query trong `server.js` không còn select cột này.  **Source of truth:** `BOOK_IMAGES` với `is_primary = 1` là duy nhất image source cho mỗi sách. |
+| **Thời hạn** | ✅ Hoàn thành — Không ảnh hưởng data integrity (không có dữ liệu nào bị mất; BOOK_IMAGES chứa đủ info). |
+| **Recovery (nếu cần)** | Nếu tương lai cần restore legacy URLs từ BOOK_IMAGES, xem script documentation trong repo. |
+
+---
+
+### 9.4. Không có cơ chế Authentication/Authorization ⚠️
+
+| Mục | Chi tiết |
+|-----|----------|
+| **Vấn đề** | Web UI dashboard hiện tại **read-only, không password/token**, bất kỳ ai truy cập máy chủ đều xem được tất cả dữ liệu (khách hàng, đơn hàng, mật khẩu hash, coupon). |
+| **Tác động** | Rủi ro bảo mật cực cao nếu deploy production; vi phạm GDPR/quy định bảo vệ dữ liệu cá nhân. |
+| **Nguyên nhân gốc** | Dashboard dự tính chỉ dành internal dev/QA, không đủ audit trong beta. |
+| **Giải pháp** | Triển khai **JWT-based authentication**:  1. Tách endpoint `/api/auth/login` với username/password (lưu password hash trong **ADMIN_USERS** table).  2. Cấp JWT token sau khi xác thực; ghi `Authorization: Bearer <token>` vào request.  3. Middleware `verifyToken()` trên tất cả `/api/*` routes.  4. **Role-based access control (RBAC):** admin, supervisor, staff với quyền hạn khác nhau.  5. Mask sensitive columns: không trả `password_hash`, `email` (ngoài user profile họ nhìn thấy). |
+| **Thời hạn** | **Bắt buộc ngay** nếu deploy staging/production, hoặc có access từ bên ngoài. |
+| **Ước lượng effort** | 5-7 ngày (JWT setup, ADMIN_USERS table, middleware, role logic, testing). |
+
+### 9.5. Không có Input Validation/Sanitization trên Search API ⚠️
+
+| Mục | Chi tiết |
+|-----|----------|
+| **Vấn đề** | Endpoint `/api/search/books?q=<term>` chỉ dùng `UPPER(:term)` để tránh SQL injection, nhưng không kiểm tra độ dài hay special characters. Term dài hoặc chứa regex có thể trigger full-table scan, gây DOS. |
+| **Tác động** | DOS risk; performance suy giảm khi có user malicious hoặc accidental; database load tăng vọt. |
+| **Nguyên nhân gốc** | Quick implementation cho beta, chưa cảnh báo user action limits. |
+| **Giải pháp** | Thêm validation layer:  ```javascript const MAX_TERM_LENGTH = 100; if (!term \|\| term.length > MAX_TERM_LENGTH) {   return res.status(400).json({ message: 'Term too long' }); } // Escape: remove regex chars, trim whitespace const safeTerm = term.trim().substring(0, MAX_TERM_LENGTH); ``` Cộng với **rate limiting** trên `/api/search/*` (max 5 req/min per IP). |
+| **Thời hạn** | **Khuyến khích** trước khi scale; **bắt buộc** trước production. |
+| **Ước lượng effort** | 1-2 ngày (validation, rate limiting middleware, test). |
+
+### 9.6. Không có Pagination Offset — chỉ hỗ trợ LIMIT ⚠️
+
+| Mục | Chi tiết |
+|-----|----------|
+| **Vấn đề** | API `/api/table/:tableName?limit=50` chỉ trả 50 dòng đầu tiên. Để get trang 2, phải query lại với LIMIT 50 nhưng không có OFFSET, nên lại lấy 50 dòng đầu. Dashboard hiện phải workaround bằng re-query và slice client-side. |
+| **Tác động** | Khó navigate large tables (>100 rows); inefficient data transfer; user experience xấu. |
+| **Nguyên nhân gốc** | Quick MVP implementation, chưa cần phân trang cho beta. |
+| **Giải pháp** | Thêm `offset` parameter vào endpoint:  ```sql SELECT ... FROM tbl ORDER BY pk OFFSET :offset ROWS FETCH FIRST :limit ROWS ONLY ``` Query string: `/api/table/books?offset=50&limit=50` → lấy dòng 51-100.  Frontend render pagination UI với `Page 1 | 2 | 3 | ...`. |
+| **Thời hạn** | **Khuyến khích** khi table vượt 500 rows; **bắt buộc** trước khi scale. |
+| **Ước lượng effort** | 2-3 ngày (update queries, frontend pagination, testing). |
+
+### 9.7. Cơ chế transaction ít đơn lương trong multi-table operations ⚠️
+
+| Mục | Chi tiết |
+|-----|----------|
+| **Vấn đề** | Khi tạo đơn hàng, cần:  1. Insert `ORDERS` record.  2. For each item: Insert `ORDER_DETAILS` + Update `BOOKS.stock_quantity` + Insert `INVENTORY_TRANSACTIONS`.  Nếu bước 2 bị lỗi sau khi insert `ORDERS`, đơn hàng incomplete. Không có transaction rollback logic. |
+| **Tác động** | Data inconsistency (đơn hàng không có chi tiết); tồn kho sai lệch; phức tạp khắc phục sau. |
+| **Nguyên nhân gốc** | Web UI hiện chỉ read-only, không tạo đơn (chức năng tạo đơn ở file backend API khác/TBD). |
+| **Giải pháp** | Khi triển khai create order API:  1. Wrap tất cả DB operations vào **explicit transaction** (BEGIN, COMMIT, ROLLBACK).  2. Hoặc dùng **savepoint** cho mỗi step để rollback partial.  3. Stored Procedure `CREATE_ORDER(...)` xác định đúng điểm commit.  Ví dụ:  ```sql BEGIN   INSERT INTO orders ...;   INSERT INTO order_details ...;   UPDATE books SET stock_quantity = stock_quantity - qty ...;   INSERT INTO inventory_transactions ...;   COMMIT; EXCEPTION   WHEN OTHERS THEN     ROLLBACK;   RAISE; END; ``` |
+| **Thời hạn** | **Khuyến khích** khi implement order creation endpoint. |
+| **Ước lượng effort** | 2-4 ngày (design transaction flow, test failure cases, documentation). |
+
+### 9.8. Thiêu logging/monitoring cho API errors ⚠️
+
+| Mục | Chi tiết |
+|-----|----------|
+| **Vấn đề** | Khi APIs fail, chỉ return `error.message` tới client. Không ghi log vào file/centralised system. Khó debug lỗi production, không biết pattern thất bại nào xảy ra. |
+| **Tác động** | Slow MTTR (Mean Time To Recover); khó detect anomalies; không có audit trail cho request. |
+| **Nguyên nhân gốc** | MVP focus vào functionality, chưa setup logging infrastructure. |
+| **Giải pháp** | Thêm **structured logging**:  1. Dùng library `winston` hoặc `pino` để ghi log vào file + stdout.  2. Log schema: `{ timestamp, level, endpoint, method, statusCode, duration, error, userId (nếu có) }`.  3. Rotate logs hàng ngày; archive cũ.  4. **(Optional Scale):** Integrate **ELK stack** (Elasticsearch, Logstash, Kibana) hoặc **Splunk** để centralized monitoring. |
+| **Thời hạn** | **Khuyến khích** ngay, đặc biệt trước staging. |
+| **Ước lượng effort** | 1-2 ngày (winston setup, log middleware, rotation config). |
+
+### 9.9. Không có caching strategy ⚠️
+
+| Mục | Chi tiết |
+|-----|----------|
+| **Vấn đề** | Mỗi lần load `/api/summary`, `/api/table/...` query database trực tiếp. Dữ liệu không thay đổi liên tục (books, categories, publishers) nhưng vẫn execute query, tốn resource. |
+| **Tác động** | High database load; slow response time khi concurrent users tăng. |
+| **Nguyên nhân gốc** | Dashboard là MVP, traffic low, caching không cần thiết lúc đó. |
+| **Giải pháp** | **Phase 1 (In-memory cache):** Dùng **Node.js cache** (ví dụ lib `node-cache`):  ```javascript const nodeCache = require('node-cache'); const cache = new nodeCache({ stdTTL: 3600 }); // 1 hour  app.get('/api/summary', async (req, res) => {   let data = cache.get('summary');   if (!data) {     data = { /* query DB */ };     cache.set('summary', data);   }   res.json(data); }); ``` **Phase 2 (Distributed cache):** Dùng **Redis** khi có multiple servers.  **Invalidation:** Khi create/update/delete, xóa cache key liên quan. |
+| **Thời hạn** | **Optional** cho beta; **bắt buộc** khi concurrent users > 100. |
+| **Ước lượng effort** | 1-2 ngày (setup caching, invalidation logic). |
+
+### 9.10. Whitelist static `allowedTables` không extensible ⚠️
+
+| Mục | Chi tiết |
+|-----|----------|
+| **Vấn đề** | Endpoint `/api/table/:tableName` dùng hardcoded object `allowedTables` với 15 tables. Để thêm table mới, phải sửa `server.js`. Không linh hoạt cho future features. |
+| **Tác động** | Sửa code & redeploy mỗi lần hay table mới; khó maintain khi nhiều tables. |
+| **Nguyên nhân gốc** | Quick MVP approach, whitelist rõ ràng được ưu tiên hơn auto-discovery. |
+| **Giải pháp** | **Option 1 (Flexible):** Lưu whitelist trong database table `ADMIN_ALLOWABLE_TABLES`:  | table_name | label | query | count_query |  Khi start server, load vào memory; re-check khi có request.  **Option 2 (Code generation):** Reflect từ database tự động, scan `user_tables` trong Oracle; generate query template.  **Option 3 (Hybrid, Recommended):** Config file `tables.json` bên ngoài `server.js` để dễ update mà không sửa code. |
+| **Thời hạn** | **Optional** cho beta; **khuyến khích** cho scale. |
+| **Ước lượng effort** | 2-3 ngày (refactor endpoint, test all tables). |
+
+### 9.11. Chưa có backup/disaster recovery strategy ⚠️
+
+| Mục | Chi tiết |
+|-----|----------|
+| **Vấn đề** | Không documented cách backup database, restore procedure, RTO/RPO targets. Nếu database corrupt hoặc mất dữ liệu, không có recovery plan. |
+| **Tác động** | Nguy cơ mất dữ liệu toàn bộ; không thể khôi phục nếu sự cố. |
+| **Nguyên nhân gốc** | Beta environment, chưa setup production-grade backup. |
+| **Giải pháp** | **Phase 1 (Immediate):** Setup RMAN (Recovery Manager) Oracle:  1. Configure daily full backup (nightly).  2. Archived redo logs hàng giờ.  3. Test restore quy trình hàng tuần.  Ước lượng: RTO 1-2 giờ, RPO 15 phút. **Phase 2 (Standby):** Dataguard nếu cần HA. |
+| **Thời hạn** | **Bắt buộc** trước khi có production data. |
+| **Ước lượng effort** | 3-5 ngày (RMAN setup, scripting, docs, testing). |
+
+### 9.12. Chưa có strategy cho multi-address CUSTOMERS (scaling) ⚠️
+
+| Mục | Chi tiết |
+|-----|----------|
+| **Vấn đề** | `CUSTOMERS.address` dùng cho beta (một địa chỉ mặc định). Khi scale, khách cần nhiều address (nhà, văn phòng, v.v.), current schema không hỗ trợ đầy đủ. |
+| **Tác động** | Khi scale, cần refactor, migration data; downtime tiềm tàng. |
+| **Nguyên nhân gốc** | Thiết kế cho beta, focus vào MVP. |
+| **Giải pháp** | **Proactive tại bước DDL (khuyến khích):** Tạo sẵn bảng `CUSTOMER_ADDRESSES` (1:N với CUSTOMERS) ngay từ nay, mark **`CUSTOMERS.address` as deprecated**; data hiện tại migrate vào `CUSTOMER_ADDRESSES`.  Schema:  ```sql CREATE TABLE customer_addresses (   address_id NUMBER PRIMARY KEY,   customer_id NUMBER FK CUSTOMERS,   street NVARCHAR2(500),   city NVARCHAR2(100),   province NVARCHAR2(100),   postal_code VARCHAR2(20),   is_default NUMBER(1),   created_at DATE,   ... ); ``` **Không cần** dùng deprecated `CUSTOMERS.address` sau đó. |
+| **Thời hạn** | **Khuyến khích** tạo table sắp sửa (nếu chưa); **bắt buộc** trước khi có feature order delivery. |
+| **Ước lượng effort** | 2-3 ngày (DDL, trigger for default, migration script). |
+
+### 9.13. API versioning chưa được plan ⚠️
+
+| Mục | Chi tiết |
+|-----|----------|
+| **Vấn đề** | Endpoints hiện tại là `/api/table`, `/api/summary`, v.v. Khi API evolve (thêm field, đổi response format), clients cũ bị break. Chưa có versioning strategy. |
+| **Tác động** | Difficulty supporting multiple client versions; brownout khi API update. |
+| **Nguyên nhân gốc** | MVP không cần nhiều client, versioning overhead. |
+| **Giải pháp** | Triển khai **URL-based versioning**:  `/api/v1/table/...` (current), `/api/v2/table/...` (future).  Hoặc **header-based:** `Accept: application/vnd.digibook.v1+json`.  Route logic: check version, apply transformations nếu cần.  Deprecation: Support v1 trong 6 tháng, announce v2 formal trong docs. |
+| **Thời hạn** | **Khuyến khích** thêm vào khi scale API. |
+| **Ước lượng effort** | 1-2 ngày (routing refactor, docs). |
+
+---
+
+### 📋 Tóm tắt Technical Debt
+
+| Mức độ | Vấn đề | Ưu tiên | Status |
+|--------|--------|--------|----------|
+| 🔴 **Critical** | Race condition COUPONS | P0 | ⏳ Pending |
+| 🔴 **Critical** | Không có authentication | P0 | ⏳ Pending |
+| 🔴 **Critical** | Không có backup/DR | P0 | ⏳ Pending |
+| 🟠 **High** | changed_by limitation | P1 | ⏳ Pending |
+| 🟠 **High** | Input validation/sanitization | P1 | ⏳ Pending |
+| 🟡 **Medium** | Logging/monitoring | P2 | ⏳ Pending |
+| 🟡 **Medium** | Pagination (offset support) | P2 | ⏳ Pending |
+| 🟡 **Medium** | Caching | P2 | ⏳ Pending |
+| ✅ **FIXED** | Legacy `cover_image_url` | — | ✅ RESOLVED |
+| 🟢 **Low** | allowedTables static | P3 | ⏳ Pending |
+| 🟢 **Low** | API versioning | P3 | ⏳ Pending |
+| 🟢 **Low** | CUSTOMER multi-address | P4 | ⏳ Pending |
+
+---
+
+### 🎯 Roadmap khắc phục
+
+1. **Giai đoạn Beta (Hiện tại):**
+   - ✅ Document tất cả tech debt (mục này).
+   - ⚠️ Kiểm soát changelog COUPONS (avoid concurrent apply).
+   - ⚠️ Nếu public → bắt buộc setup authentication.
+
+2. **Giai đoạn Staging (Trước Production):**
+   - Implement Stored Procedure untuk coupon race condition.
+   - Setup logging/monitoring.
+   - Input validation trên tất cả endpoints.
+   - Backup/DR plan & testing.
+   - Remove legacy `cover_image_url` hoặc deprecate formally.
+
+3. **Giai đoạn Production (1-2 tháng sau launch):**
+   - Thêm pagination (offset).
+   - Caching strategy.
+   - API versioning (nếu có mobile app).
+   - ADMIN_USERS table & revise changed_by.
+
+4. **Giai đoạn Scale (6+ tháng sau launch):**
+   - CUSTOMER_ADDRESSES table.
+   - Distributed caching (Redis).
+   - Database replication/standby.
+   - Advanced monitoring & alerting.
 
 ---

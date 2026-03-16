@@ -104,27 +104,27 @@ INSERT INTO coupons VALUES (8, 'FLASH70K', 'Flash sale theo giờ', 'FIXED', 700
 -- ==========================================================
 
 -- 7) BOOKS (20 bản ghi)
-INSERT INTO books (book_id, title, isbn, price, stock_quantity, description, publication_year, page_count, cover_image_url, category_id, publisher_id, created_at, updated_at)
-VALUES (1, 'Mắt Biếc', '9786042000011', 98000, 120, 'Tiểu thuyết Việt Nam noi tieng', 2019, 320, 'https://img.digibook.vn/books/1/main.jpg', 7, 1, DATE '2026-01-10', DATE '2026-03-01');
-INSERT INTO books VALUES (2, 'Cho Tôi Xin Một Vé Đi Tuổi Thơ', '9786042000012', 88000, 90, 'Tác phẩm dành cho mọi lứa tuổi', 2018, 280, 'https://img.digibook.vn/books/2/main.jpg', 7, 1, DATE '2026-01-10', DATE '2026-03-01');
-INSERT INTO books VALUES (3, 'Nhà Giả Kim', '9786042000013', 120000, 70, 'Tiểu thuyết truyền cảm hứng', 2017, 240, 'https://img.digibook.vn/books/3/main.jpg', 8, 4, DATE '2026-01-11', DATE '2026-03-01');
-INSERT INTO books VALUES (4, 'Đắc Nhân Tâm', '9786042000014', 110000, 80, 'Sách ky nang giao tiep', 2015, 300, 'https://img.digibook.vn/books/4/main.jpg', 5, 3, DATE '2026-01-11', DATE '2026-03-01');
-INSERT INTO books VALUES (5, 'Clean Code', '9786042000015', 350000, 60, 'Nguyên tắc viết code sạch', 2020, 464, 'https://img.digibook.vn/books/5/main.jpg', 4, 6, DATE '2026-01-12', DATE '2026-03-02');
-INSERT INTO books VALUES (6, 'The Pragmatic Programmer', '9786042000016', 420000, 55, 'Kinh nghiệm lập trình thực chiến', 2019, 352, 'https://img.digibook.vn/books/6/main.jpg', 4, 7, DATE '2026-01-12', DATE '2026-03-02');
-INSERT INTO books VALUES (7, 'Introduction to Algorithms', '9786042000017', 650000, 40, 'Sách giai thuat kinh dien', 2021, 1312, 'https://img.digibook.vn/books/7/main.jpg', 4, 8, DATE '2026-01-13', DATE '2026-03-02');
-INSERT INTO books VALUES (8, 'Deep Work', '9786042000018', 210000, 85, 'Tập trung sâu trong công việc', 2016, 304, 'https://img.digibook.vn/books/8/main.jpg', 5, 4, DATE '2026-01-13', DATE '2026-03-02');
-INSERT INTO books VALUES (9, 'Tâm Lý Học Tiền Bạc', '9786042000019', 190000, 100, 'Tâm lý tài chính cá nhân', 2022, 280, 'https://img.digibook.vn/books/9/main.jpg', 3, 4, DATE '2026-01-14', DATE '2026-03-03');
-INSERT INTO books VALUES (10, 'Think Fast and Slow', '9786042000020', 280000, 65, 'Tư duy nhanh và chậm', 2018, 512, 'https://img.digibook.vn/books/10/main.jpg', 3, 7, DATE '2026-01-14', DATE '2026-03-03');
-INSERT INTO books VALUES (11, 'Oracle Database 19c Handbook', '9786042000021', 520000, 30, 'Tài liệu Oracle 19c', 2023, 700, 'https://img.digibook.vn/books/11/main.jpg', 10, 8, DATE '2026-01-15', DATE '2026-03-03');
-INSERT INTO books VALUES (12, 'SQL Performance Explained', '9786042000022', 360000, 45, 'Tối ưu truy vấn SQL', 2020, 360, 'https://img.digibook.vn/books/12/main.jpg', 10, 7, DATE '2026-01-15', DATE '2026-03-03');
-INSERT INTO books VALUES (13, 'Python for Data Analysis', '9786042000023', 410000, 50, 'Phân tích dữ liệu bang Python', 2021, 480, 'https://img.digibook.vn/books/13/main.jpg', 9, 7, DATE '2026-01-16', DATE '2026-03-04');
-INSERT INTO books VALUES (14, 'Hands On Machine Learning', '9786042000024', 560000, 35, 'Machine learning thực hành', 2022, 720, 'https://img.digibook.vn/books/14/main.jpg', 9, 8, DATE '2026-01-16', DATE '2026-03-04');
-INSERT INTO books VALUES (15, 'Trẻ Em Học Lập Trình', '9786042000025', 150000, 95, 'Nhập môn lập trình cho trẻ em', 2021, 220, 'https://img.digibook.vn/books/15/main.jpg', 6, 2, DATE '2026-01-17', DATE '2026-03-04');
-INSERT INTO books VALUES (16, '100 Câu Đố Tư Duy', '9786042000026', 99000, 140, 'Sách tri tue cho thieu nhi', 2020, 180, 'https://img.digibook.vn/books/16/main.jpg', 6, 2, DATE '2026-01-17', DATE '2026-03-04');
-INSERT INTO books VALUES (17, 'Khởi Nghiệp Tinh Gọn', '9786042000027', 170000, 75, 'Khởi nghiệp và mô hình tinh gọn', 2019, 260, 'https://img.digibook.vn/books/17/main.jpg', 3, 5, DATE '2026-01-18', DATE '2026-03-05');
-INSERT INTO books VALUES (18, 'Quản Trị Tài Chính Cá Nhân', '9786042000028', 200000, 88, 'Quản lý tài chính cho gia đình', 2023, 320, 'https://img.digibook.vn/books/18/main.jpg', 3, 5, DATE '2026-01-18', DATE '2026-03-05');
-INSERT INTO books VALUES (19, 'Docker và Kubernetes Cơ Bản', '9786042000029', 330000, 58, 'Nền tảng devops hiện đại', 2022, 410, 'https://img.digibook.vn/books/19/main.jpg', 4, 6, DATE '2026-01-19', DATE '2026-03-05');
-INSERT INTO books VALUES (20, 'Microservices Pattern', '9786042000030', 470000, 42, 'Kiến trúc hệ thống phân tán', 2021, 500, 'https://img.digibook.vn/books/20/main.jpg', 4, 7, DATE '2026-01-19', DATE '2026-03-05');
+INSERT INTO books (book_id, title, isbn, price, stock_quantity, description, publication_year, page_count, category_id, publisher_id, created_at, updated_at)
+VALUES (1, 'Mắt Biếc', '9786042000011', 98000, 120, 'Tiểu thuyết Việt Nam noi tieng', 2019, 320, 7, 1, DATE '2026-01-10', DATE '2026-03-01');
+INSERT INTO books VALUES (2, 'Cho Tôi Xin Một Vé Đi Tuổi Thơ', '9786042000012', 88000, 90, 'Tác phẩm dành cho mọi lứa tuổi', 2018, 280, 7, 1, DATE '2026-01-10', DATE '2026-03-01');
+INSERT INTO books VALUES (3, 'Nhà Giả Kim', '9786042000013', 120000, 70, 'Tiểu thuyết truyền cảm hứng', 2017, 240, 8, 4, DATE '2026-01-11', DATE '2026-03-01');
+INSERT INTO books VALUES (4, 'Đắc Nhân Tâm', '9786042000014', 110000, 80, 'Sách ky nang giao tiep', 2015, 300, 5, 3, DATE '2026-01-11', DATE '2026-03-01');
+INSERT INTO books VALUES (5, 'Clean Code', '9786042000015', 350000, 60, 'Nguyên tắc viết code sạch', 2020, 464, 4, 6, DATE '2026-01-12', DATE '2026-03-02');
+INSERT INTO books VALUES (6, 'The Pragmatic Programmer', '9786042000016', 420000, 55, 'Kinh nghiệm lập trình thực chiến', 2019, 352, 4, 7, DATE '2026-01-12', DATE '2026-03-02');
+INSERT INTO books VALUES (7, 'Introduction to Algorithms', '9786042000017', 650000, 40, 'Sách giai thuat kinh dien', 2021, 1312, 4, 8, DATE '2026-01-13', DATE '2026-03-02');
+INSERT INTO books VALUES (8, 'Deep Work', '9786042000018', 210000, 85, 'Tập trung sâu trong công việc', 2016, 304, 5, 4, DATE '2026-01-13', DATE '2026-03-02');
+INSERT INTO books VALUES (9, 'Tâm Lý Học Tiền Bạc', '9786042000019', 190000, 100, 'Tâm lý tài chính cá nhân', 2022, 280, 3, 4, DATE '2026-01-14', DATE '2026-03-03');
+INSERT INTO books VALUES (10, 'Think Fast and Slow', '9786042000020', 280000, 65, 'Tư duy nhanh và chậm', 2018, 512, 3, 7, DATE '2026-01-14', DATE '2026-03-03');
+INSERT INTO books VALUES (11, 'Oracle Database 19c Handbook', '9786042000021', 520000, 30, 'Tài liệu Oracle 19c', 2023, 700, 10, 8, DATE '2026-01-15', DATE '2026-03-03');
+INSERT INTO books VALUES (12, 'SQL Performance Explained', '9786042000022', 360000, 45, 'Tối ưu truy vấn SQL', 2020, 360, 10, 7, DATE '2026-01-15', DATE '2026-03-03');
+INSERT INTO books VALUES (13, 'Python for Data Analysis', '9786042000023', 410000, 50, 'Phân tích dữ liệu bang Python', 2021, 480, 9, 7, DATE '2026-01-16', DATE '2026-03-04');
+INSERT INTO books VALUES (14, 'Hands On Machine Learning', '9786042000024', 560000, 35, 'Machine learning thực hành', 2022, 720, 9, 8, DATE '2026-01-16', DATE '2026-03-04');
+INSERT INTO books VALUES (15, 'Trẻ Em Học Lập Trình', '9786042000025', 150000, 95, 'Nhập môn lập trình cho trẻ em', 2021, 220, 6, 2, DATE '2026-01-17', DATE '2026-03-04');
+INSERT INTO books VALUES (16, '100 Câu Đố Tư Duy', '9786042000026', 99000, 140, 'Sách tri tue cho thieu nhi', 2020, 180, 6, 2, DATE '2026-01-17', DATE '2026-03-04');
+INSERT INTO books VALUES (17, 'Khởi Nghiệp Tinh Gọn', '9786042000027', 170000, 75, 'Khởi nghiệp và mô hình tinh gọn', 2019, 260, 3, 5, DATE '2026-01-18', DATE '2026-03-05');
+INSERT INTO books VALUES (18, 'Quản Trị Tài Chính Cá Nhân', '9786042000028', 200000, 88, 'Quản lý tài chính cho gia đình', 2023, 320, 3, 5, DATE '2026-01-18', DATE '2026-03-05');
+INSERT INTO books VALUES (19, 'Docker và Kubernetes Cơ Bản', '9786042000029', 330000, 58, 'Nền tảng devops hiện đại', 2022, 410, 4, 6, DATE '2026-01-19', DATE '2026-03-05');
+INSERT INTO books VALUES (20, 'Microservices Pattern', '9786042000030', 470000, 42, 'Kiến trúc hệ thống phân tán', 2021, 500, 4, 7, DATE '2026-01-19', DATE '2026-03-05');
 
 -- 8) BOOK_IMAGES (28 bản ghi)
 INSERT INTO book_images (image_id, book_id, image_url, is_primary, sort_order, created_at) VALUES (1, 1, 'https://img.digibook.vn/books/1/main.jpg', 1, 1, DATE '2026-01-10');

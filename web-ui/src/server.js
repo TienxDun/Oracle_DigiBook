@@ -78,7 +78,6 @@ const allowedTables = {
         DBMS_LOB.SUBSTR(description, 200, 1) AS description,
         publication_year,
         page_count,
-        cover_image_url,
         category_id,
         publisher_id,
         created_at,

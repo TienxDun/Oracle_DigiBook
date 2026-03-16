@@ -60,12 +60,16 @@ function formatCompactCurrency(value) {
   return formatCurrency(value);
 }
 
-function formatValue(value) {
+function formatValue(value, columnName = '') {
   if (value == null) {
     return '-';
   }
 
   if (typeof value === 'number') {
+    if (String(columnName).toUpperCase().endsWith('_YEAR')) {
+      return String(value);
+    }
+
     return formatNumber(value);
   }
 
@@ -179,7 +183,7 @@ function renderTable(columns, rows) {
     .map(
       (row) =>
         `<tr>${columns
-          .map((column) => `<td>${formatValue(row[column])}</td>`)
+          .map((column) => `<td>${formatValue(row[column], column)}</td>`)
           .join('')}</tr>`
     )
     .join('')}</tbody>`;
@@ -206,8 +210,8 @@ function renderIntoContainer(container, rows) {
           .map((column) => {
             const raw = row[column];
             const content = column.toLowerCase().includes('status')
-              ? `<span class="badge">${formatValue(raw)}</span>`
-              : formatValue(raw);
+              ? `<span class="badge">${formatValue(raw, column)}</span>`
+              : formatValue(raw, column);
             return `<td>${content}</td>`;
           })
           .join('')}</tr>`

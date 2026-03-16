@@ -1,711 +1,500 @@
-/*
-================================================================================
-    📦 BƯỚC 2: TẠO LƯỢC ĐỒ và RÀNG BUỘC (DDL) — DigiBook Database
-================================================================================
-  Chủ đề  : Website bán sách DigiBook
-  DBMS    : Oracle 19c
-  Nhóm    : Dũng, Nam, Hiếu, Phát
-  File    : 2_create_tables.sql
-  Mục đích: Tạo toàn bộ Tables, Constraints, Sequences và Auto-increment Triggers
-================================================================================
-  ⚠️ THỨ TỰ THỰC THI: Chạy từ trên xuống dưới.
-     Các bảng cha (không phụ thuộc FK) được tạo trước, bảng con tạo sau.
-================================================================================
-*/
+-- ==========================================================
+-- FILE: 2_create_tables.sql
+-- Mục tiêu: Tạo lược đồ bảng + ràng buộc + sequence + trigger
+-- Hệ quản trị: Oracle 19c
+-- ==========================================================
 
-SET DEFINE OFF;
+-- ==========================================================
+-- 1) TẠO BẢNG (DDL)
+-- ==========================================================
 
--- ============================================================================
--- 🗑️ PHẦN 0: XÓA CÁC ĐỐI TƯỢNG CŨ (NẾU TỒN TẠI) — ĐỂ CHẠY LẠI AN TOÀN
--- ============================================================================
--- Ghi chú: Xóa theo thứ tự ngược lại (bảng con trước, bảng cha sau)
--- để tránh lỗi vi phạm ràng buộc Foreign Key.
-
--- Xóa Triggers trước
-BEGIN EXECUTE IMMEDIATE 'DROP TRIGGER trg_reviews_auto_id';        EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP TRIGGER trg_order_details_auto_id';   EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP TRIGGER trg_orders_auto_id';          EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP TRIGGER trg_books_auto_id';           EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP TRIGGER trg_publishers_auto_id';      EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP TRIGGER trg_authors_auto_id';         EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP TRIGGER trg_authors_birth_date_chk';  EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP TRIGGER trg_categories_auto_id';      EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP TRIGGER trg_customers_auto_id';       EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-
--- Xóa Sequences
-BEGIN EXECUTE IMMEDIATE 'DROP SEQUENCE seq_reviews';        EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP SEQUENCE seq_order_details';  EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP SEQUENCE seq_orders';         EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP SEQUENCE seq_books';          EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP SEQUENCE seq_publishers';     EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP SEQUENCE seq_authors';        EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP SEQUENCE seq_categories';     EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP SEQUENCE seq_customers';      EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-
--- Xóa Tables (bảng con trước, bảng cha sau)
-BEGIN EXECUTE IMMEDIATE 'DROP TABLE REVIEWS CASCADE CONSTRAINTS';        EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP TABLE ORDER_DETAILS CASCADE CONSTRAINTS';  EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP TABLE ORDERS CASCADE CONSTRAINTS';         EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP TABLE BOOK_AUTHORS CASCADE CONSTRAINTS';   EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP TABLE BOOKS CASCADE CONSTRAINTS';          EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP TABLE PUBLISHERS CASCADE CONSTRAINTS';     EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP TABLE AUTHORS CASCADE CONSTRAINTS';        EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP TABLE CATEGORIES CASCADE CONSTRAINTS';     EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP TABLE CUSTOMERS CASCADE CONSTRAINTS';      EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-
-PROMPT ✅ Đã dọn dẹp các đối tượng cũ thành công!
-PROMPT ================================================
-
--- ============================================================================
--- 📋 PHẦN 1: TẠO CÁC BẢNG (CREATE TABLES)
--- ============================================================================
-
--- ────────────────────────────────────────────────────────────────────────────
--- 1.1. Bảng CUSTOMERS — Khách hàng
--- Phụ trách: DŨNG
--- Mô tả   : Lưu thông tin khách hàng đăng ký trên hệ thống DigiBook
--- ────────────────────────────────────────────────────────────────────────────
-CREATE TABLE CUSTOMERS (
-    customer_id     NUMBER                          -- Mã khách hàng (PK, auto-increment)
-        CONSTRAINT pk_customers PRIMARY KEY,
-    full_name       NVARCHAR2(100)  NOT NULL,       -- Họ và tên (bắt buộc)
-    email           VARCHAR2(150)   NOT NULL,       -- Email đăng nhập (bắt buộc, duy nhất)
-    password_hash   VARCHAR2(256)   NOT NULL,       -- Mật khẩu đã mã hóa (bắt buộc)
-    phone           VARCHAR2(15),                   -- Số điện thoại (duy nhất, không bắt buộc)
-    address         NVARCHAR2(500),                 -- Địa chỉ giao hàng
-    created_at      DATE            DEFAULT SYSDATE,-- Ngày tạo tài khoản
-    status          VARCHAR2(20)    DEFAULT 'ACTIVE',-- Trạng thái tài khoản
-
-    -- Ràng buộc UNIQUE
+CREATE TABLE customers (
+    customer_id      NUMBER,
+    full_name        NVARCHAR2(100) NOT NULL,
+    email            VARCHAR2(150) NOT NULL,
+    password_hash    VARCHAR2(256) NOT NULL,
+    phone            VARCHAR2(15),
+    address          NVARCHAR2(500),
+    created_at       DATE DEFAULT SYSDATE,
+    updated_at       DATE,
+    status           VARCHAR2(20) DEFAULT 'ACTIVE',
+    CONSTRAINT pk_customers PRIMARY KEY (customer_id),
     CONSTRAINT uq_customers_email UNIQUE (email),
     CONSTRAINT uq_customers_phone UNIQUE (phone),
-
-    -- Ràng buộc CHECK: Trạng thái chỉ nhận 3 giá trị hợp lệ
-    CONSTRAINT chk_customers_status
-        CHECK (status IN ('ACTIVE', 'INACTIVE', 'BANNED')),
-
-    -- Ràng buộc CHECK: Email phải có định dạng cơ bản (chứa @)
-    CONSTRAINT chk_customers_email_format
-        CHECK (email LIKE '%_@_%.__%')
+    CONSTRAINT ck_customers_status CHECK (status IN ('ACTIVE', 'INACTIVE', 'BANNED'))
 );
 
-COMMENT ON TABLE CUSTOMERS IS 'Bảng khách hàng - Lưu thông tin người dùng đăng ký trên DigiBook';
-COMMENT ON COLUMN CUSTOMERS.customer_id IS 'Mã khách hàng - Khóa chính, tự động tăng';
-COMMENT ON COLUMN CUSTOMERS.full_name IS 'Họ và tên đầy đủ của khách hàng';
-COMMENT ON COLUMN CUSTOMERS.email IS 'Email đăng nhập - Duy nhất trong hệ thống';
-COMMENT ON COLUMN CUSTOMERS.password_hash IS 'Mật khẩu đã được mã hóa (hash)';
-COMMENT ON COLUMN CUSTOMERS.phone IS 'Số điện thoại liên hệ';
-COMMENT ON COLUMN CUSTOMERS.address IS 'Địa chỉ giao hàng mặc định';
-COMMENT ON COLUMN CUSTOMERS.created_at IS 'Ngày tạo tài khoản';
-COMMENT ON COLUMN CUSTOMERS.status IS 'Trạng thái tài khoản: ACTIVE/INACTIVE/BANNED';
-
-PROMPT ✅ Tạo bảng CUSTOMERS thành công!
-
--- ────────────────────────────────────────────────────────────────────────────
--- 1.2. Bảng CATEGORIES — Danh mục sách
--- Phụ trách: DŨNG
--- Mô tả   : Lưu các danh mục/thể loại sách (Văn học, Kinh tế, Kỹ năng...)
--- ────────────────────────────────────────────────────────────────────────────
-CREATE TABLE CATEGORIES (
-    category_id     NUMBER                          -- Mã danh mục (PK, auto-increment)
-        CONSTRAINT pk_categories PRIMARY KEY,
-    category_name   NVARCHAR2(100)  NOT NULL,       -- Tên danh mục (bắt buộc, duy nhất)
-    description     NVARCHAR2(500),                 -- Mô tả danh mục
-
-    -- Ràng buộc UNIQUE: Mỗi tên danh mục phải duy nhất
-    CONSTRAINT uq_categories_name UNIQUE (category_name)
+CREATE TABLE categories (
+    category_id      NUMBER,
+    category_name    NVARCHAR2(100) NOT NULL,
+    description      NVARCHAR2(500),
+    parent_id        NUMBER,
+    CONSTRAINT pk_categories PRIMARY KEY (category_id),
+    CONSTRAINT uq_categories_name UNIQUE (category_name),
+    CONSTRAINT fk_categories_parent FOREIGN KEY (parent_id)
+        REFERENCES categories(category_id)
 );
 
-COMMENT ON TABLE CATEGORIES IS 'Bảng danh mục - Phân loại thể loại sách';
-COMMENT ON COLUMN CATEGORIES.category_id IS 'Mã danh mục - Khóa chính, tự động tăng';
-COMMENT ON COLUMN CATEGORIES.category_name IS 'Tên danh mục sách - Duy nhất';
-COMMENT ON COLUMN CATEGORIES.description IS 'Mô tả chi tiết về danh mục';
-
-PROMPT ✅ Tạo bảng CATEGORIES thành công!
-
--- ────────────────────────────────────────────────────────────────────────────
--- 1.3. Bảng AUTHORS — Tác giả
--- Phụ trách: NAM
--- Mô tả   : Lưu thông tin tác giả viết sách
--- ────────────────────────────────────────────────────────────────────────────
-CREATE TABLE AUTHORS (
-    author_id       NUMBER                          -- Mã tác giả (PK, auto-increment)
-        CONSTRAINT pk_authors PRIMARY KEY,
-    author_name     NVARCHAR2(150)  NOT NULL,       -- Tên tác giả (bắt buộc)
-    biography       NCLOB,                          -- Tiểu sử (text dài)
-    birth_date      DATE,                           -- Ngày sinh
-    nationality     NVARCHAR2(50)                   -- Quốc tịch
+CREATE TABLE carts (
+    cart_id          NUMBER,
+    customer_id      NUMBER NOT NULL,
+    created_at       DATE DEFAULT SYSDATE,
+    updated_at       DATE,
+    status           VARCHAR2(20) DEFAULT 'ACTIVE',
+    CONSTRAINT pk_carts PRIMARY KEY (cart_id),
+    CONSTRAINT fk_carts_customer FOREIGN KEY (customer_id)
+        REFERENCES customers(customer_id),
+    CONSTRAINT ck_carts_status CHECK (status IN ('ACTIVE', 'MERGED', 'ABANDONED'))
 );
 
-COMMENT ON TABLE AUTHORS IS 'Bảng tác giả - Lưu thông tin người viết sách';
-COMMENT ON COLUMN AUTHORS.author_id IS 'Mã tác giả - Khóa chính, tự động tăng';
-COMMENT ON COLUMN AUTHORS.author_name IS 'Tên đầy đủ của tác giả';
-COMMENT ON COLUMN AUTHORS.biography IS 'Tiểu sử chi tiết của tác giả';
-COMMENT ON COLUMN AUTHORS.birth_date IS 'Ngày sinh của tác giả';
-COMMENT ON COLUMN AUTHORS.nationality IS 'Quốc tịch của tác giả';
-
-PROMPT ✅ Tạo bảng AUTHORS thành công!
-
--- ────────────────────────────────────────────────────────────────────────────
--- 1.4. Bảng PUBLISHERS — Nhà xuất bản
--- Phụ trách: NAM
--- Mô tả   : Lưu thông tin các nhà xuất bản
--- ────────────────────────────────────────────────────────────────────────────
-CREATE TABLE PUBLISHERS (
-    publisher_id    NUMBER                          -- Mã NXB (PK, auto-increment)
-        CONSTRAINT pk_publishers PRIMARY KEY,
-    publisher_name  NVARCHAR2(200)  NOT NULL,       -- Tên NXB (bắt buộc, duy nhất)
-    address         NVARCHAR2(500),                 -- Địa chỉ NXB
-    phone           VARCHAR2(15),                   -- Số điện thoại
-    email           VARCHAR2(150),                  -- Email liên hệ
-
-    -- Ràng buộc UNIQUE
-    CONSTRAINT uq_publishers_name  UNIQUE (publisher_name),
-    CONSTRAINT uq_publishers_email UNIQUE (email),
-
-    -- Ràng buộc CHECK: Email NXB phải có định dạng hợp lệ (nếu có)
-    CONSTRAINT chk_publishers_email_format
-        CHECK (email IS NULL OR email LIKE '%_@_%.__%')
+CREATE TABLE authors (
+    author_id        NUMBER,
+    author_name      NVARCHAR2(150) NOT NULL,
+    biography        NCLOB,
+    birth_date       DATE,
+    nationality      NVARCHAR2(50),
+    CONSTRAINT pk_authors PRIMARY KEY (author_id)
 );
 
-COMMENT ON TABLE PUBLISHERS IS 'Bảng nhà xuất bản - Lưu thông tin NXB';
-COMMENT ON COLUMN PUBLISHERS.publisher_id IS 'Mã NXB - Khóa chính, tự động tăng';
-COMMENT ON COLUMN PUBLISHERS.publisher_name IS 'Tên nhà xuất bản - Duy nhất';
-COMMENT ON COLUMN PUBLISHERS.address IS 'Địa chỉ trụ sở NXB';
-COMMENT ON COLUMN PUBLISHERS.phone IS 'Số điện thoại liên hệ NXB';
-COMMENT ON COLUMN PUBLISHERS.email IS 'Email liên hệ NXB - Duy nhất';
+CREATE TABLE publishers (
+    publisher_id     NUMBER,
+    publisher_name   NVARCHAR2(200) NOT NULL,
+    address          NVARCHAR2(500),
+    phone            VARCHAR2(15),
+    email            VARCHAR2(150),
+    CONSTRAINT pk_publishers PRIMARY KEY (publisher_id),
+    CONSTRAINT uq_publishers_name UNIQUE (publisher_name),
+    CONSTRAINT uq_publishers_email UNIQUE (email)
+);
 
-PROMPT ✅ Tạo bảng PUBLISHERS thành công!
+CREATE TABLE coupons (
+    coupon_id            NUMBER,
+    coupon_code          VARCHAR2(50) NOT NULL,
+    coupon_name          NVARCHAR2(150) NOT NULL,
+    discount_type        VARCHAR2(10) NOT NULL,
+    discount_value       NUMBER(10,2) NOT NULL,
+    start_at             DATE NOT NULL,
+    end_at               DATE NOT NULL,
+    max_uses             NUMBER,
+    used_count           NUMBER DEFAULT 0 NOT NULL,
+    per_customer_limit   NUMBER DEFAULT 1 NOT NULL,
+    min_order_amount     NUMBER(12,2) DEFAULT 0 NOT NULL,
+    max_discount_amount  NUMBER(10,2),
+    is_active            NUMBER(1) DEFAULT 1,
+    CONSTRAINT pk_coupons PRIMARY KEY (coupon_id),
+    CONSTRAINT uq_coupons_code UNIQUE (coupon_code),
+    CONSTRAINT ck_cp_discount_type CHECK (discount_type IN ('PERCENT', 'FIXED')),
+    CONSTRAINT ck_cp_discount_value CHECK (
+        (discount_type = 'PERCENT' AND discount_value > 0 AND discount_value <= 100)
+        OR
+        (discount_type = 'FIXED' AND discount_value > 0)
+    ),
+    CONSTRAINT ck_cp_end_after_start CHECK (end_at >= start_at),
+    CONSTRAINT ck_cp_max_uses CHECK (max_uses IS NULL OR max_uses > 0),
+    CONSTRAINT ck_cp_used_count CHECK (used_count >= 0),
+    CONSTRAINT ck_cp_per_cus_limit CHECK (per_customer_limit > 0),
+    CONSTRAINT ck_cp_min_order_amt CHECK (min_order_amount >= 0),
+    CONSTRAINT ck_cp_max_discount CHECK (max_discount_amount IS NULL OR max_discount_amount > 0),
+    CONSTRAINT ck_cp_is_active CHECK (is_active IN (0, 1))
+);
 
--- ────────────────────────────────────────────────────────────────────────────
--- 1.5. Bảng BOOKS — Sách (Sản phẩm chính)
--- Phụ trách: HIẾU
--- Mô tả   : Lưu toàn bộ thông tin sách bán trên DigiBook
--- ────────────────────────────────────────────────────────────────────────────
-CREATE TABLE BOOKS (
-    book_id             NUMBER                          -- Mã sách (PK, auto-increment)
-        CONSTRAINT pk_books PRIMARY KEY,
-    title               NVARCHAR2(300)  NOT NULL,       -- Tên sách (bắt buộc)
-    isbn                VARCHAR2(20),                   -- Mã ISBN (duy nhất)
-    price               NUMBER(10,2)    NOT NULL,       -- Giá bán VNĐ (bắt buộc, > 0)
-    stock_quantity      NUMBER          DEFAULT 0,      -- Số lượng tồn kho (>= 0)
-    description         NCLOB,                          -- Mô tả chi tiết sách
-    publication_year    NUMBER(4),                       -- Năm xuất bản
-    page_count          NUMBER,                         -- Số trang
-    cover_image_url     VARCHAR2(500),                  -- Link ảnh bìa
-    category_id         NUMBER,                         -- FK: Mã danh mục
-    publisher_id        NUMBER,                         -- FK: Mã NXB
-    created_at          DATE            DEFAULT SYSDATE,-- Ngày thêm vào hệ thống
-
-    -- Ràng buộc UNIQUE: Mỗi ISBN phải duy nhất
+CREATE TABLE books (
+    book_id            NUMBER,
+    title              NVARCHAR2(300) NOT NULL,
+    isbn               VARCHAR2(20),
+    price              NUMBER(10,2) NOT NULL,
+    stock_quantity     NUMBER DEFAULT 0,
+    description        NCLOB,
+    publication_year   NUMBER(4),
+    page_count         NUMBER,
+    cover_image_url    VARCHAR2(500),
+    category_id        NUMBER,
+    publisher_id       NUMBER,
+    created_at         DATE DEFAULT SYSDATE,
+    updated_at         DATE,
+    CONSTRAINT pk_books PRIMARY KEY (book_id),
     CONSTRAINT uq_books_isbn UNIQUE (isbn),
-
-    -- Ràng buộc CHECK: Giá sách phải lớn hơn 0
-    CONSTRAINT chk_books_price
-        CHECK (price > 0),
-
-    -- Ràng buộc CHECK: Số lượng tồn kho không âm
-    CONSTRAINT chk_books_stock
-        CHECK (stock_quantity >= 0),
-
-    -- Ràng buộc CHECK: Năm xuất bản hợp lệ (1900 - 2100)
-    CONSTRAINT chk_books_pub_year
-        CHECK (publication_year IS NULL OR (publication_year >= 1900 AND publication_year <= 2100)),
-
-    -- Ràng buộc CHECK: Số trang phải lớn hơn 0 (nếu có)
-    CONSTRAINT chk_books_page_count
-        CHECK (page_count IS NULL OR page_count > 0),
-
-    -- Khóa ngoại: Liên kết đến bảng CATEGORIES
-    CONSTRAINT fk_books_category
-        FOREIGN KEY (category_id) REFERENCES CATEGORIES(category_id)
-        ON DELETE SET NULL,
-
-    -- Khóa ngoại: Liên kết đến bảng PUBLISHERS
-    CONSTRAINT fk_books_publisher
-        FOREIGN KEY (publisher_id) REFERENCES PUBLISHERS(publisher_id)
-        ON DELETE SET NULL
+    CONSTRAINT fk_books_category FOREIGN KEY (category_id)
+        REFERENCES categories(category_id),
+    CONSTRAINT fk_books_publisher FOREIGN KEY (publisher_id)
+        REFERENCES publishers(publisher_id),
+    CONSTRAINT ck_books_price CHECK (price > 0),
+    CONSTRAINT ck_books_stock CHECK (stock_quantity >= 0),
+    CONSTRAINT ck_books_pub_year CHECK (publication_year BETWEEN 1900 AND 2100),
+    CONSTRAINT ck_books_page_count CHECK (page_count > 0)
 );
 
-COMMENT ON TABLE BOOKS IS 'Bảng sách - Sản phẩm chính của DigiBook';
-COMMENT ON COLUMN BOOKS.book_id IS 'Mã sách - Khóa chính, tự động tăng';
-COMMENT ON COLUMN BOOKS.title IS 'Tiêu đề sách';
-COMMENT ON COLUMN BOOKS.isbn IS 'Mã quốc tế ISBN - Duy nhất';
-COMMENT ON COLUMN BOOKS.price IS 'Giá bán (VNĐ)';
-COMMENT ON COLUMN BOOKS.stock_quantity IS 'Số lượng tồn kho hiện tại';
-COMMENT ON COLUMN BOOKS.description IS 'Mô tả chi tiết nội dung sách';
-COMMENT ON COLUMN BOOKS.publication_year IS 'Năm xuất bản';
-COMMENT ON COLUMN BOOKS.page_count IS 'Tổng số trang';
-COMMENT ON COLUMN BOOKS.cover_image_url IS 'Đường dẫn URL ảnh bìa sách';
-COMMENT ON COLUMN BOOKS.category_id IS 'FK - Mã danh mục sách';
-COMMENT ON COLUMN BOOKS.publisher_id IS 'FK - Mã nhà xuất bản';
-COMMENT ON COLUMN BOOKS.created_at IS 'Ngày thêm sách vào hệ thống';
+CREATE TABLE book_images (
+    image_id          NUMBER,
+    book_id           NUMBER NOT NULL,
+    image_url         VARCHAR2(500) NOT NULL,
+    is_primary        NUMBER(1) DEFAULT 0,
+    sort_order        NUMBER DEFAULT 0,
+    created_at        DATE DEFAULT SYSDATE,
+    CONSTRAINT pk_book_images PRIMARY KEY (image_id),
+    CONSTRAINT fk_bimg_book FOREIGN KEY (book_id)
+        REFERENCES books(book_id),
+    CONSTRAINT ck_bimg_is_primary CHECK (is_primary IN (0, 1))
+);
 
-PROMPT ✅ Tạo bảng BOOKS thành công!
-
--- ────────────────────────────────────────────────────────────────────────────
--- 1.6. Bảng BOOK_AUTHORS — Liên kết Sách – Tác giả (Bảng trung gian N:N)
--- Phụ trách: HIẾU
--- Mô tả   : Giải quyết quan hệ nhiều-nhiều giữa BOOKS và AUTHORS
---            Một sách có thể có nhiều tác giả, một tác giả viết nhiều sách
--- ────────────────────────────────────────────────────────────────────────────
-CREATE TABLE BOOK_AUTHORS (
-    book_id     NUMBER  NOT NULL,                   -- FK: Mã sách
-    author_id   NUMBER  NOT NULL,                   -- FK: Mã tác giả
-
-    -- Khóa chính tổng hợp (Composite Primary Key)
+CREATE TABLE book_authors (
+    book_id           NUMBER,
+    author_id         NUMBER,
+    role              VARCHAR2(20) DEFAULT 'AUTHOR' NOT NULL,
+    author_order      NUMBER,
     CONSTRAINT pk_book_authors PRIMARY KEY (book_id, author_id),
-
-    -- Khóa ngoại: Liên kết đến bảng BOOKS (xóa cascade khi sách bị xóa)
-    CONSTRAINT fk_ba_book
-        FOREIGN KEY (book_id) REFERENCES BOOKS(book_id)
-        ON DELETE CASCADE,
-
-    -- Khóa ngoại: Liên kết đến bảng AUTHORS (xóa cascade khi tác giả bị xóa)
-    CONSTRAINT fk_ba_author
-        FOREIGN KEY (author_id) REFERENCES AUTHORS(author_id)
-        ON DELETE CASCADE
+    CONSTRAINT fk_ba_book FOREIGN KEY (book_id)
+        REFERENCES books(book_id),
+    CONSTRAINT fk_ba_author FOREIGN KEY (author_id)
+        REFERENCES authors(author_id),
+    CONSTRAINT ck_ba_role CHECK (role IN ('AUTHOR', 'TRANSLATOR', 'EDITOR')),
+    CONSTRAINT ck_ba_author_order CHECK (author_order IS NULL OR author_order > 0)
 );
 
-COMMENT ON TABLE BOOK_AUTHORS IS 'Bảng trung gian - Liên kết Sách và Tác giả (quan hệ N:N)';
-COMMENT ON COLUMN BOOK_AUTHORS.book_id IS 'FK - Mã sách (thành phần khóa chính)';
-COMMENT ON COLUMN BOOK_AUTHORS.author_id IS 'FK - Mã tác giả (thành phần khóa chính)';
-
-PROMPT ✅ Tạo bảng BOOK_AUTHORS thành công!
-
--- ────────────────────────────────────────────────────────────────────────────
--- 1.7. Bảng ORDERS — Đơn hàng
--- Phụ trách: PHÁT
--- Mô tả   : Lưu thông tin đơn hàng của khách
--- ────────────────────────────────────────────────────────────────────────────
-CREATE TABLE ORDERS (
-    order_id            NUMBER                          -- Mã đơn hàng (PK, auto-increment)
-        CONSTRAINT pk_orders PRIMARY KEY,
-    customer_id         NUMBER          NOT NULL,       -- FK: Mã khách hàng (bắt buộc)
-    order_date          DATE            DEFAULT SYSDATE,-- Ngày đặt hàng
-    total_amount        NUMBER(12,2)    DEFAULT 0,      -- Tổng tiền đơn hàng (>= 0)
-    status              VARCHAR2(20)    DEFAULT 'PENDING',-- Trạng thái đơn hàng
-    shipping_address    NVARCHAR2(500)  NOT NULL,       -- Địa chỉ giao hàng (bắt buộc)
-    payment_method      VARCHAR2(30),                   -- Phương thức thanh toán
-
-    -- Ràng buộc CHECK: Tổng tiền không âm
-    CONSTRAINT chk_orders_total
-        CHECK (total_amount >= 0),
-
-    -- Ràng buộc CHECK: Trạng thái đơn hàng chỉ nhận 5 giá trị hợp lệ
-    CONSTRAINT chk_orders_status
-        CHECK (status IN ('PENDING', 'CONFIRMED', 'SHIPPING', 'DELIVERED', 'CANCELLED')),
-
-    -- Ràng buộc CHECK: Phương thức thanh toán hợp lệ
-    CONSTRAINT chk_orders_payment
-        CHECK (payment_method IS NULL OR payment_method IN ('COD', 'CREDIT_CARD', 'BANK_TRANSFER', 'E_WALLET')),
-
-    -- Khóa ngoại: Liên kết đến bảng CUSTOMERS
-    CONSTRAINT fk_orders_customer
-        FOREIGN KEY (customer_id) REFERENCES CUSTOMERS(customer_id)
-        ON DELETE CASCADE
+CREATE TABLE orders (
+    order_id           NUMBER,
+    customer_id        NUMBER NOT NULL,
+    coupon_id          NUMBER,
+    order_date         DATE DEFAULT SYSDATE,
+    total_amount       NUMBER(12,2) DEFAULT 0,
+    status             VARCHAR2(20) DEFAULT 'PENDING',
+    shipping_address   NVARCHAR2(500) NOT NULL,
+    payment_method     VARCHAR2(30),
+    payment_status     VARCHAR2(20) DEFAULT 'PENDING',
+    shipping_fee       NUMBER(10,2) DEFAULT 0,
+    discount_amount    NUMBER(10,2) DEFAULT 0,
+    updated_at         DATE,
+    CONSTRAINT pk_orders PRIMARY KEY (order_id),
+    CONSTRAINT fk_orders_customer FOREIGN KEY (customer_id)
+        REFERENCES customers(customer_id),
+    CONSTRAINT fk_orders_coupon FOREIGN KEY (coupon_id)
+        REFERENCES coupons(coupon_id),
+    CONSTRAINT ck_orders_total_amount CHECK (total_amount >= 0),
+    CONSTRAINT ck_orders_status CHECK (status IN ('PENDING', 'CONFIRMED', 'SHIPPING', 'DELIVERED', 'CANCELLED')),
+    CONSTRAINT ck_orders_payment_mth CHECK (payment_method IN ('COD', 'CREDIT_CARD', 'BANK_TRANSFER', 'E_WALLET')),
+    CONSTRAINT ck_orders_payment_stt CHECK (payment_status IN ('PENDING', 'PAID', 'FAILED', 'REFUNDED')),
+    CONSTRAINT ck_orders_ship_fee CHECK (shipping_fee >= 0),
+    CONSTRAINT ck_orders_discount CHECK (discount_amount >= 0)
 );
 
-COMMENT ON TABLE ORDERS IS 'Bảng đơn hàng - Lưu thông tin đặt hàng của khách';
-COMMENT ON COLUMN ORDERS.order_id IS 'Mã đơn hàng - Khóa chính, tự động tăng';
-COMMENT ON COLUMN ORDERS.customer_id IS 'FK - Mã khách hàng đặt đơn';
-COMMENT ON COLUMN ORDERS.order_date IS 'Ngày giờ đặt hàng';
-COMMENT ON COLUMN ORDERS.total_amount IS 'Tổng giá trị đơn hàng (VNĐ)';
-COMMENT ON COLUMN ORDERS.status IS 'Trạng thái: PENDING/CONFIRMED/SHIPPING/DELIVERED/CANCELLED';
-COMMENT ON COLUMN ORDERS.shipping_address IS 'Địa chỉ giao hàng cụ thể';
-COMMENT ON COLUMN ORDERS.payment_method IS 'Phương thức: COD/CREDIT_CARD/BANK_TRANSFER/E_WALLET';
-
-PROMPT ✅ Tạo bảng ORDERS thành công!
-
--- ────────────────────────────────────────────────────────────────────────────
--- 1.8. Bảng ORDER_DETAILS — Chi tiết đơn hàng
--- Phụ trách: PHÁT
--- Mô tả   : Lưu từng dòng sản phẩm (sách) trong đơn hàng
---            Cột subtotal là VIRTUAL COLUMN tự động tính = quantity * unit_price
--- ────────────────────────────────────────────────────────────────────────────
-CREATE TABLE ORDER_DETAILS (
-    order_detail_id NUMBER                          -- Mã chi tiết (PK, auto-increment)
-        CONSTRAINT pk_order_details PRIMARY KEY,
-    order_id        NUMBER          NOT NULL,       -- FK: Mã đơn hàng (bắt buộc)
-    book_id         NUMBER          NOT NULL,       -- FK: Mã sách (bắt buộc)
-    quantity        NUMBER          NOT NULL,       -- Số lượng mua (bắt buộc, > 0)
-    unit_price      NUMBER(10,2)    NOT NULL,       -- Đơn giá tại thời điểm mua (bắt buộc, > 0)
-    subtotal        NUMBER(12,2)                    -- Thành tiền (Virtual Column)
-        GENERATED ALWAYS AS (quantity * unit_price) VIRTUAL,
-
-    -- Ràng buộc CHECK: Số lượng mua phải > 0
-    CONSTRAINT chk_od_quantity
-        CHECK (quantity > 0),
-
-    -- Ràng buộc CHECK: Đơn giá phải > 0
-    CONSTRAINT chk_od_unit_price
-        CHECK (unit_price > 0),
-
-    -- Ràng buộc UNIQUE: Mỗi sách chỉ xuất hiện 1 lần trong 1 đơn hàng
-    -- (Nếu mua thêm thì tăng quantity, không tạo dòng mới)
+CREATE TABLE order_details (
+    order_detail_id   NUMBER,
+    order_id          NUMBER NOT NULL,
+    book_id           NUMBER NOT NULL,
+    quantity          NUMBER NOT NULL,
+    unit_price        NUMBER(10,2) NOT NULL,
+    subtotal          NUMBER(12,2) GENERATED ALWAYS AS (quantity * unit_price) VIRTUAL,
+    CONSTRAINT pk_order_details PRIMARY KEY (order_detail_id),
+    CONSTRAINT fk_od_order FOREIGN KEY (order_id)
+        REFERENCES orders(order_id),
+    CONSTRAINT fk_od_book FOREIGN KEY (book_id)
+        REFERENCES books(book_id),
     CONSTRAINT uq_od_order_book UNIQUE (order_id, book_id),
-
-    -- Khóa ngoại: Liên kết đến bảng ORDERS
-    CONSTRAINT fk_od_order
-        FOREIGN KEY (order_id) REFERENCES ORDERS(order_id)
-        ON DELETE CASCADE,
-
-    -- Khóa ngoại: Liên kết đến bảng BOOKS
-    CONSTRAINT fk_od_book
-        FOREIGN KEY (book_id) REFERENCES BOOKS(book_id)
-        ON DELETE CASCADE
+    CONSTRAINT ck_od_quantity CHECK (quantity > 0),
+    CONSTRAINT ck_od_unit_price CHECK (unit_price > 0)
 );
 
-COMMENT ON TABLE ORDER_DETAILS IS 'Bảng chi tiết đơn hàng - Từng dòng sản phẩm trong đơn';
-COMMENT ON COLUMN ORDER_DETAILS.order_detail_id IS 'Mã chi tiết - Khóa chính, tự động tăng';
-COMMENT ON COLUMN ORDER_DETAILS.order_id IS 'FK - Mã đơn hàng';
-COMMENT ON COLUMN ORDER_DETAILS.book_id IS 'FK - Mã sách được mua';
-COMMENT ON COLUMN ORDER_DETAILS.quantity IS 'Số lượng mua';
-COMMENT ON COLUMN ORDER_DETAILS.unit_price IS 'Đơn giá tại thời điểm mua (snapshot giá)';
-COMMENT ON COLUMN ORDER_DETAILS.subtotal IS 'Thành tiền = quantity × unit_price (Virtual Column)';
-
-PROMPT ✅ Tạo bảng ORDER_DETAILS thành công!
-
--- ────────────────────────────────────────────────────────────────────────────
--- 1.9. Bảng REVIEWS — Đánh giá sách
--- Phụ trách: PHÁT
--- Mô tả   : Lưu đánh giá và bình luận của khách hàng cho sách
---            Mỗi khách chỉ được đánh giá 1 lần cho mỗi sách (UNIQUE)
--- ────────────────────────────────────────────────────────────────────────────
-CREATE TABLE REVIEWS (
-    review_id       NUMBER                          -- Mã đánh giá (PK, auto-increment)
-        CONSTRAINT pk_reviews PRIMARY KEY,
-    customer_id     NUMBER          NOT NULL,       -- FK: Mã khách hàng (bắt buộc)
-    book_id         NUMBER          NOT NULL,       -- FK: Mã sách (bắt buộc)
-    rating          NUMBER(1)       NOT NULL,       -- Số sao 1-5 (bắt buộc)
-    review_comment  NCLOB,                          -- Nội dung bình luận
-    review_date     DATE            DEFAULT SYSDATE,-- Ngày đánh giá
-
-    -- Ràng buộc CHECK: Rating từ 1 đến 5
-    CONSTRAINT chk_reviews_rating
-        CHECK (rating BETWEEN 1 AND 5),
-
-    -- Ràng buộc UNIQUE: Mỗi khách chỉ đánh giá 1 lần / sách
-    CONSTRAINT uq_reviews_customer_book
-        UNIQUE (customer_id, book_id),
-
-    -- Khóa ngoại: Liên kết đến bảng CUSTOMERS
-    CONSTRAINT fk_reviews_customer
-        FOREIGN KEY (customer_id) REFERENCES CUSTOMERS(customer_id)
-        ON DELETE CASCADE,
-
-    -- Khóa ngoại: Liên kết đến bảng BOOKS
-    CONSTRAINT fk_reviews_book
-        FOREIGN KEY (book_id) REFERENCES BOOKS(book_id)
-        ON DELETE CASCADE
+CREATE TABLE order_status_history (
+    status_history_id   NUMBER,
+    order_id            NUMBER NOT NULL,
+    old_status          VARCHAR2(20),
+    new_status          VARCHAR2(20) NOT NULL,
+    changed_at          DATE DEFAULT SYSDATE,
+    changed_by          NUMBER,
+    changed_source      VARCHAR2(20) DEFAULT 'SYSTEM' NOT NULL,
+    note                NVARCHAR2(500),
+    CONSTRAINT pk_order_status_his PRIMARY KEY (status_history_id),
+    CONSTRAINT fk_osh_order FOREIGN KEY (order_id)
+        REFERENCES orders(order_id),
+    CONSTRAINT fk_osh_changed_by FOREIGN KEY (changed_by)
+        REFERENCES customers(customer_id),
+    CONSTRAINT ck_osh_new_status CHECK (new_status IN ('PENDING', 'CONFIRMED', 'SHIPPING', 'DELIVERED', 'CANCELLED')),
+    CONSTRAINT ck_osh_source CHECK (changed_source IN ('SYSTEM', 'ADMIN', 'CUSTOMER'))
 );
 
-COMMENT ON TABLE REVIEWS IS 'Bảng đánh giá - Bình luận và chấm điểm sách của khách hàng';
-COMMENT ON COLUMN REVIEWS.review_id IS 'Mã đánh giá - Khóa chính, tự động tăng';
-COMMENT ON COLUMN REVIEWS.customer_id IS 'FK - Mã khách hàng đánh giá';
-COMMENT ON COLUMN REVIEWS.book_id IS 'FK - Mã sách được đánh giá';
-COMMENT ON COLUMN REVIEWS.rating IS 'Số sao đánh giá (1 đến 5)';
-COMMENT ON COLUMN REVIEWS.review_comment IS 'Nội dung bình luận chi tiết';
-COMMENT ON COLUMN REVIEWS.review_date IS 'Ngày viết đánh giá';
+CREATE TABLE reviews (
+    review_id         NUMBER,
+    order_id          NUMBER NOT NULL,
+    book_id           NUMBER NOT NULL,
+    rating            NUMBER(1) NOT NULL,
+    review_comment    NCLOB,
+    review_date       DATE DEFAULT SYSDATE,
+    CONSTRAINT pk_reviews PRIMARY KEY (review_id),
+    CONSTRAINT fk_reviews_order FOREIGN KEY (order_id)
+        REFERENCES orders(order_id),
+    CONSTRAINT fk_reviews_book FOREIGN KEY (book_id)
+        REFERENCES books(book_id),
+    CONSTRAINT fk_reviews_od FOREIGN KEY (order_id, book_id)
+        REFERENCES order_details(order_id, book_id),
+    CONSTRAINT uq_reviews_order_book UNIQUE (order_id, book_id),
+    CONSTRAINT ck_reviews_rating CHECK (rating BETWEEN 1 AND 5)
+);
 
-PROMPT ✅ Tạo bảng REVIEWS thành công!
+CREATE TABLE cart_items (
+    cart_item_id      NUMBER,
+    cart_id           NUMBER NOT NULL,
+    book_id           NUMBER NOT NULL,
+    quantity          NUMBER NOT NULL,
+    unit_price        NUMBER(10,2) NOT NULL,
+    created_at        DATE DEFAULT SYSDATE,
+    updated_at        DATE,
+    CONSTRAINT pk_cart_items PRIMARY KEY (cart_item_id),
+    CONSTRAINT fk_ci_cart FOREIGN KEY (cart_id)
+        REFERENCES carts(cart_id),
+    CONSTRAINT fk_ci_book FOREIGN KEY (book_id)
+        REFERENCES books(book_id),
+    CONSTRAINT uq_ci_cart_book UNIQUE (cart_id, book_id),
+    CONSTRAINT ck_ci_quantity CHECK (quantity > 0),
+    CONSTRAINT ck_ci_unit_price CHECK (unit_price > 0)
+);
 
-PROMPT ================================================
-PROMPT ✅ HOÀN TẤT TẠO 9 BẢNG DỮ LIỆU!
-PROMPT ================================================
+CREATE TABLE inventory_transactions (
+    txn_id            NUMBER,
+    book_id           NUMBER NOT NULL,
+    txn_type          VARCHAR2(20) NOT NULL,
+    reference_id      NUMBER,
+    reference_type    VARCHAR2(20),
+    quantity          NUMBER NOT NULL,
+    created_at        DATE DEFAULT SYSDATE,
+    note              NVARCHAR2(500),
+    CONSTRAINT pk_inventory_txn PRIMARY KEY (txn_id),
+    CONSTRAINT fk_it_book FOREIGN KEY (book_id)
+        REFERENCES books(book_id),
+    CONSTRAINT fk_it_order_ref FOREIGN KEY (reference_id)
+        REFERENCES orders(order_id),
+    CONSTRAINT ck_it_type CHECK (txn_type IN ('IN', 'OUT', 'ADJUST')),
+    CONSTRAINT ck_it_ref_type CHECK (reference_type IN ('ORDER', 'MANUAL', 'RETURN')),
+    CONSTRAINT ck_it_quantity CHECK (quantity > 0),
+    CONSTRAINT ck_it_out_requires_ref CHECK (
+        txn_type <> 'OUT' OR (reference_id IS NOT NULL AND reference_type = 'ORDER')
+    )
+);
 
--- ============================================================================
--- 🔢 PHẦN 2: TẠO SEQUENCES — Bộ đếm tự động tăng cho Primary Key
--- ============================================================================
--- Ghi chú: Mỗi bảng có PK kiểu NUMBER sẽ có 1 Sequence tương ứng.
--- Bảng BOOK_AUTHORS dùng Composite PK nên không cần Sequence.
--- Sequence bắt đầu từ 1, mỗi lần tăng 1, cache 20 để tối ưu hiệu suất.
+-- Ràng buộc: Mỗi sách chỉ có tối đa 1 ảnh chính (is_primary = 1)
+CREATE UNIQUE INDEX uq_bimg_primary_one
+    ON book_images (CASE WHEN is_primary = 1 THEN book_id END);
 
--- Sequence cho CUSTOMERS (Phụ trách: Dũng)
-CREATE SEQUENCE seq_customers
-    START WITH 1
-    INCREMENT BY 1
-    NOCACHE
-    NOCYCLE;
 
--- Sequence cho CATEGORIES (Phụ trách: Dũng)
-CREATE SEQUENCE seq_categories
-    START WITH 1
-    INCREMENT BY 1
-    NOCACHE
-    NOCYCLE;
+-- ==========================================================
+-- 2) SEQUENCE CHO CÁC BẢNG CÓ PK KIỂU NUMBER
+-- ==========================================================
 
--- Sequence cho AUTHORS (Phụ trách: Nam)
-CREATE SEQUENCE seq_authors
-    START WITH 1
-    INCREMENT BY 1
-    NOCACHE
-    NOCYCLE;
+CREATE SEQUENCE seq_customers START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
+CREATE SEQUENCE seq_categories START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
+CREATE SEQUENCE seq_carts START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
+CREATE SEQUENCE seq_cart_items START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
+CREATE SEQUENCE seq_authors START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
+CREATE SEQUENCE seq_publishers START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
+CREATE SEQUENCE seq_coupons START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
+CREATE SEQUENCE seq_books START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
+CREATE SEQUENCE seq_book_images START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
+CREATE SEQUENCE seq_orders START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
+CREATE SEQUENCE seq_order_details START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
+CREATE SEQUENCE seq_order_status_his START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
+CREATE SEQUENCE seq_reviews START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
+CREATE SEQUENCE seq_inventory_txn START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
 
--- Sequence cho PUBLISHERS (Phụ trách: Nam)
-CREATE SEQUENCE seq_publishers
-    START WITH 1
-    INCREMENT BY 1
-    NOCACHE
-    NOCYCLE;
 
--- Sequence cho BOOKS (Phụ trách: Hiếu)
-CREATE SEQUENCE seq_books
-    START WITH 1
-    INCREMENT BY 1
-    NOCACHE
-    NOCYCLE;
+-- ==========================================================
+-- 3) TRIGGER TỰ ĐỘNG GÁN PK TỪ SEQUENCE
+-- ==========================================================
 
--- Sequence cho ORDERS (Phụ trách: Phát)
-CREATE SEQUENCE seq_orders
-    START WITH 1
-    INCREMENT BY 1
-    NOCACHE
-    NOCYCLE;
-
--- Sequence cho ORDER_DETAILS (Phụ trách: Phát)
-CREATE SEQUENCE seq_order_details
-    START WITH 1
-    INCREMENT BY 1
-    NOCACHE
-    NOCYCLE;
-
--- Sequence cho REVIEWS (Phụ trách: Phát)
-CREATE SEQUENCE seq_reviews
-    START WITH 1
-    INCREMENT BY 1
-    NOCACHE
-    NOCYCLE;
-
-PROMPT ================================================
-PROMPT ✅ HOÀN TẤT TẠO 8 SEQUENCES!
-PROMPT ================================================
-
--- ============================================================================
--- ⚡ PHẦN 3: TẠO TRIGGERS — Auto-increment và Trigger kiểm tra dữ liệu
--- ============================================================================
--- Ghi chú: Sử dụng BEFORE INSERT trigger kết hợp Sequence
--- Đây là phương pháp chuẩn trên Oracle (trước 12c dùng IDENTITY).
--- Chọn Sequence + Trigger để tương thích đồ án và minh họa rõ cơ chế.
--- Mỗi trigger kiểm tra nếu PK chưa được gán thì mới lấy từ Sequence.
--- Bổ sung 01 trigger nghiệp vụ kiểm tra birth_date của AUTHORS.
-
--- ────────────────────────────────────────────────────────────────────────────
--- 3.1. Trigger Auto-ID cho bảng CUSTOMERS
--- Phụ trách: DŨNG
--- ────────────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE TRIGGER trg_customers_auto_id
-    BEFORE INSERT ON CUSTOMERS
-    FOR EACH ROW
+-- ==========================================================
+-- [Dũng] Trigger cấp mã cho CUSTOMERS
+-- ==========================================================
+CREATE OR REPLACE TRIGGER trg_bi_customers
+BEFORE INSERT ON customers
+FOR EACH ROW
 BEGIN
-    -- Nếu chưa gán customer_id thì tự động lấy giá trị tiếp theo từ Sequence
+    -- Tự động sinh customer_id nếu chưa truyền từ ứng dụng
     IF :NEW.customer_id IS NULL THEN
         :NEW.customer_id := seq_customers.NEXTVAL;
     END IF;
 END;
 /
 
--- ────────────────────────────────────────────────────────────────────────────
--- 3.2. Trigger Auto-ID cho bảng CATEGORIES
--- Phụ trách: DŨNG
--- ────────────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE TRIGGER trg_categories_auto_id
-    BEFORE INSERT ON CATEGORIES
-    FOR EACH ROW
+-- ==========================================================
+-- [Dũng] Trigger cấp mã cho CATEGORIES
+-- ==========================================================
+CREATE OR REPLACE TRIGGER trg_bi_categories
+BEFORE INSERT ON categories
+FOR EACH ROW
 BEGIN
-    -- Nếu chưa gán category_id thì tự động lấy giá trị tiếp theo từ Sequence
+    -- Tự động sinh category_id nếu giá trị đầu vào là NULL
     IF :NEW.category_id IS NULL THEN
         :NEW.category_id := seq_categories.NEXTVAL;
     END IF;
 END;
 /
 
--- ────────────────────────────────────────────────────────────────────────────
--- 3.3. Trigger Auto-ID cho bảng AUTHORS
--- Phụ trách: NAM
--- ────────────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE TRIGGER trg_authors_auto_id
-    BEFORE INSERT ON AUTHORS
-    FOR EACH ROW
+-- ==========================================================
+-- [Dũng] Trigger cấp mã cho CARTS
+-- ==========================================================
+CREATE OR REPLACE TRIGGER trg_bi_carts
+BEFORE INSERT ON carts
+FOR EACH ROW
 BEGIN
-    -- Nếu chưa gán author_id thì tự động lấy giá trị tiếp theo từ Sequence
+    -- Tự động sinh cart_id cho bản ghi giỏ hàng mới
+    IF :NEW.cart_id IS NULL THEN
+        :NEW.cart_id := seq_carts.NEXTVAL;
+    END IF;
+END;
+/
+
+-- ==========================================================
+-- [Dũng] Trigger cấp mã cho CART_ITEMS
+-- ==========================================================
+CREATE OR REPLACE TRIGGER trg_bi_cart_items
+BEFORE INSERT ON cart_items
+FOR EACH ROW
+BEGIN
+    -- Tự động sinh cart_item_id để đảm bảo khóa chính duy nhất
+    IF :NEW.cart_item_id IS NULL THEN
+        :NEW.cart_item_id := seq_cart_items.NEXTVAL;
+    END IF;
+END;
+/
+
+-- ==========================================================
+-- [Nam] Trigger cấp mã cho AUTHORS
+-- ==========================================================
+CREATE OR REPLACE TRIGGER trg_bi_authors
+BEFORE INSERT ON authors
+FOR EACH ROW
+BEGIN
+    -- Tự động sinh author_id cho thông tin tác giả mới
     IF :NEW.author_id IS NULL THEN
         :NEW.author_id := seq_authors.NEXTVAL;
     END IF;
 END;
 /
 
--- ────────────────────────────────────────────────────────────────────────────
--- 3.3a. Trigger Validate Birth Date cho bảng AUTHORS
--- Phụ trách: NAM
--- ────────────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE TRIGGER trg_authors_birth_date_chk
-    BEFORE INSERT OR UPDATE OF birth_date ON AUTHORS
-    FOR EACH ROW
+-- ==========================================================
+-- [Nam] Trigger cấp mã cho PUBLISHERS
+-- ==========================================================
+CREATE OR REPLACE TRIGGER trg_bi_publishers
+BEFORE INSERT ON publishers
+FOR EACH ROW
 BEGIN
-    IF :NEW.birth_date IS NOT NULL AND :NEW.birth_date >= TRUNC(SYSDATE) THEN
-        RAISE_APPLICATION_ERROR(-20031, 'Ngày sinh tác giả phải nhỏ hơn ngày hiện tại');
-    END IF;
-END;
-/
-
--- ────────────────────────────────────────────────────────────────────────────
--- 3.4. Trigger Auto-ID cho bảng PUBLISHERS
--- Phụ trách: NAM
--- ────────────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE TRIGGER trg_publishers_auto_id
-    BEFORE INSERT ON PUBLISHERS
-    FOR EACH ROW
-BEGIN
-    -- Nếu chưa gán publisher_id thì tự động lấy giá trị tiếp theo từ Sequence
+    -- Tự động sinh publisher_id cho bản ghi nhà xuất bản
     IF :NEW.publisher_id IS NULL THEN
         :NEW.publisher_id := seq_publishers.NEXTVAL;
     END IF;
 END;
 /
 
--- ────────────────────────────────────────────────────────────────────────────
--- 3.5. Trigger Auto-ID cho bảng BOOKS
--- Phụ trách: HIẾU
--- ────────────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE TRIGGER trg_books_auto_id
-    BEFORE INSERT ON BOOKS
-    FOR EACH ROW
+-- ==========================================================
+-- [Nam] Trigger cấp mã cho COUPONS
+-- ==========================================================
+CREATE OR REPLACE TRIGGER trg_bi_coupons
+BEFORE INSERT ON coupons
+FOR EACH ROW
 BEGIN
-    -- Nếu chưa gán book_id thì tự động lấy giá trị tiếp theo từ Sequence
+    -- Tự động sinh coupon_id cho mã giảm giá mới
+    IF :NEW.coupon_id IS NULL THEN
+        :NEW.coupon_id := seq_coupons.NEXTVAL;
+    END IF;
+END;
+/
+
+-- ==========================================================
+-- [Hiếu] Trigger cấp mã cho BOOKS
+-- ==========================================================
+CREATE OR REPLACE TRIGGER trg_bi_books
+BEFORE INSERT ON books
+FOR EACH ROW
+BEGIN
+    -- Tự động sinh book_id cho sách mới thêm vào hệ thống
     IF :NEW.book_id IS NULL THEN
         :NEW.book_id := seq_books.NEXTVAL;
     END IF;
 END;
 /
 
--- ────────────────────────────────────────────────────────────────────────────
--- 3.6. Trigger Auto-ID cho bảng ORDERS
--- Phụ trách: PHÁT
--- ────────────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE TRIGGER trg_orders_auto_id
-    BEFORE INSERT ON ORDERS
-    FOR EACH ROW
+-- ==========================================================
+-- [Hiếu] Trigger cấp mã cho BOOK_IMAGES
+-- ==========================================================
+CREATE OR REPLACE TRIGGER trg_bi_book_images
+BEFORE INSERT ON book_images
+FOR EACH ROW
 BEGIN
-    -- Nếu chưa gán order_id thì tự động lấy giá trị tiếp theo từ Sequence
+    -- Tự động sinh image_id cho ảnh sách mới
+    IF :NEW.image_id IS NULL THEN
+        :NEW.image_id := seq_book_images.NEXTVAL;
+    END IF;
+END;
+/
+
+-- ==========================================================
+-- [Hiếu] Trigger cấp mã cho INVENTORY_TRANSACTIONS
+-- ==========================================================
+CREATE OR REPLACE TRIGGER trg_bi_inventory_txn
+BEFORE INSERT ON inventory_transactions
+FOR EACH ROW
+BEGIN
+    -- Tự động sinh txn_id cho giao dịch kho
+    IF :NEW.txn_id IS NULL THEN
+        :NEW.txn_id := seq_inventory_txn.NEXTVAL;
+    END IF;
+END;
+/
+
+-- ==========================================================
+-- [Phát] Trigger cấp mã cho ORDERS
+-- ==========================================================
+CREATE OR REPLACE TRIGGER trg_bi_orders
+BEFORE INSERT ON orders
+FOR EACH ROW
+BEGIN
+    -- Tự động sinh order_id cho đơn hàng mới
     IF :NEW.order_id IS NULL THEN
         :NEW.order_id := seq_orders.NEXTVAL;
     END IF;
 END;
 /
 
--- ────────────────────────────────────────────────────────────────────────────
--- 3.7. Trigger Auto-ID cho bảng ORDER_DETAILS
--- Phụ trách: PHÁT
--- ────────────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE TRIGGER trg_order_details_auto_id
-    BEFORE INSERT ON ORDER_DETAILS
-    FOR EACH ROW
+-- ==========================================================
+-- [Phát] Trigger cấp mã cho ORDER_DETAILS
+-- ==========================================================
+CREATE OR REPLACE TRIGGER trg_bi_order_details
+BEFORE INSERT ON order_details
+FOR EACH ROW
 BEGIN
-    -- Nếu chưa gán order_detail_id thì tự động lấy giá trị tiếp theo từ Sequence
+    -- Tự động sinh order_detail_id cho dòng chi tiết đơn
     IF :NEW.order_detail_id IS NULL THEN
         :NEW.order_detail_id := seq_order_details.NEXTVAL;
     END IF;
 END;
 /
 
--- ────────────────────────────────────────────────────────────────────────────
--- 3.8. Trigger Auto-ID cho bảng REVIEWS
--- Phụ trách: PHÁT
--- ────────────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE TRIGGER trg_reviews_auto_id
-    BEFORE INSERT ON REVIEWS
-    FOR EACH ROW
+-- ==========================================================
+-- [Phát] Trigger cấp mã cho ORDER_STATUS_HISTORY
+-- ==========================================================
+CREATE OR REPLACE TRIGGER trg_bi_order_status_his
+BEFORE INSERT ON order_status_history
+FOR EACH ROW
 BEGIN
-    -- Nếu chưa gán review_id thì tự động lấy giá trị tiếp theo từ Sequence
+    -- Tự động sinh status_history_id cho lịch sử trạng thái đơn
+    IF :NEW.status_history_id IS NULL THEN
+        :NEW.status_history_id := seq_order_status_his.NEXTVAL;
+    END IF;
+END;
+/
+
+-- ==========================================================
+-- [Phát] Trigger cấp mã cho REVIEWS
+-- ==========================================================
+CREATE OR REPLACE TRIGGER trg_bi_reviews
+BEFORE INSERT ON reviews
+FOR EACH ROW
+BEGIN
+    -- Tự động sinh review_id cho đánh giá mới
     IF :NEW.review_id IS NULL THEN
         :NEW.review_id := seq_reviews.NEXTVAL;
     END IF;
 END;
 /
 
-PROMPT ================================================
-PROMPT ✅ HOÀN TẤT TẠO 9 TRIGGERS (8 AUTO-INCREMENT + 1 VALIDATION)!
-PROMPT ================================================
-
--- ============================================================================
--- 📊 PHẦN 4: KIỂM TRA — XÁC NHẬN TẤT CẢ ĐỐI TƯỢNG ĐÃ TẠO THÀNH CÔNG
--- ============================================================================
-
--- Liệt kê tất cả các bảng đã tạo
-PROMPT
-PROMPT 📋 DANH SÁCH CÁC BẢNG ĐÃ TẠO:
-SELECT table_name, num_rows
-FROM user_tables
-WHERE table_name IN (
-    'CUSTOMERS', 'CATEGORIES', 'AUTHORS', 'PUBLISHERS',
-    'BOOKS', 'BOOK_AUTHORS', 'ORDERS', 'ORDER_DETAILS', 'REVIEWS'
-)
-ORDER BY table_name;
-
--- Liệt kê tất cả các Sequences đã tạo
-PROMPT
-PROMPT 🔢 DANH SÁCH CÁC SEQUENCES ĐÃ TẠO:
-SELECT sequence_name, min_value, max_value, increment_by, last_number
-FROM user_sequences
-WHERE sequence_name IN (
-    'SEQ_CUSTOMERS', 'SEQ_CATEGORIES', 'SEQ_AUTHORS', 'SEQ_PUBLISHERS',
-    'SEQ_BOOKS', 'SEQ_ORDERS', 'SEQ_ORDER_DETAILS', 'SEQ_REVIEWS'
-)
-ORDER BY sequence_name;
-
--- Liệt kê tất cả các Triggers đã tạo
-PROMPT
-PROMPT ⚡ DANH SÁCH CÁC TRIGGERS ĐÃ TẠO:
-SELECT trigger_name, table_name, triggering_event, trigger_type, status
-FROM user_triggers
-WHERE trigger_name LIKE 'TRG_%'
-ORDER BY trigger_name;
-
--- Liệt kê tất cả các Constraints
-PROMPT
-PROMPT 🔒 DANH SÁCH CÁC CONSTRAINTS:
-SELECT table_name, constraint_name, constraint_type, status
-FROM user_constraints
-WHERE table_name IN (
-    'CUSTOMERS', 'CATEGORIES', 'AUTHORS', 'PUBLISHERS',
-    'BOOKS', 'BOOK_AUTHORS', 'ORDERS', 'ORDER_DETAILS', 'REVIEWS'
-)
-ORDER BY table_name, constraint_type;
-
-PROMPT
-PROMPT ================================================================
-PROMPT 🎉 BƯỚC 2 HOÀN TẤT — TẠO LƯỢC ĐỒ và RÀNG BUỘC THÀNH CÔNG!
-PROMPT ================================================================
-PROMPT    📦 9 Tables created
-PROMPT    🔢 8 Sequences created  
-PROMPT    ⚡ 9 Triggers created (8 Auto-increment + 1 Validation)
-PROMPT    🔒 Constraints: PK, FK, UNIQUE, CHECK, NOT NULL
-PROMPT    📝 Comments on all tables and columns
-PROMPT ================================================================
+-- ==========================================================
+-- KẾT THÚC FILE
+-- ==========================================================

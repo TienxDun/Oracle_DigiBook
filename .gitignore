@@ -1,0 +1,24 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Env
+.env
+.env.*
+
+# Node
+node_modules/
+coverage/
+dist/
+.build/
+.next/
+
+# Editor
+.vscode/
+
+# Misc
+*.tmp
+*.swp

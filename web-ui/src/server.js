@@ -1,9 +1,10 @@
 const express = require('express');
 const os = require('os');
+const oracledb = require('oracledb');
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 
-const { closePool, initPool, query } = require('./db');
+const { closePool, execute, initPool, query } = require('./db');
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -443,6 +444,189 @@ app.get('/api/runtime', (req, res) => {
     startedAt: runtimeState.startedAt,
     baseUrl: actualPort ? `http://localhost:${actualPort}` : null
   });
+});
+
+app.post('/api/testing/procedures/manage-book', async (req, res) => {
+  const action = String(req.body.action || '').trim().toUpperCase();
+
+  if (!['ADD', 'UPDATE', 'DELETE'].includes(action)) {
+    return res.status(400).json({ message: 'Action không hợp lệ. Chỉ hỗ trợ ADD/UPDATE/DELETE.' });
+  }
+
+  try {
+    const binds = {
+      p_action: action,
+      p_book_id: {
+        dir: oracledb.BIND_INOUT,
+        type: oracledb.NUMBER,
+        val: req.body.bookId == null ? null : Number(req.body.bookId)
+      },
+      p_title: req.body.title ?? null,
+      p_isbn: req.body.isbn ?? null,
+      p_price: req.body.price == null ? null : Number(req.body.price),
+      p_stock_quantity: req.body.stockQuantity == null ? null : Number(req.body.stockQuantity),
+      p_description: req.body.description ?? null,
+      p_publication_year: req.body.publicationYear == null ? null : Number(req.body.publicationYear),
+      p_page_count: req.body.pageCount == null ? null : Number(req.body.pageCount),
+      p_category_id: req.body.categoryId == null ? null : Number(req.body.categoryId),
+      p_publisher_id: req.body.publisherId == null ? null : Number(req.body.publisherId)
+    };
+
+    const result = await execute(
+      `
+        BEGIN
+          sp_manage_book(
+            :p_action,
+            :p_book_id,
+            :p_title,
+            :p_isbn,
+            :p_price,
+            :p_stock_quantity,
+            :p_description,
+            :p_publication_year,
+            :p_page_count,
+            :p_category_id,
+            :p_publisher_id
+          );
+        END;
+      `,
+      binds,
+      { autoCommit: true }
+    );
+
+    res.json({
+      ok: true,
+      action,
+      bookId: result.outBinds.p_book_id,
+      message: `Procedure sp_manage_book(${action}) chạy thành công.`
+    });
+  } catch (error) {
+    res.status(400).json({ ok: false, message: error.message });
+  }
+});
+
+app.post('/api/testing/procedures/monthly-sales', async (req, res) => {
+  const fromDate = String(req.body.fromDate || '').trim();
+  const toDate = String(req.body.toDate || '').trim();
+
+  if (!fromDate || !toDate) {
+    return res.status(400).json({ message: 'Vui lòng nhập fromDate và toDate (YYYY-MM-DD).' });
+  }
+
+  const activePool = await initPool();
+  const connection = await activePool.getConnection();
+
+  try {
+    const result = await connection.execute(
+      `BEGIN sp_report_monthly_sales(:p_from_date, :p_to_date, :p_result); END;`,
+      {
+        p_from_date: new Date(fromDate),
+        p_to_date: new Date(toDate),
+        p_result: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR }
+      },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    const resultSet = result.outBinds.p_result;
+    const rows = await resultSet.getRows(1000);
+    await resultSet.close();
+
+    res.json({ ok: true, rows, count: rows.length });
+  } catch (error) {
+    res.status(400).json({ ok: false, message: error.message });
+  } finally {
+    await connection.close();
+  }
+});
+
+app.post('/api/testing/procedures/low-stock', async (req, res) => {
+  const threshold = Number(req.body.threshold ?? 10);
+
+  if (Number.isNaN(threshold) || threshold < 0) {
+    return res.status(400).json({ message: 'Ngưỡng tồn kho phải là số >= 0.' });
+  }
+
+  try {
+    await execute(
+      `BEGIN sp_print_low_stock_books(:p_threshold); END;`,
+      { p_threshold: threshold },
+      { autoCommit: false }
+    );
+
+    const rows = await query(
+      `
+        SELECT
+          b.book_id,
+          b.title,
+          b.stock_quantity,
+          c.category_name,
+          p.publisher_name
+        FROM books b
+        LEFT JOIN categories c ON c.category_id = b.category_id
+        LEFT JOIN publishers p ON p.publisher_id = b.publisher_id
+        WHERE b.stock_quantity <= :threshold
+        ORDER BY b.stock_quantity ASC, b.book_id ASC
+      `,
+      { threshold }
+    );
+
+    res.json({
+      ok: true,
+      message: 'Procedure sp_print_low_stock_books chạy thành công.',
+      rows,
+      count: rows.length
+    });
+  } catch (error) {
+    res.status(400).json({ ok: false, message: error.message });
+  }
+});
+
+app.post('/api/testing/procedures/coupon-discount', async (req, res) => {
+  const couponCode = String(req.body.couponCode || '').trim();
+  const orderAmount = Number(req.body.orderAmount);
+
+  if (!couponCode) {
+    return res.status(400).json({ message: 'Coupon code không được để trống.' });
+  }
+
+  if (Number.isNaN(orderAmount) || orderAmount <= 0) {
+    return res.status(400).json({ message: 'orderAmount phải là số > 0.' });
+  }
+
+  try {
+    const result = await execute(
+      `
+        BEGIN
+          sp_calculate_coupon_discount(
+            :p_coupon_code,
+            :p_order_amount,
+            :p_discount_amount,
+            :p_message
+          );
+        END;
+      `,
+      {
+        p_coupon_code: couponCode,
+        p_order_amount: orderAmount,
+        p_discount_amount: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
+        p_message: { dir: oracledb.BIND_OUT, type: oracledb.STRING, maxSize: 200 }
+      }
+    );
+
+    res.json({
+      ok: true,
+      couponCode,
+      orderAmount,
+      discountAmount: result.outBinds.p_discount_amount,
+      messageCode: result.outBinds.p_message
+    });
+  } catch (error) {
+    res.status(400).json({ ok: false, message: error.message });
+  }
+});
+
+app.get('/testing', (req, res) => {
+  res.sendFile(path.resolve(__dirname, '..', 'public', 'testing.html'));
 });
 
 app.get('*', (req, res) => {

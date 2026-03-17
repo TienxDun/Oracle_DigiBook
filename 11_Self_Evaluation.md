@@ -13,7 +13,7 @@
 | **Bước 1** | Thiết kế CSDL | `1_Database_Design.md` | ✅ **HOÀN THÀNH** |
 | **Bước 2** | Tạo lược đồ DDL | `2_create_tables.sql` | ✅ **HOÀN THÀNH** |
 | **Bước 3** | Tạo dữ liệu mẫu DML | `3_insert_data.sql` | ✅ **HOÀN THÀNH** |
-| **Bước 4** | Stored Procedures | `4_procedures.sql` | ❌ **CHƯA THỰC HIỆN** |
+| **Bước 4** | Stored Procedures | `4_procedures.sql` | ✅ **HOÀN THÀNH** |
 | **Bước 5** | Triggers | `5_triggers.sql` | ❌ **CHƯA THỰC HIỆN** |
 | **Bước 6** | Views | `6_views.sql` | ❌ **CHƯA THỰC HIỆN** |
 | **Bước 7** | Indexing & Tuning | `7_indexes_and_tuning.sql` | ❌ **CHƯA THỰC HIỆN** |
@@ -398,7 +398,7 @@ subtotal      NUMBER(12,2) GENERATED ALWAYS AS (quantity * unit_price) VIRTUAL
 ### **Tóm Tắt Hoàn Thành:**
 
 - ✅ **Bước 1-3:** Hoàn thành & nhất quán  
-- ⚠️ **Bước 4-10:** Chưa thực hiện (cần thêm)
+- ⚠️ **Bước 5-10:** Chưa thực hiện (cần thêm)
 - ✅ **Bước 11:** Đang thực hiện (báo cáo này)
 
 ### **Mức Độ Tin Cậy:**
@@ -418,8 +418,7 @@ subtotal      NUMBER(12,2) GENERATED ALWAYS AS (quantity * unit_price) VIRTUAL
     - Chạy kiểm tra ràng buộc FK/UK/CHECK sau khi nạp dữ liệu (`0.1_list_digibook_objects.sql`)
     - Chốt checklist verify sequence sau khi đồng bộ (`NEXTVAL >= MAX(id)+1`)
 
-2. **Trung hạn (Bước 4-10):**
-   - Viết 4 Stored Procedures (CRUD, Reporting, Cursor, Business Logic)
+2. **Trung hạn (Bước 5-10):**
    - Viết 3+ Triggers (Validation, Audit, Calculation)
    - Tạo 3 Views (Reporting joins, Masked columns, Materialized view)
    - Tạo Indexes & Tuning (EXPLAIN PLAN analysis)

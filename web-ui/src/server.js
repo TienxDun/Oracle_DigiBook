@@ -4,7 +4,7 @@ const oracledb = require('oracledb');
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 
-const { closePool, execute, initPool, query } = require('./db');
+const { closePool, execute, initPool, query, withConnection } = require('./db');
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -279,8 +279,113 @@ const allowedTables = {
       ORDER BY txn_id DESC
       FETCH FIRST :limit ROWS ONLY
     `
+  },
+  orders_audit_log: {
+    label: 'Audit log đơn hàng',
+    countQuery: 'SELECT COUNT(*) AS total_rows FROM orders_audit_log',
+    query: `
+      SELECT
+        audit_id,
+        order_id,
+        action_type,
+        old_status,
+        new_status,
+        old_total_amount,
+        new_total_amount,
+        old_payment_status,
+        new_payment_status,
+        action_by,
+        action_at,
+        module_name,
+        client_identifier,
+        note
+      FROM orders_audit_log
+      ORDER BY audit_id DESC
+      FETCH FIRST :limit ROWS ONLY
+    `
+  },
+  vw_order_sales_report: {
+    label: 'View báo cáo bán hàng',
+    countQuery: 'SELECT COUNT(*) AS total_rows FROM vw_order_sales_report',
+    query: `
+      SELECT
+        order_id,
+        order_date,
+        customer_name,
+        customer_email,
+        order_status,
+        payment_method,
+        payment_status,
+        book_title,
+        category_name,
+        publisher_name,
+        quantity,
+        unit_price,
+        line_subtotal,
+        shipping_fee,
+        discount_amount,
+        order_total_amount,
+        line_weight_percent
+      FROM vw_order_sales_report
+      ORDER BY order_id DESC
+      FETCH FIRST :limit ROWS ONLY
+    `
+  },
+  vw_customer_secure_profile: {
+    label: 'View khách hàng (đã mask)',
+    countQuery: 'SELECT COUNT(*) AS total_rows FROM vw_customer_secure_profile',
+    query: `
+      SELECT
+        customer_id,
+        full_name,
+        masked_email,
+        masked_phone,
+        masked_address,
+        status,
+        total_orders,
+        total_spent,
+        customer_segment,
+        created_at,
+        updated_at
+      FROM vw_customer_secure_profile
+      ORDER BY customer_id
+      FETCH FIRST :limit ROWS ONLY
+    `
+  },
+  mv_daily_category_sales: {
+    label: 'MV doanh thu theo ngày',
+    countQuery: 'SELECT COUNT(*) AS total_rows FROM mv_daily_category_sales',
+    query: `
+      SELECT
+        sale_date,
+        category_id,
+        category_name,
+        total_orders,
+        total_units_sold,
+        gross_merchandise_value,
+        avg_unit_price,
+        latest_order_at
+      FROM mv_daily_category_sales
+      ORDER BY sale_date DESC, category_id
+      FETCH FIRST :limit ROWS ONLY
+    `
   }
 };
+
+function getOracleDate(value) {
+  const trimmed = String(value || '').trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  const parsed = new Date(trimmed);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatOracleError(error) {
+  return error && error.message ? error.message : 'Oracle request failed';
+}
 
 app.use(express.json());
 app.use(express.static(path.resolve(__dirname, '..', 'public')));
@@ -622,6 +727,456 @@ app.post('/api/testing/procedures/coupon-discount', async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({ ok: false, message: error.message });
+  }
+});
+
+app.post('/api/testing/triggers/validation', async (req, res) => {
+  const scenario = String(req.body.scenario || '').trim();
+
+  if (!['short-address', 'delivered-unpaid', 'missing-payment-method'].includes(scenario)) {
+    return res.status(400).json({ message: 'Scenario không hợp lệ.' });
+  }
+
+  try {
+    const result = await withConnection(async (connection) => {
+      if (scenario === 'short-address') {
+        try {
+          await connection.execute(
+            `
+              INSERT INTO orders (
+                order_id,
+                customer_id,
+                coupon_id,
+                order_date,
+                total_amount,
+                status,
+                shipping_address,
+                payment_method,
+                payment_status,
+                shipping_fee,
+                discount_amount,
+                updated_at
+              ) VALUES (
+                NULL,
+                :customer_id,
+                NULL,
+                SYSDATE,
+                0,
+                'PENDING',
+                :shipping_address,
+                NULL,
+                'PENDING',
+                30000,
+                0,
+                NULL
+              )
+            `,
+            {
+              customer_id: Number(req.body.customerId || 1),
+              shipping_address: req.body.shippingAddress || 'Qua ngan'
+            }
+          );
+
+          await connection.rollback();
+          return {
+            ok: false,
+            passed: false,
+            scenario,
+            message: 'Trigger không chặn dữ liệu như kỳ vọng.'
+          };
+        } catch (error) {
+          await connection.rollback();
+          return {
+            ok: true,
+            passed: true,
+            scenario,
+            message: formatOracleError(error)
+          };
+        }
+      }
+
+      try {
+        await connection.execute(
+          `
+            UPDATE orders
+               SET status = :status,
+                   payment_status = :payment_status,
+                   payment_method = :payment_method
+             WHERE order_id = :order_id
+          `,
+          {
+            status: scenario === 'delivered-unpaid' ? 'DELIVERED' : 'CONFIRMED',
+            payment_status: req.body.paymentStatus || 'PENDING',
+            payment_method: scenario === 'missing-payment-method' ? null : (req.body.paymentMethod || 'COD'),
+            order_id: Number(req.body.orderId || 7)
+          },
+          { autoCommit: false }
+        );
+
+        await connection.rollback();
+        return {
+          ok: false,
+          passed: false,
+          scenario,
+          message: 'Trigger không chặn cập nhật như kỳ vọng.'
+        };
+      } catch (error) {
+        await connection.rollback();
+        return {
+          ok: true,
+          passed: true,
+          scenario,
+          message: formatOracleError(error)
+        };
+      }
+    });
+
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ ok: false, message: formatOracleError(error) });
+  }
+});
+
+app.post('/api/testing/triggers/recalculate', async (req, res) => {
+  try {
+    const result = await withConnection(async (connection) => {
+      const customerId = Number(req.body.customerId || 1);
+      const bookId = Number(req.body.bookId || 1);
+      const shippingFee = Number(req.body.shippingFee ?? 30000);
+      const discountAmount = Number(req.body.discountAmount ?? 10000);
+      const insertQuantity = Number(req.body.insertQuantity ?? 2);
+      const insertUnitPrice = Number(req.body.insertUnitPrice ?? 100000);
+      const updateQuantity = Number(req.body.updateQuantity ?? 3);
+      const updateUnitPrice = Number(req.body.updateUnitPrice ?? 100000);
+      const shippingAddress = req.body.shippingAddress || '[UI Trigger Test] 123 Nguyen Van A, Quan 1, TP HCM';
+
+      await connection.execute(`BEGIN DBMS_APPLICATION_INFO.SET_MODULE('TRIGGER_UI', 'RECALC'); END;`);
+      await connection.execute(`BEGIN DBMS_SESSION.SET_IDENTIFIER('TRIGGER_UI_RECALC'); END;`);
+
+      const createOrderResult = await connection.execute(
+        `
+          INSERT INTO orders (
+            order_id,
+            customer_id,
+            coupon_id,
+            order_date,
+            total_amount,
+            status,
+            shipping_address,
+            payment_method,
+            payment_status,
+            shipping_fee,
+            discount_amount,
+            updated_at
+          ) VALUES (
+            NULL,
+            :customer_id,
+            NULL,
+            SYSDATE,
+            0,
+            'PENDING',
+            :shipping_address,
+            NULL,
+            'PENDING',
+            :shipping_fee,
+            :discount_amount,
+            NULL
+          ) RETURNING order_id INTO :order_id
+        `,
+        {
+          customer_id: customerId,
+          shipping_address: shippingAddress,
+          shipping_fee: shippingFee,
+          discount_amount: discountAmount,
+          order_id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
+        },
+        { autoCommit: false }
+      );
+
+      const orderId = createOrderResult.outBinds.order_id[0];
+
+      const insertDetailResult = await connection.execute(
+        `
+          INSERT INTO order_details (
+            order_detail_id,
+            order_id,
+            book_id,
+            quantity,
+            unit_price
+          ) VALUES (
+            NULL,
+            :order_id,
+            :book_id,
+            :quantity,
+            :unit_price
+          ) RETURNING order_detail_id INTO :detail_id
+        `,
+        {
+          order_id: orderId,
+          book_id: bookId,
+          quantity: insertQuantity,
+          unit_price: insertUnitPrice,
+          detail_id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
+        },
+        { autoCommit: false }
+      );
+
+      const detailId = insertDetailResult.outBinds.detail_id[0];
+
+      const [afterInsert] = await connection.execute(
+        `
+          SELECT order_id, total_amount, shipping_fee, discount_amount
+          FROM orders
+          WHERE order_id = :order_id
+        `,
+        { order_id: orderId },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      ).then((queryResult) => queryResult.rows);
+
+      await connection.execute(
+        `
+          UPDATE order_details
+             SET quantity = :quantity,
+                 unit_price = :unit_price
+           WHERE order_detail_id = :detail_id
+        `,
+        {
+          quantity: updateQuantity,
+          unit_price: updateUnitPrice,
+          detail_id: detailId
+        },
+        { autoCommit: false }
+      );
+
+      const [afterUpdate] = await connection.execute(
+        `
+          SELECT order_id, total_amount, shipping_fee, discount_amount
+          FROM orders
+          WHERE order_id = :order_id
+        `,
+        { order_id: orderId },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      ).then((queryResult) => queryResult.rows);
+
+      await connection.execute(
+        `DELETE FROM order_details WHERE order_detail_id = :detail_id`,
+        { detail_id: detailId },
+        { autoCommit: false }
+      );
+
+      const [afterDelete] = await connection.execute(
+        `
+          SELECT order_id, total_amount, shipping_fee, discount_amount
+          FROM orders
+          WHERE order_id = :order_id
+        `,
+        { order_id: orderId },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      ).then((queryResult) => queryResult.rows);
+
+      await connection.execute(`DELETE FROM orders WHERE order_id = :order_id`, { order_id: orderId }, { autoCommit: false });
+      await connection.rollback();
+
+      return {
+        ok: true,
+        orderId,
+        detailId,
+        steps: [
+          {
+            step: 'Sau khi insert order_detail',
+            expectedTotal: insertQuantity * insertUnitPrice + shippingFee - discountAmount,
+            actualTotal: afterInsert ? afterInsert.TOTAL_AMOUNT : null,
+            shippingFee,
+            discountAmount
+          },
+          {
+            step: 'Sau khi update order_detail',
+            expectedTotal: updateQuantity * updateUnitPrice + shippingFee - discountAmount,
+            actualTotal: afterUpdate ? afterUpdate.TOTAL_AMOUNT : null,
+            shippingFee,
+            discountAmount
+          },
+          {
+            step: 'Sau khi delete order_detail',
+            expectedTotal: Math.max(shippingFee - discountAmount, 0),
+            actualTotal: afterDelete ? afterDelete.TOTAL_AMOUNT : null,
+            shippingFee,
+            discountAmount
+          }
+        ]
+      };
+    });
+
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ ok: false, message: formatOracleError(error) });
+  }
+});
+
+app.post('/api/testing/triggers/audit', async (req, res) => {
+  try {
+    const result = await withConnection(async (connection) => {
+      const customerId = Number(req.body.customerId || 1);
+      const shippingFee = Number(req.body.shippingFee ?? 30000);
+      const discountAmount = Number(req.body.discountAmount ?? 10000);
+      const shippingAddress = req.body.shippingAddress || '[UI Trigger Audit] 123 Nguyen Van A, Quan 1, TP HCM';
+      const fromStatusDate = getOracleDate(req.body.fromDate);
+      const toStatusDate = getOracleDate(req.body.toDate);
+
+      await connection.execute(`BEGIN DBMS_APPLICATION_INFO.SET_MODULE('TRIGGER_UI', 'AUDIT'); END;`);
+      await connection.execute(`BEGIN DBMS_SESSION.SET_IDENTIFIER('TRIGGER_UI_AUDIT'); END;`);
+
+      const createOrderResult = await connection.execute(
+        `
+          INSERT INTO orders (
+            order_id,
+            customer_id,
+            coupon_id,
+            order_date,
+            total_amount,
+            status,
+            shipping_address,
+            payment_method,
+            payment_status,
+            shipping_fee,
+            discount_amount,
+            updated_at
+          ) VALUES (
+            NULL,
+            :customer_id,
+            NULL,
+            SYSDATE,
+            0,
+            'PENDING',
+            :shipping_address,
+            NULL,
+            'PENDING',
+            :shipping_fee,
+            :discount_amount,
+            NULL
+          ) RETURNING order_id INTO :order_id
+        `,
+        {
+          customer_id: customerId,
+          shipping_address: shippingAddress,
+          shipping_fee: shippingFee,
+          discount_amount: discountAmount,
+          order_id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
+        },
+        { autoCommit: false }
+      );
+
+      const orderId = createOrderResult.outBinds.order_id[0];
+
+      await connection.execute(
+        `
+          UPDATE orders
+             SET status = 'CONFIRMED',
+                 payment_method = 'COD',
+                 payment_status = 'PENDING'
+           WHERE order_id = :order_id
+        `,
+        { order_id: orderId },
+        { autoCommit: false }
+      );
+
+      await connection.execute(
+        `DELETE FROM orders WHERE order_id = :order_id`,
+        { order_id: orderId },
+        { autoCommit: false }
+      );
+
+      const queryResult = await connection.execute(
+        `
+          SELECT
+            audit_id,
+            order_id,
+            action_type,
+            old_status,
+            new_status,
+            old_total_amount,
+            new_total_amount,
+            old_payment_status,
+            new_payment_status,
+            action_by,
+            action_at,
+            module_name,
+            client_identifier,
+            note
+          FROM orders_audit_log
+          WHERE order_id = :order_id
+          ORDER BY audit_id
+        `,
+        { order_id: orderId },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      const auditRows = queryResult.rows || [];
+
+      if (fromStatusDate || toStatusDate) {
+        const filteredRows = auditRows.filter((row) => {
+          const actionAt = row.ACTION_AT ? new Date(row.ACTION_AT) : null;
+          if (!actionAt) {
+            return false;
+          }
+
+          if (fromStatusDate && actionAt < fromStatusDate) {
+            return false;
+          }
+
+          if (toStatusDate && actionAt > toStatusDate) {
+            return false;
+          }
+
+          return true;
+        });
+
+        await connection.rollback();
+        return { ok: true, orderId, rows: filteredRows, count: filteredRows.length };
+      }
+
+      await connection.rollback();
+      return { ok: true, orderId, rows: auditRows, count: auditRows.length };
+    });
+
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ ok: false, message: formatOracleError(error) });
+  }
+});
+
+app.get('/api/testing/triggers/audit-log', async (req, res) => {
+  const requestedLimit = Number(req.query.limit || 20);
+  const limit = Math.min(Math.max(requestedLimit, 1), 100);
+
+  try {
+    const rows = await query(
+      `
+        SELECT
+          audit_id,
+          order_id,
+          action_type,
+          old_status,
+          new_status,
+          old_total_amount,
+          new_total_amount,
+          old_payment_status,
+          new_payment_status,
+          action_by,
+          action_at,
+          module_name,
+          client_identifier,
+          note
+        FROM orders_audit_log
+        ORDER BY audit_id DESC
+        FETCH FIRST :limit ROWS ONLY
+      `,
+      { limit }
+    );
+
+    res.json({ ok: true, rows, count: rows.length });
+  } catch (error) {
+    res.status(400).json({ ok: false, message: formatOracleError(error) });
   }
 });
 

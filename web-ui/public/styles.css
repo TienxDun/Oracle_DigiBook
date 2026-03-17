@@ -469,7 +469,7 @@ button:hover {
   display: grid;
   gap: 6px;
   max-height: none;
-  overflow: visible;
+  overflow: hidden;
   padding: 2px;
 }
 
@@ -478,7 +478,7 @@ button:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   padding: 9px 11px;
   border-radius: 12px;
   background: transparent;
@@ -486,6 +486,7 @@ button:hover {
   color: var(--text);
   font-weight: 500;
   text-align: left;
+  min-width: 0;
 }
 
 .tab-label {
@@ -667,6 +668,10 @@ tbody tr:hover {
   align-items: end;
 }
 
+.testing-form-inline-wide {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .testing-form-grid label,
 .testing-form-inline label {
   display: grid;
@@ -682,6 +687,7 @@ tbody tr:hover {
 .testing-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
 }
 
 .testing-subhead {
@@ -726,6 +732,116 @@ tbody tr:hover {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 12px;
   line-height: 1.5;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.result-console.pass {
+  border-color: rgba(17, 94, 89, 0.55);
+  box-shadow: 0 0 0 2px rgba(17, 94, 89, 0.12);
+}
+
+.result-console.fail {
+  border-color: rgba(185, 28, 28, 0.5);
+  box-shadow: 0 0 0 2px rgba(185, 28, 28, 0.1);
+}
+
+/* ── Test section headers ──────────────────────────────── */
+.test-section-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 18px 0 10px;
+  border-bottom: 1px solid var(--line);
+  margin-top: 6px;
+}
+
+.test-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.test-section-label {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  border: 1px solid rgba(15, 118, 110, 0.22);
+  color: var(--accent-strong);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.test-section-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.test-section-desc {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ── Card kicker row (kicker + badge) ──────────────────── */
+.card-kicker-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+.card-kicker-row .section-kicker {
+  margin: 0;
+}
+
+/* ── Test result badge ─────────────────────────────────── */
+.test-badge {
+  display: none;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.test-badge.pass {
+  display: inline-flex;
+  background: rgba(17, 94, 89, 0.14);
+  border: 1px solid rgba(17, 94, 89, 0.3);
+  color: #0f5e58;
+}
+
+.test-badge.fail {
+  display: inline-flex;
+  background: rgba(185, 28, 28, 0.1);
+  border: 1px solid rgba(185, 28, 28, 0.28);
+  color: #b91c1c;
+}
+
+/* ── Roadmap groups ────────────────────────────────────── */
+.roadmap-groups {
+  display: grid;
+  gap: 16px;
+}
+
+.roadmap-group-label {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .chips {
@@ -744,6 +860,24 @@ tbody tr:hover {
   color: var(--accent-strong);
   font-size: 12px;
   font-weight: 700;
+}
+
+.chip-done {
+  background: rgba(17, 94, 89, 0.12);
+  border-color: rgba(17, 94, 89, 0.25);
+  color: #115e59;
+}
+
+.chip-next {
+  background: rgba(180, 83, 9, 0.12);
+  border-color: rgba(180, 83, 9, 0.22);
+  color: #9a3412;
+}
+
+.chip-info {
+  background: rgba(37, 99, 235, 0.12);
+  border-color: rgba(37, 99, 235, 0.25);
+  color: #1e3a8a;
 }
 
 @media (max-width: 980px) {

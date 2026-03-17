@@ -56,9 +56,21 @@ async function execute(sql, binds = {}, options = {}) {
   }
 }
 
+async function withConnection(work) {
+  const activePool = await initPool();
+  const connection = await activePool.getConnection();
+
+  try {
+    return await work(connection);
+  } finally {
+    await connection.close();
+  }
+}
+
 module.exports = {
   closePool,
   execute,
   initPool,
-  query
+  query,
+  withConnection
 };

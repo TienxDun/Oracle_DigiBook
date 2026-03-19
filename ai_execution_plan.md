@@ -81,19 +81,6 @@ Bạn hãy thực hiện TUẦN TỰ từng bước dưới đây. Ở mỗi bư
 - **Yêu cầu:** Viết một bản báo cáo hoàn chỉnh (định dạng Markdown), tóm tắt lại cấu trúc dự án, hướng dẫn cách chạy từng file SQL, phân tích kết quả và xuất ra **Bảng phân công công việc** (như context ban đầu) chứng minh nhóm đã làm đúng tiến độ.
 - **Output kỳ vọng:** File `10_Final_Report.md`.
 
-### **Bước 11: Tự đánh giá và kiểm tra tính nhất quán (Self-Evaluation)**
-- **Yêu cầu:**
-  1. Rà soát toàn bộ các file đã tạo từ Bước 1 đến Bước 10.
-  2. Đảm bảo tính nhất quán giữa các thành phần:
-     - Tên bảng, cột trong ERD phải khớp với script tạo bảng.
-     - Các ràng buộc trong script phải phản ánh đúng thiết kế.
-     - Stored procedures, triggers, views phải thao tác trên đúng các bảng đã tạo.
-     - Dữ liệu mẫu phải tuân thủ ràng buộc và phù hợp với nghiệp vụ.
-     - Index phải được tạo trên các cột phù hợp với truy vấn thực tế.
-     - Phân quyền phải hợp lý với từng đối tượng.
-  3. Viết một báo cáo ngắn (Markdown) xác nhận tất cả các thành phần đều đồng bộ và nhất quán, nếu phát hiện lỗi thì đề xuất cách sửa.
-- **Output kỳ vọng:** File `11_Self_Evaluation.md`.
-
 ---
 
 ## ⚠️ CONSTRAINTS & RULES (QUY TẮC BẮT BUỘC)

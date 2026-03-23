@@ -3,6 +3,7 @@ const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 
 oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
+oracledb.fetchAsString = [oracledb.CLOB];
 oracledb.autoCommit = false;
 
 let pool;

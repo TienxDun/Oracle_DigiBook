@@ -423,16 +423,21 @@ router.get('/summary', async (req, res) => {
 
 router.get('/tables', async (req, res) => {
   try {
-    const tables = await Promise.all(
+    const tables = (await Promise.all(
       Object.entries(allowedTables).map(async ([key, value]) => {
-        const [countResult] = await query(value.countQuery);
-        return {
-          key,
-          label: value.label,
-          totalRows: Number(countResult.TOTAL_ROWS || 0)
-        };
+        try {
+          const [countResult] = await query(value.countQuery);
+          return {
+            key,
+            label: value.label,
+            totalRows: Number(countResult.TOTAL_ROWS || 0)
+          };
+        } catch (err) {
+          console.warn(`[/api/tables] Skipping ${key}: ${err.message}`);
+          return null; // Skip tables that don't exist
+        }
       })
-    );
+    )).filter(t => t !== null);
     success(res, tables);
   } catch (err) {
     error(res, err.message);

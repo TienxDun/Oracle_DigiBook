@@ -14,9 +14,17 @@ function formatDate(d) {
 }
 
 function renderStars(rating, max = 5) {
-  const full = Math.floor(rating);
-  const half = rating % 1 >= 0.5 ? 1 : 0;
-  return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(max - full - half);
+  let starsHtml = '';
+  for (let i = 1; i <= max; i++) {
+    if (i <= rating) {
+      starsHtml += `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--star)"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
+    } else if (i - 0.5 <= rating) {
+      starsHtml += `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--star)"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path><path d="M12 2v15.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor"></path></svg>`;
+    } else {
+      starsHtml += `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);opacity:0.3"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
+    }
+  }
+  return starsHtml;
 }
 
 async function api(path, options = {}) {
@@ -152,8 +160,9 @@ function renderBookCard(book) {
         <div class="book-card-meta">
           <span class="book-card-price">${formatPrice(book.PRICE)}</span>
           <span class="book-card-rating">
-            ★ ${Number(book.AVG_RATING || 0).toFixed(1)}
-            <span>(${book.REVIEW_COUNT || 0})</span>
+            ${renderStars(Number(book.AVG_RATING || 0))}
+            <strong>${Number(book.AVG_RATING || 0).toFixed(1)}</strong>
+            <span class="count">(${book.REVIEW_COUNT || 0})</span>
           </span>
         </div>
         ${book.STOCK_QUANTITY > 0 ? `<button class="add-cart-btn" onclick="event.stopPropagation(); addToCart(${book.BOOK_ID})">Thêm vào giỏ</button>` : ''}
@@ -165,7 +174,7 @@ function renderBookCard(book) {
 function renderPagination(page, totalPages, onPageChange) {
   if (totalPages <= 1) return '';
   let html = '<div class="pagination">';
-  html += `<button class="page-btn" ${page <= 1 ? 'disabled' : ''} onclick="${onPageChange}(${page - 1})">◀</button>`;
+  html += `<button class="page-btn" ${page <= 1 ? 'disabled' : ''} onclick="${onPageChange}(${page - 1})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button>`;
   for (let i = 1; i <= totalPages; i++) {
     if (totalPages > 7 && i > 3 && i < totalPages - 2 && Math.abs(i - page) > 1) {
       if (i === 4 || i === totalPages - 3) html += '<span style="padding:0 6px;color:var(--text-muted)">...</span>';
@@ -173,7 +182,7 @@ function renderPagination(page, totalPages, onPageChange) {
     }
     html += `<button class="page-btn ${i === page ? 'active' : ''}" onclick="${onPageChange}(${i})">${i}</button>`;
   }
-  html += `<button class="page-btn" ${page >= totalPages ? 'disabled' : ''} onclick="${onPageChange}(${page + 1})">▶</button>`;
+  html += `<button class="page-btn" ${page >= totalPages ? 'disabled' : ''} onclick="${onPageChange}(${page + 1})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></button>`;
   html += '</div>';
   return html;
 }

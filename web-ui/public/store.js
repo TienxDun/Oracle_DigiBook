@@ -206,7 +206,11 @@ async function renderBookDetailPage(bookId) {
     const related = await api(`/book/${bookId}/related`).catch(() => ({ rows: [] }));
 
     const stockClass = book.STOCK_QUANTITY <= 0 ? 'out-stock' : book.STOCK_QUANTITY <= 10 ? 'low-stock' : 'in-stock';
-    const stockIcon = book.STOCK_QUANTITY <= 0 ? '❌' : book.STOCK_QUANTITY <= 10 ? '⚠️' : '✅';
+    const stockIcon = book.STOCK_QUANTITY <= 0 
+      ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>` 
+      : book.STOCK_QUANTITY <= 10 
+        ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`
+        : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
     const stockText = book.STOCK_QUANTITY <= 0 ? 'Hết hàng' : `Còn ${book.STOCK_QUANTITY} sản phẩm`;
 
     const mainImg = book.images.find(i => i.IS_PRIMARY === 1) || book.images[0];
@@ -463,7 +467,7 @@ async function renderCheckoutPage() {
   appEl.innerHTML = renderHeader() + `
     <div class="container checkout-page">
       <div class="stepper">
-        <div class="step done"><span class="step-dot">✓</span> Giỏ hàng</div>
+        <div class="step done"><span class="step-dot"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span> Giỏ hàng</div>
         <div class="step-line"></div>
         <div class="step active"><span class="step-dot">2</span> Thông tin</div>
         <div class="step-line"></div>
@@ -541,7 +545,7 @@ async function placeOrder() {
 function renderOrderSuccessPage(orderId) {
   appEl.innerHTML = renderHeader() + `
     <div class="container success-page">
-      <div class="success-icon">✓</div>
+      <div class="success-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
       <h2>Đặt hàng thành công!</h2>
       <p>Mã đơn hàng: <strong>#${orderId}</strong>. Cảm ơn bạn đã mua sắm tại DigiBook!</p>
       <div style="display:flex;gap:12px;justify-content:center">

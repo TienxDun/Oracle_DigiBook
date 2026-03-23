@@ -103,7 +103,7 @@
               <span class="stat-card-icon"><i data-lucide="star"></i></span>
             </div>
             <div class="stat-card-value">${cards.totalReviews}</div>
-            <div class="stat-card-sub">Trung bình: ${cards.avgRating} / 5 ⭐</div>
+            <div class="stat-card-sub">Trung bình: ${cards.avgRating} / 5 <i data-lucide="star" style="width:12px;height:12px;vertical-align:middle;display:inline-block"></i></div>
           </div>
         `;
         ui.refreshIcons();

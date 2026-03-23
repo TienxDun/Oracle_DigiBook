@@ -18,7 +18,7 @@
       <!-- SIDEBAR -->
       <aside class="admin-sidebar" id="adminSidebar">
         <div class="sidebar-brand">
-          <div class="sidebar-brand-icon">📚</div>
+          <div class="sidebar-brand-icon"><i data-lucide="book-heart"></i></div>
           <div>
             <div class="sidebar-brand-text">DigiBook</div>
             <div class="sidebar-brand-sub">Admin Panel</div>
@@ -134,7 +134,7 @@
                   </select>
                 </label>
                 <button class="btn btn-outline btn-sm" id="btnReloadBooks">
-                  <i data-lucide="rotate-cw"></i> Tải lại
+                  <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> Tải lại
                 </button>
               </div>
               <div class="admin-card-body">
@@ -177,7 +177,7 @@
                     <option value="50">50</option>
                   </select>
                 </label>
-                <button class="btn btn-outline btn-sm" id="btnReloadOrders">↻ Tải lại</button>
+                <button class="btn btn-outline btn-sm" id="btnReloadOrders"><i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> Tải lại</button>
               </div>
               <div class="admin-card-body">
                 <div class="admin-table-wrap">
@@ -219,7 +219,7 @@
                     <option value="50">50</option>
                   </select>
                 </label>
-                <button class="btn btn-outline btn-sm" id="btnReloadCustomers">↻ Tải lại</button>
+                <button class="btn btn-outline btn-sm" id="btnReloadCustomers"><i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> Tải lại</button>
               </div>
               <div class="admin-card-body">
                 <div class="admin-table-wrap">
@@ -259,7 +259,7 @@
                     <option value="50">50</option>
                   </select>
                 </label>
-                <button class="btn btn-outline btn-sm" id="btnReloadCoupons">↻ Tải lại</button>
+                <button class="btn btn-outline btn-sm" id="btnReloadCoupons"><i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> Tải lại</button>
               </div>
               <div class="admin-card-body">
                 <div class="admin-table-wrap">
@@ -314,13 +314,13 @@
                           <option value="100">100</option>
                         </select>
                       </label>
-                      <button class="btn btn-outline btn-sm" id="btnReloadTable">↻ Tải lại</button>
+                      <button class="btn btn-outline btn-sm" id="btnReloadTable"><i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> Tải lại</button>
                     </div>
                   </div>
                   <div class="admin-card-body">
                     <div class="admin-table-wrap" id="tableViewContainer">
                       <div class="empty-state">
-                        <div class="empty-state-icon">🗄️</div>
+                        <div class="empty-state-icon"><i data-lucide="database"></i></div>
                         <div class="empty-state-text">Chọn một bảng từ danh sách bên trái</div>
                         <div class="empty-state-sub">Dữ liệu sẽ hiển thị tại đây</div>
                       </div>
@@ -339,7 +339,7 @@
       <div class="modal">
         <div class="modal-header">
           <h3 class="modal-title" id="bookModalTitle">Thêm sách mới</h3>
-          <button class="modal-close" id="bookModalClose">✕</button>
+          <button class="modal-close" id="bookModalClose"><i data-lucide="x"></i></button>
         </div>
         <div class="modal-body">
           <form id="bookForm">
@@ -400,7 +400,7 @@
       <div class="modal">
         <div class="modal-header">
           <h3 class="modal-title" id="orderDetailTitle">Chi tiết đơn hàng</h3>
-          <button class="modal-close" id="orderDetailClose">✕</button>
+          <button class="modal-close" id="orderDetailClose"><i data-lucide="x"></i></button>
         </div>
         <div class="modal-body" id="orderDetailBody"></div>
       </div>
@@ -411,7 +411,7 @@
       <div class="modal">
         <div class="modal-header">
           <h3 class="modal-title">Cập nhật trạng thái</h3>
-          <button class="modal-close" id="orderStatusClose">✕</button>
+          <button class="modal-close" id="orderStatusClose"><i data-lucide="x"></i></button>
         </div>
         <div class="modal-body">
           <input type="hidden" id="orderStatusId" />

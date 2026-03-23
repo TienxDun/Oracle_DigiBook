@@ -6,129 +6,123 @@
 
 ```mermaid
 graph TD
-  A["Hệ thống DigiBook - Quản lý bán sách"] --> B1["Quản lý danh mục"]
-  A --> B2["Quản lý sách"]
-  A --> B3["Quản lý tác giả và NXB"]
-  A --> B4["Quản lý khách hàng"]
-  A --> B5["Giỏ hàng"]
-  A --> B6["Đơn hàng và thanh toán"]
-  A --> B7["Quản lý kho"]
-  A --> B8["Khuyến mãi Coupon"]
-  A --> B9["Đánh giá sách"]
-  A --> B10["Báo cáo Dashboard"]
+  A["Hệ thống Ready - Quản lý bán sách trực tuyến"] --> B1["Quản lý sản phẩm"]
+  A --> B2["Quản lý khách hàng"]
+  A --> B3["Giỏ hàng và đặt hàng"]
+  A --> B4["Thanh toán trực tuyến"]
+  A --> B5["Quản lý kho và chi nhánh"]
+  A --> B6["Vận chuyển và trạng thái đơn"]
+  A --> B7["Khuyến mãi và voucher"]
+  A --> B8["Nhân viên và phân quyền"]
+  A --> B9["Báo cáo và thống kê"]
 
-  B1 --> C11["Thêm danh mục"]
-  B1 --> C12["Cập nhật danh mục"]
-  B1 --> C13["Quản lý danh mục cha con"]
+  B1 --> C11["Thêm và cập nhật sách"]
+  B1 --> C12["Quản lý danh mục"]
+  B1 --> C13["Quản lý tác giả và NXB"]
+  B1 --> C14["Quản lý ảnh sách"]
 
-  B2 --> C21["Thêm sách"]
-  B2 --> C22["Cập nhật thông tin sách"]
-  B2 --> C23["Quản lý ảnh sách"]
-  B2 --> C24["Gán tác giả cho sách"]
+  B2 --> C21["Đăng ký và cập nhật hồ sơ"]
+  B2 --> C22["Quản lý trạng thái khách hàng"]
 
-  B3 --> C31["Thêm tác giả"]
-  B3 --> C32["Thêm NXB"]
-  B3 --> C33["Tra cứu tác giả NXB"]
+  B3 --> C31["Tạo và cập nhật giỏ hàng"]
+  B3 --> C32["Lập đơn hàng"]
+  B3 --> C33["Theo dõi đơn hàng"]
 
-  B4 --> C41["Đăng ký khách hàng"]
-  B4 --> C42["Cập nhật thông tin"]
-  B4 --> C43["Quản lý trạng thái khách hàng"]
+  B4 --> C41["Tạo giao dịch thanh toán"]
+  B4 --> C42["Xác nhận kết quả thanh toán"]
 
-  B5 --> C51["Tạo giỏ hàng"]
-  B5 --> C52["Thêm hoặc xóa sản phẩm"]
-  B5 --> C53["Cập nhật số lượng"]
+  B5 --> C51["Quản lý chi nhánh kho"]
+  B5 --> C52["Nhập kho theo chi nhánh"]
+  B5 --> C53["Xuất kho theo đơn"]
+  B5 --> C54["Điều chỉnh tồn kho"]
 
-  B6 --> C61["Tạo đơn hàng"]
-  B6 --> C62["Áp dụng coupon"]
-  B6 --> C63["Cập nhật trạng thái đơn"]
-  B6 --> C64["Theo dõi thanh toán"]
+  B6 --> C61["Tạo vận đơn"]
+  B6 --> C62["Cập nhật trạng thái giao hàng"]
+  B6 --> C63["Lưu lịch sử trạng thái"]
 
-  B7 --> C71["Nhập kho"]
-  B7 --> C72["Xuất kho theo đơn"]
-  B7 --> C73["Điều chỉnh tồn"]
+  B7 --> C71["Tạo và quản lý voucher"]
+  B7 --> C72["Kiểm tra điều kiện áp dụng"]
 
-  B8 --> C81["Tạo coupon"]
-  B8 --> C82["Kiểm tra điều kiện áp dụng"]
-  B8 --> C83["Theo dõi lượt dùng"]
+  B8 --> C81["Quản lý nhân viên"]
+  B8 --> C82["Phân quyền theo vai trò"]
 
-  B9 --> C91["Thêm đánh giá"]
-  B9 --> C92["Kiểm tra đã mua"]
-
-  B10 --> C101["Thống kê sách tồn kho"]
-  B10 --> C102["Thống kê đơn hàng doanh thu"]
-  B10 --> C103["Thống kê đánh giá"]
+  B9 --> C91["Thống kê doanh thu"]
+  B9 --> C92["Thống kê tồn kho theo chi nhánh"]
+  B9 --> C93["Báo cáo hiệu suất bán hàng"]
 ```
 
 ### 3.1.2. Mô tả chi tiết chức năng
 
-**1) Quản lý danh mục**
-- Mục đích: tổ chức cây phân loại sách để tìm kiếm và duyệt nhanh.
-- Dữ liệu vào: CATEGORIES(category_id, category_name, parent_id, description).
-- Dữ liệu ra: danh sách danh mục, cây phân cấp theo parent_id.
-- Ràng buộc: category_name là duy nhất; parent_id có thể NULL.
-- Nghiệp vụ: danh mục có thể nhiều cấp; xóa danh mục cần kiểm tra sách liên quan.
+**1) Quản lý sản phẩm**
+- Mục đích: quản lý danh mục, sách và thông tin xuất bản phục vụ tra cứu và bán hàng.
+- Dữ liệu vào: SACH, DANH_MUC, TAC_GIA, NXB, ANH_SACH, SACH_TAC_GIA.
+- Dữ liệu ra: danh sách sách theo danh mục, chi tiết sách, ảnh đại diện, tác giả liên kết.
+- Ràng buộc: giá bán > 0, ISBN duy nhất, mã danh mục hợp lệ.
+- Ràng buộc: mỗi sách thuộc một danh mục; liên kết tác giả theo quan hệ N-N.
+- Nghiệp vụ: mỗi sách chỉ có một ảnh chính; không xóa danh mục khi còn sách.
 
-**2) Quản lý sách**
-- Mục đích: lưu thông tin sách và hiển thị trên web UI.
-- Dữ liệu vào: BOOKS, BOOK_IMAGES, BOOK_AUTHORS, CATEGORIES, PUBLISHERS.
-- Dữ liệu ra: dữ liệu sách, ảnh chính, danh sách tác giả gắn kèm.
-- Ràng buộc: price > 0, stock_quantity >= 0, ISBN duy nhất.
-- Nghiệp vụ: một sách thuộc một danh mục, có nhiều ảnh và nhiều tác giả.
+**2) Quản lý khách hàng**
+- Mục đích: quản lý hồ sơ khách hàng và trạng thái tài khoản phục vụ đặt hàng.
+- Dữ liệu vào: KHACH_HANG.
+- Dữ liệu ra: hồ sơ khách hàng, trạng thái hoạt động, lịch sử cập nhật.
+- Ràng buộc: email và số điện thoại duy nhất; trạng thái thuộc tập cho phép.
+- Ràng buộc: mỗi đơn hàng bắt buộc gắn với một khách hàng hợp lệ.
+- Nghiệp vụ: tài khoản bị khóa thì không tạo giỏ/đặt hàng mới.
 
-**3) Quản lý tác giả và NXB**
-- Mục đích: quản lý nguồn gốc tác phẩm.
-- Dữ liệu vào: AUTHORS, PUBLISHERS, BOOK_AUTHORS.
-- Dữ liệu ra: hồ sơ tác giả/NXB, sách liên quan.
-- Ràng buộc: publisher_name duy nhất; tác giả có thể nhiều vai trò.
-- Nghiệp vụ: quan hệ N-N giữa sách và tác giả thông qua BOOK_AUTHORS.
+**3) Giỏ hàng và đặt hàng**
+- Mục đích: lưu tạm sản phẩm và chuyển giỏ thành đơn đặt hàng (OMS).
+- Dữ liệu vào: GIO_HANG, CT_GIO_HANG, DON_HANG, CT_DON_HANG, SACH, TON_KHO.
+- Dữ liệu ra: đơn hàng, chi tiết đơn, tổng tiền tạm tính.
+- Ràng buộc: số lượng > 0; một sách chỉ một dòng trong giỏ.
+- Ràng buộc: không tạo đơn nếu tồn kho = 0 hoặc vượt tồn hiện có.
+- Nghiệp vụ: khi tạo đơn, chốt giá tại thời điểm đặt hàng.
 
-**4) Quản lý khách hàng**
-- Mục đích: lưu hồ sơ người mua và phục vụ đặt hàng.
-- Dữ liệu vào: CUSTOMERS.
-- Dữ liệu ra: danh sách khách hàng, trạng thái tài khoản.
-- Ràng buộc: email duy nhất, status thuộc ACTIVE/INACTIVE/BANNED.
-- Nghiệp vụ: chỉ khách hàng hợp lệ mới được tạo đơn và đánh giá.
+**4) Thanh toán trực tuyến**
+- Mục đích: ghi nhận giao dịch thanh toán online và đối soát kết quả.
+- Dữ liệu vào: THANH_TOAN, DON_HANG, PHUONG_THUC_THANH_TOAN.
+- Dữ liệu ra: trạng thái thanh toán, mã giao dịch, thời điểm thanh toán.
+- Ràng buộc: mỗi đơn chỉ có một giao dịch thành công.
+- Ràng buộc: đơn chỉ chuyển “Đã xác nhận” khi thanh toán thành công.
+- Nghiệp vụ: giao dịch lỗi phải ghi nhận để đối soát/hoàn tiền.
 
-**5) Giỏ hàng**
-- Mục đích: lưu tạm các sách trước khi đặt mua.
-- Dữ liệu vào: CARTS, CART_ITEMS, BOOKS.
-- Dữ liệu ra: nội dung giỏ hàng theo khách.
-- Ràng buộc: quantity > 0, unit_price > 0, cart_id hợp lệ.
-- Nghiệp vụ: một khách có một giỏ đang ACTIVE; mỗi sách chỉ 1 dòng/giỏ.
+**5) Quản lý kho và chi nhánh**
+- Mục đích: theo dõi tồn kho theo chi nhánh và luồng nhập/xuất/điều chỉnh.
+- Dữ liệu vào: CHI_NHANH_KHO, TON_KHO, GD_KHO, DON_HANG.
+- Dữ liệu ra: tồn kho từng chi nhánh, nhật ký giao dịch kho.
+- Ràng buộc: tồn kho không âm; giao dịch kho phải có loại và nguồn gốc rõ ràng.
+- Ràng buộc: xuất kho phải liên kết đơn hàng hoặc phiếu điều chỉnh hợp lệ.
+- Nghiệp vụ: ưu tiên xuất từ chi nhánh gần khách hoặc tồn cao.
 
-**6) Đơn hàng và thanh toán**
-- Mục đích: tạo đơn, tính tiền và theo dõi trạng thái.
-- Dữ liệu vào: ORDERS, ORDER_DETAILS, CUSTOMERS, COUPONS.
-- Dữ liệu ra: hóa đơn, tổng tiền, trạng thái thanh toán và giao hàng.
-- Ràng buộc: mỗi đơn gắn với 1 khách hàng hợp lệ; status theo tập cho sẵn.
-- Nghiệp vụ: không tạo đơn nếu tồn kho không đủ; UNIQUE(order_id, book_id).
+**6) Vận chuyển và trạng thái giao hàng**
+- Mục đích: quản lý vận đơn và lịch sử trạng thái giao hàng.
+- Dữ liệu vào: VAN_DON, LICH_SU_TRANG_THAI_DON, DON_HANG.
+- Dữ liệu ra: trạng thái giao hàng hiện tại và lịch sử cập nhật.
+- Ràng buộc: trạng thái theo quy trình (Đã xác nhận → Đang giao → Đã giao).
+- Ràng buộc: mỗi đơn chỉ có một vận đơn hiệu lực tại một thời điểm.
+- Nghiệp vụ: cập nhật trạng thái bởi nhân viên hoặc hệ thống vận chuyển.
 
-**7) Quản lý kho**
-- Mục đích: ghi nhận nhập/xuất/điều chỉnh tồn.
-- Dữ liệu vào: INVENTORY_TRANSACTIONS, BOOKS, ORDERS.
-- Dữ liệu ra: lịch sử giao dịch kho, tồn kho hiện tại.
-- Ràng buộc: txn_type IN ('IN','OUT','ADJUST'), quantity > 0.
-- Nghiệp vụ: xuất kho theo đơn bắt buộc có reference_id liên kết ORDERS.
+**7) Khuyến mãi và voucher**
+- Mục đích: quản lý chương trình giảm giá và áp dụng cho đơn hàng.
+- Dữ liệu vào: VOUCHER, DON_HANG, KHACH_HANG.
+- Dữ liệu ra: số tiền giảm, lượt sử dụng, log áp dụng.
+- Ràng buộc: voucher còn hiệu lực, chưa vượt giới hạn lượt dùng.
+- Ràng buộc: mỗi khách có giới hạn sử dụng theo quy định.
+- Nghiệp vụ: chỉ áp dụng khi đơn đạt mức tối thiểu và đúng loại giảm giá.
 
-**8) Khuyến mãi (Coupon)**
-- Mục đích: áp dụng giảm giá cho đơn hàng.
-- Dữ liệu vào: COUPONS, ORDERS.
-- Dữ liệu ra: số tiền giảm, số lượt dùng.
-- Ràng buộc: discount_type PERCENT/FIXED; thời gian hiệu lực hợp lệ.
-- Nghiệp vụ: chỉ áp dụng nếu còn lượt dùng và đạt min_order_amount.
+**8) Nhân viên và phân quyền**
+- Mục đích: quản lý nhân sự nội bộ và kiểm soát quyền truy cập hệ thống.
+- Dữ liệu vào: NHAN_VIEN, VAI_TRO, PHAN_QUYEN.
+- Dữ liệu ra: danh sách nhân viên, vai trò, lịch sử phân quyền.
+- Ràng buộc: mỗi nhân viên thuộc đúng một vai trò chính.
+- Ràng buộc: quyền sửa đơn/kho chỉ cấp cho vai trò được phép.
+- Nghiệp vụ: thay đổi vai trò phải được ghi nhận để audit.
 
-**9) Đánh giá sách**
-- Mục đích: cho phép người đã mua phản hồi sách.
-- Dữ liệu vào: REVIEWS, CUSTOMERS, BOOKS, ORDERS.
-- Dữ liệu ra: điểm rating và nội dung đánh giá.
-- Ràng buộc: mỗi khách chỉ đánh giá sách đã mua.
-- Nghiệp vụ: rating trong ngưỡng cho phép; cập nhật thống kê điểm trung bình.
-
-**10) Báo cáo/Dashboard**
-- Mục đích: tổng hợp nhanh số liệu vận hành.
-- Dữ liệu vào: BOOKS, ORDERS, CUSTOMERS, REVIEWS, INVENTORY_TRANSACTIONS.
-- Dữ liệu ra: số sách, tồn kho, đơn hàng, doanh thu, điểm đánh giá.
-- Nghiệp vụ: dữ liệu chỉ đọc; phục vụ giám sát nhanh.
+**9) Báo cáo và thống kê**
+- Mục đích: cung cấp báo cáo điều hành cho ban giám đốc và quản lý.
+- Dữ liệu vào: DON_HANG, THANH_TOAN, TON_KHO, CHI_NHANH_KHO, NHAN_VIEN.
+- Dữ liệu ra: báo cáo doanh thu, tồn kho, hiệu suất bán theo chi nhánh.
+- Ràng buộc: dữ liệu chỉ đọc, không cho sửa trực tiếp từ báo cáo.
+- Nghiệp vụ: tổng hợp theo ngày/tháng/quý, hỗ trợ so sánh kỳ trước.
 
 ## 3.2. Phân tích dữ liệu
 
@@ -136,29 +130,32 @@ graph TD
 
 ```mermaid
 erDiagram
-  CUSTOMERS ||--o{ CARTS : owns
-  CARTS ||--o{ CART_ITEMS : contains
-  BOOKS ||--o{ CART_ITEMS : in_cart
+  KHACH_HANG ||--o{ GIO_HANG : so_huu
+  GIO_HANG ||--o{ CT_GIO_HANG : chua
+  SACH ||--o{ CT_GIO_HANG : trong_gio
 
-  CUSTOMERS ||--o{ ORDERS : places
-  ORDERS ||--o{ ORDER_DETAILS : has
-  BOOKS ||--o{ ORDER_DETAILS : includes
+  KHACH_HANG ||--o{ DON_HANG : dat
+  DON_HANG ||--o{ CT_DON_HANG : gom
+  SACH ||--o{ CT_DON_HANG : duoc_mua
 
-  BOOKS ||--o{ BOOK_IMAGES : has
-  BOOKS ||--o{ INVENTORY_TRANSACTIONS : tracks
+  DON_HANG ||--o{ THANH_TOAN : thanh_toan
+  DON_HANG ||--o{ VAN_DON : van_chuyen
+  DON_HANG ||--o{ LICH_SU_TRANG_THAI_DON : lich_su
 
-  BOOKS ||--o{ BOOK_AUTHORS : links
-  AUTHORS ||--o{ BOOK_AUTHORS : links
+  VOUCHER ||--o{ DON_HANG : ap_dung
 
-  CATEGORIES ||--o{ BOOKS : categorizes
-  PUBLISHERS ||--o{ BOOKS : publishes
+  DANH_MUC ||--o{ SACH : phan_loai
+  NXB ||--o{ SACH : xuat_ban
+  SACH ||--o{ ANH_SACH : co
+  SACH ||--o{ SACH_TAC_GIA : lien_ket
+  TAC_GIA ||--o{ SACH_TAC_GIA : lien_ket
 
-  COUPONS ||--o{ ORDERS : applied_to
+  CHI_NHANH_KHO ||--o{ TON_KHO : quan_ly
+  SACH ||--o{ TON_KHO : ton_tai
+  TON_KHO ||--o{ GD_KHO : phat_sinh
+  CHI_NHANH_KHO ||--o{ NHAN_VIEN : phan_bo
 
-  CUSTOMERS ||--o{ REVIEWS : writes
-  BOOKS ||--o{ REVIEWS : receives
-
-  ORDERS ||--o{ ORDER_STATUS_HISTORY : history
+  VAI_TRO ||--o{ NHAN_VIEN : cap
 ```
 
 ### 3.2.2. Sơ đồ luồng dữ liệu (DFD)
@@ -167,11 +164,17 @@ erDiagram
 
 ```mermaid
 flowchart LR
-  KH["Khách hàng"] -->|"Đăng ký/Đăng nhập, Tìm kiếm, Đặt hàng"| SYS["DigiBook System"]
-  SYS -->|"Xác nhận đơn, Trạng thái, KQ tìm kiếm"| KH
+  KH["Khách hàng"] -->|"Đăng ký/Đăng nhập, tìm kiếm, đặt hàng, thanh toán"| SYS["Hệ thống Ready"]
+  SYS -->|"Kết quả tìm kiếm, xác nhận đơn, trạng thái giao hàng"| KH
 
-  ADM["Quản trị/Staff"] -->|"Cập nhật sách, kho, coupon"| SYS
-  SYS -->|"Báo cáo/Dashboard"| ADM
+  NV["Nhân viên (Sales/Kho)"] -->|"Cập nhật sách, kho, xử lý đơn, giao hàng"| SYS
+  SYS -->|"Danh sách đơn, tồn kho, báo cáo tác nghiệp"| NV
+
+  QL["Quản trị"] -->|"Quản lý nhân sự, phân quyền, cấu hình"| SYS
+  SYS -->|"Báo cáo tổng hợp, nhật ký hệ thống"| QL
+
+  PAY["Cổng thanh toán"] <-->|"Yêu cầu/Phản hồi giao dịch"| SYS
+  SHIP["Đơn vị vận chuyển"] <-->|"Tạo/Tra cứu vận đơn"| SYS
 ```
 
 **b) DFD Level 1**
@@ -179,26 +182,32 @@ flowchart LR
 ```mermaid
 flowchart LR
   KH["Khách hàng"] --> P1["1. Quản lý tài khoản"]
-  KH --> P2["2. Giỏ hàng"]
-  KH --> P3["3. Đặt hàng và Thanh toán"]
-  KH --> P4["4. Đánh giá"]
+  KH --> P2["2. Tìm kiếm và xem sách"]
+  KH --> P3["3. Giỏ hàng"]
+  KH --> P4["4. Đặt hàng"]
+  KH --> P5["5. Thanh toán"]
 
-  ADM["Quản trị"] --> P5["5. Quản lý sách và danh mục"]
-  ADM --> P6["6. Quản lý kho"]
-  ADM --> P7["7. Quản lý coupon"]
-  ADM --> P8["8. Báo cáo"]
+  NV["Nhân viên"] --> P6["6. Quản lý sách và danh mục"]
+  NV --> P7["7. Quản lý kho chi nhánh"]
+  NV --> P8["8. Xử lý đơn và vận chuyển"]
 
-  P1 <--> D1[(CUSTOMERS)]
-  P2 <--> D2[(CARTS/CART_ITEMS)]
-  P3 <--> D3[(ORDERS/ORDER_DETAILS)]
-  P3 <--> D4[(COUPONS)]
-  P3 <--> D5[(BOOKS)]
-  P6 <--> D6[(INVENTORY_TRANSACTIONS)]
-  P4 <--> D7[(REVIEWS)]
-  P5 <--> D5
-  P5 <--> D8[(CATEGORIES/AUTHORS/PUBLISHERS/BOOK_IMAGES/BOOK_AUTHORS)]
-  P8 <--> D1
-  P8 <--> D3
-  P8 <--> D5
-  P8 <--> D7
+  QL["Quản trị"] --> P9["9. Quản lý nhân sự và phân quyền"]
+  QL --> P10["10. Báo cáo"]
+
+  PAY["Cổng thanh toán"] <-->|"Kết quả giao dịch"| P5
+  SHIP["Đơn vị vận chuyển"] <-->|"Tạo/Tra cứu vận đơn"| P8
+
+  P1 <--> D1[(KHACH_HANG)]
+  P2 <--> D2[(SACH/DANH_MUC/TAC_GIA/NXB/ANH_SACH)]
+  P3 <--> D3[(GIO_HANG/CT_GIO_HANG)]
+  P4 <--> D4[(DON_HANG/CT_DON_HANG)]
+  P5 <--> D5[(THANH_TOAN)]
+  P6 <--> D2
+  P7 <--> D6[(CHI_NHANH_KHO/TON_KHO/GD_KHO)]
+  P8 <--> D4
+  P8 <--> D7[(VAN_DON/LICH_SU_TRANG_THAI_DON)]
+  P9 <--> D8[(NHAN_VIEN/VAI_TRO/PHAN_QUYEN)]
+  P10 <--> D4
+  P10 <--> D5
+  P10 <--> D6
 ```

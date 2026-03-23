@@ -370,24 +370,34 @@ function getOracleDate(value) {
 router.get('/summary', async (req, res) => {
   try {
     const [bookStats] = await query(`
-      SELECT COUNT(*) AS total_books, NVL(SUM(stock_quantity), 0) AS total_stock
+      SELECT 
+        COUNT(*) AS total_books, 
+        NVL(SUM(stock_quantity), 0) AS total_stock,
+        COUNT(CASE WHEN created_at >= TRUNC(SYSDATE, 'MM') THEN 1 END) AS new_books
       FROM books
     `);
 
     const [customerStats] = await query(`
-      SELECT COUNT(*) AS total_customers
+      SELECT 
+        COUNT(*) AS total_customers,
+        COUNT(CASE WHEN created_at >= TRUNC(SYSDATE, 'MM') THEN 1 END) AS new_customers
       FROM customers
     `);
 
     const [orderStats] = await query(`
-      SELECT COUNT(*) AS total_orders,
-             NVL(SUM(CASE WHEN status = 'DELIVERED' THEN total_amount ELSE 0 END), 0) AS delivered_revenue
+      SELECT 
+        COUNT(*) AS total_orders,
+        NVL(SUM(CASE WHEN status = 'DELIVERED' THEN total_amount ELSE 0 END), 0) AS delivered_revenue,
+        COUNT(CASE WHEN order_date >= TRUNC(SYSDATE, 'MM') THEN 1 END) AS new_orders,
+        NVL(SUM(CASE WHEN (status = 'DELIVERED' AND order_date >= TRUNC(SYSDATE, 'MM')) THEN total_amount ELSE 0 END), 0) AS new_revenue
       FROM orders
     `);
 
     const [reviewStats] = await query(`
-      SELECT COUNT(*) AS total_reviews,
-             ROUND(NVL(AVG(rating), 0), 2) AS avg_rating
+      SELECT 
+        COUNT(*) AS total_reviews,
+        ROUND(NVL(AVG(rating), 0), 2) AS avg_rating,
+        COUNT(CASE WHEN review_date >= TRUNC(SYSDATE, 'MM') THEN 1 END) AS new_reviews
       FROM reviews
     `);
 
@@ -408,11 +418,16 @@ router.get('/summary', async (req, res) => {
       cards: {
         totalBooks: bookStats.TOTAL_BOOKS,
         totalStock: bookStats.TOTAL_STOCK,
+        newBooks: bookStats.NEW_BOOKS,
         totalCustomers: customerStats.TOTAL_CUSTOMERS,
+        newCustomers: customerStats.NEW_CUSTOMERS,
         totalOrders: orderStats.TOTAL_ORDERS,
+        newOrders: orderStats.NEW_ORDERS,
         deliveredRevenue: orderStats.DELIVERED_REVENUE,
+        newRevenue: orderStats.NEW_REVENUE,
         totalReviews: reviewStats.TOTAL_REVIEWS,
-        avgRating: reviewStats.AVG_RATING
+        avgRating: reviewStats.AVG_RATING,
+        newReviews: reviewStats.NEW_REVIEWS
       },
       recentOrders
     });

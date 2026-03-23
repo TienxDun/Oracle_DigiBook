@@ -68,42 +68,82 @@
           <div class="stat-card blue">
             <div class="stat-card-header">
               <span class="stat-card-label">Tổng sách</span>
-              <span class="stat-card-icon"><i data-lucide="book-open-check"></i></span>
+              <div class="stat-card-icon"><i data-lucide="book-open-check"></i></div>
             </div>
-            <div class="stat-card-value">${Number(cards.totalBooks).toLocaleString()}</div>
-            <div class="stat-card-sub">Tồn kho: ${Number(cards.totalStock).toLocaleString()} cuốn</div>
+            <div class="stat-card-main">
+              <div class="stat-card-value">${Number(cards.totalBooks).toLocaleString()}</div>
+              <div class="stat-card-footer">
+                <span class="stat-card-trend ${cards.newBooks > 0 ? 'up' : ''}">
+                  <i data-lucide="${cards.newBooks > 0 ? 'trending-up' : 'minus'}" style="width:12px;height:12px"></i> 
+                  ${cards.newBooks > 0 ? '+' : ''}${cards.newBooks}
+                </span>
+                <span class="stat-card-sub">mới trong tháng</span>
+              </div>
+            </div>
           </div>
           <div class="stat-card green">
             <div class="stat-card-header">
               <span class="stat-card-label">Đơn hàng</span>
-              <span class="stat-card-icon"><i data-lucide="shopping-bag"></i></span>
+              <div class="stat-card-icon"><i data-lucide="shopping-bag"></i></div>
             </div>
-            <div class="stat-card-value">${Number(cards.totalOrders).toLocaleString()}</div>
-            <div class="stat-card-sub">Tổng số đơn hàng</div>
+            <div class="stat-card-main">
+              <div class="stat-card-value">${Number(cards.totalOrders).toLocaleString()}</div>
+              <div class="stat-card-footer">
+                <span class="stat-card-trend ${cards.newOrders > 0 ? 'up' : ''}">
+                  <i data-lucide="${cards.newOrders > 0 ? 'trending-up' : 'minus'}" style="width:12px;height:12px"></i>
+                  ${cards.newOrders > 0 ? '+' : ''}${cards.newOrders}
+                </span>
+                <span class="stat-card-sub">tháng này</span>
+              </div>
+            </div>
           </div>
           <div class="stat-card amber">
             <div class="stat-card-header">
               <span class="stat-card-label">Doanh thu</span>
-              <span class="stat-card-icon"><i data-lucide="banknote"></i></span>
+              <div class="stat-card-icon"><i data-lucide="banknote"></i></div>
             </div>
-            <div class="stat-card-value">${ui.formatVND(cards.deliveredRevenue)}</div>
-            <div class="stat-card-sub">Đơn đã giao thành công</div>
+            <div class="stat-card-main">
+              <div class="stat-card-value">${ui.formatVND(cards.deliveredRevenue)}</div>
+              <div class="stat-card-footer">
+                <span class="stat-card-trend ${cards.newRevenue > 0 ? 'up' : ''}">
+                  <i data-lucide="${cards.newRevenue > 0 ? 'trending-up' : 'minus'}" style="width:12px;height:12px"></i>
+                  +${ui.formatVND(cards.newRevenue)}
+                </span>
+                <span class="stat-card-sub">doanh số mới</span>
+              </div>
+            </div>
           </div>
           <div class="stat-card purple">
             <div class="stat-card-header">
               <span class="stat-card-label">Khách hàng</span>
-              <span class="stat-card-icon"><i data-lucide="users-round"></i></span>
+              <div class="stat-card-icon"><i data-lucide="users-round"></i></div>
             </div>
-            <div class="stat-card-value">${Number(cards.totalCustomers).toLocaleString()}</div>
-            <div class="stat-card-sub">Đã đăng ký</div>
+            <div class="stat-card-main">
+              <div class="stat-card-value">${Number(cards.totalCustomers).toLocaleString()}</div>
+              <div class="stat-card-footer">
+                <span class="stat-card-trend ${cards.newCustomers > 0 ? 'up' : ''}">
+                  <i data-lucide="${cards.newCustomers > 0 ? 'user-plus' : 'minus'}" style="width:12px;height:12px"></i>
+                  +${cards.newCustomers}
+                </span>
+                <span class="stat-card-sub">đăng ký mới</span>
+              </div>
+            </div>
           </div>
           <div class="stat-card red">
             <div class="stat-card-header">
               <span class="stat-card-label">Đánh giá</span>
-              <span class="stat-card-icon"><i data-lucide="star"></i></span>
+              <div class="stat-card-icon"><i data-lucide="star"></i></div>
             </div>
-            <div class="stat-card-value">${cards.totalReviews}</div>
-            <div class="stat-card-sub">Trung bình: ${cards.avgRating} / 5 <i data-lucide="star" style="width:12px;height:12px;vertical-align:middle;display:inline-block"></i></div>
+            <div class="stat-card-main">
+              <div class="stat-card-value">${cards.totalReviews}</div>
+              <div class="stat-card-footer">
+                <span class="stat-card-trend up">
+                  <i data-lucide="star" style="width:12px;height:12px"></i>
+                  ${cards.avgRating}/5
+                </span>
+                <span class="stat-card-sub">trung bình</span>
+              </div>
+            </div>
           </div>
         `;
         ui.refreshIcons();

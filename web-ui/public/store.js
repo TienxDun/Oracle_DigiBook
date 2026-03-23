@@ -207,15 +207,18 @@ async function renderBookDetailPage(bookId) {
 
     const stockClass = book.STOCK_QUANTITY <= 0 ? 'out-stock' : book.STOCK_QUANTITY <= 10 ? 'low-stock' : 'in-stock';
     const stockIcon = book.STOCK_QUANTITY <= 0 
-      ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>` 
+      ? `<i data-lucide="x-circle"></i>` 
       : book.STOCK_QUANTITY <= 10 
-        ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`
-        : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+        ? `<i data-lucide="alert-circle"></i>`
+        : `<i data-lucide="check-circle"></i>`;
     const stockText = book.STOCK_QUANTITY <= 0 ? 'Hết hàng' : `Còn ${book.STOCK_QUANTITY} sản phẩm`;
 
     const mainImg = book.images.find(i => i.IS_PRIMARY === 1) || book.images[0];
 
-    document.getElementById('bookDetail').innerHTML = `
+    const detailEl = document.getElementById('bookDetail');
+    if (!detailEl) return;
+
+    detailEl.innerHTML = `
       <div class="breadcrumb">
         <a href="#" onclick="navigate('/');return false">Trang chủ</a> <span>›</span>
         <a href="#" onclick="navigate('/category/${book.CATEGORY_ID}');return false">${book.CATEGORY_NAME || 'Danh mục'}</a> <span>›</span>
@@ -234,32 +237,72 @@ async function renderBookDetailPage(bookId) {
         </div>
         <div class="detail-info">
           <h1>${book.TITLE}</h1>
-          <div class="detail-authors">
-            ${book.authors.map(a => `<span class="author-tag">${a.AUTHOR_NAME} <span class="role">${a.ROLE === 'AUTHOR' ? 'Tác giả' : a.ROLE === 'TRANSLATOR' ? 'Dịch giả' : 'Biên tập'}</span></span>`).join('')}
-          </div>
-          <div class="detail-meta">
-            <span>${book.PUBLISHER_NAME || 'N/A'}</span>
-            <span>${book.CATEGORY_NAME || 'N/A'}</span>
-            ${book.PUBLICATION_YEAR ? `<span>Năm: ${book.PUBLICATION_YEAR}</span>` : ''}
-            ${book.PAGE_COUNT ? `<span>${book.PAGE_COUNT} trang</span>` : ''}
-            ${book.ISBN ? `<span>ISBN: ${book.ISBN}</span>` : ''}
-          </div>
-          <div class="detail-rating">
-            <span class="stars">${renderStars(book.avgRating)}</span>
-            <strong>${book.avgRating.toFixed(1)}</strong>/5
-            <span class="count">(${book.reviewCount} đánh giá)</span>
-          </div>
-          <div class="detail-price">${formatPrice(book.PRICE)}</div>
-          <div class="detail-stock ${stockClass}">${stockIcon} ${stockText}</div>
-          ${book.STOCK_QUANTITY > 0 ? `
-          <div class="detail-actions">
-            <div class="qty-control">
-              <button onclick="let v=document.getElementById('detailQty');v.value=Math.max(1,Number(v.value)-1)">−</button>
-              <input type="number" id="detailQty" value="1" min="1" max="${book.STOCK_QUANTITY}" />
-              <button onclick="let v=document.getElementById('detailQty');v.value=Math.min(${book.STOCK_QUANTITY},Number(v.value)+1)">+</button>
+          
+          <div class="detail-info-grid">
+            <!-- Cell: Authors -->
+            <div class="bento-cell">
+              <span class="bento-cell-label">Tác giả</span>
+              <div class="detail-authors">
+                ${book.authors.map(a => `
+                  <div class="author-tag">
+                    ${a.AUTHOR_NAME} 
+                    <span class="role">${a.ROLE === 'AUTHOR' ? 'Tác giả' : 'Dịch giả'}</span>
+                  </div>
+                `).join('')}
+              </div>
             </div>
-            <button class="btn-add-cart" style="opacity:1;transform:none" onclick="addToCart(${book.BOOK_ID}, Number(document.getElementById('detailQty').value))">Thêm vào giỏ hàng</button>
-          </div>` : ''}
+
+            <!-- Cell: Rating -->
+            <div class="bento-cell">
+              <span class="bento-cell-label">Đánh giá</span>
+              <div class="detail-rating">
+                <span class="rating-score">${book.avgRating.toFixed(1)}</span>
+                <span class="stars">${renderStars(book.avgRating)}</span>
+                <span class="count">(${book.reviewCount})</span>
+              </div>
+            </div>
+
+            <!-- Bento Cell: Technical Spec Grid -->
+            <div class="detail-meta-bento">
+              <div class="meta-item">
+                <i data-lucide="building-2"></i>
+                <div class="val">${book.PUBLISHER_NAME || 'N/A'}</div>
+                <div class="lab">Nhà xuất bản</div>
+              </div>
+              <div class="meta-item">
+                <i data-lucide="calendar"></i>
+                <div class="val">${book.PUBLICATION_YEAR || 'N/A'}</div>
+                <div class="lab">Năm xuất bản</div>
+              </div>
+              <div class="meta-item">
+                <i data-lucide="file-text"></i>
+                <div class="val">${book.PAGE_COUNT || '0'} trang</div>
+                <div class="lab">Số trang</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Purchase Block -->
+          <div class="detail-purchase-bento">
+            <div class="detail-price-row">
+              <div class="detail-price">${formatPrice(book.PRICE)}</div>
+              <div class="detail-stock ${stockClass}">
+                ${stockIcon} <span>${stockText}</span>
+              </div>
+            </div>
+            
+            <div class="detail-actions">
+              <div class="qty-control">
+                <button onclick="let v=document.getElementById('detailQty');v.value=Math.max(1,Number(v.value)-1)">−</button>
+                <input type="number" id="detailQty" value="1" min="1" max="${book.STOCK_QUANTITY || 1}">
+                <button onclick="let v=document.getElementById('detailQty');v.value=Math.min(${book.STOCK_QUANTITY || 1},Number(v.value)+1)">+</button>
+              </div>
+              <button class="btn-add-cart" onclick="addToCart(${book.BOOK_ID}, Number(document.getElementById('detailQty').value))">
+                <i data-lucide="shopping-cart" style="width:20px;height:20px"></i>
+                Thêm vào giỏ hàng
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -308,8 +351,14 @@ async function renderBookDetailPage(bookId) {
         </div>
       ` : ''}
     `;
+
+    // Refresh icons for dynamic content
+    if (window.lucide) window.lucide.createIcons();
+
   } catch (e) {
-    document.getElementById('bookDetail').innerHTML = `<div class="empty-state"><h3>Không tìm thấy sách</h3><p>${e.message}</p></div>`;
+    if (document.getElementById('bookDetail')) {
+      document.getElementById('bookDetail').innerHTML = `<div class="empty-state"><h3>Lỗi tải dữ liệu</h3><p>${e.message}</p></div>`;
+    }
   }
 }
 

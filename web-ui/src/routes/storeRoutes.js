@@ -17,6 +17,19 @@ router.get('/categories', async (req, res) => {
   }
 });
 
+router.get('/publishers', async (req, res) => {
+  try {
+    const rows = await query(`
+      SELECT publisher_id, publisher_name
+      FROM publishers
+      ORDER BY publisher_name
+    `);
+    success(res, { rows });
+  } catch (err) {
+    error(res, err.message);
+  }
+});
+
 router.get('/featured-books', async (req, res) => {
   try {
     const rows = await query(`
@@ -102,7 +115,7 @@ router.get('/books', async (req, res) => {
   const offset = (page - 1) * limit;
   const minPrice = req.query.min_price ? Number(req.query.min_price) : null;
   const maxPrice = req.query.max_price ? Number(req.query.max_price) : null;
-  const publisherId = req.query.publisher ? Number(req.query.publisher) : null;
+  // Xử lý publisherId sau trong whereExtra
   const minRating = req.query.min_rating ? Number(req.query.min_rating) : null;
 
   let orderClause;
@@ -123,7 +136,11 @@ router.get('/books', async (req, res) => {
   }
   if (minPrice) { whereExtra += ' AND b.price >= :minPrice'; binds.minPrice = minPrice; }
   if (maxPrice) { whereExtra += ' AND b.price <= :maxPrice'; binds.maxPrice = maxPrice; }
-  if (publisherId) { whereExtra += ' AND b.publisher_id = :publisherId'; binds.publisherId = publisherId; }
+  if (req.query.publisher) {
+    const pubIds = String(req.query.publisher).split(',').map(Number);
+    whereExtra += ` AND b.publisher_id IN (${pubIds.map((_, i) => `:pub${i}`).join(',')})`;
+    pubIds.forEach((id, i) => binds[`pub${i}`] = id);
+  }
 
   let havingClause = '';
   if (minRating) {
@@ -140,7 +157,11 @@ router.get('/books', async (req, res) => {
     }
     if (minPrice) { countWhere += ' AND b.price >= :minPrice'; countBinds.minPrice = minPrice; }
     if (maxPrice) { countWhere += ' AND b.price <= :maxPrice'; countBinds.maxPrice = maxPrice; }
-    if (publisherId) { countWhere += ' AND b.publisher_id = :publisherId'; countBinds.publisherId = publisherId; }
+    if (req.query.publisher) {
+      const pubIds = String(req.query.publisher).split(',').map(Number);
+      countWhere += ` AND b.publisher_id IN (${pubIds.map((_, i) => `:pubCount${i}`).join(',')})`;
+      pubIds.forEach((id, i) => countBinds[`pubCount${i}`] = id);
+    }
 
     const [countResult] = await query(`SELECT COUNT(*) AS total FROM books b WHERE 1=1 ${countWhere}`, countBinds);
 

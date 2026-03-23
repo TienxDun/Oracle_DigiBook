@@ -76,7 +76,7 @@ function renderHeader() {
   return `
     <header class="site-header">
       <div class="header-inner">
-        <div class="logo" onclick="navigate('/')">DigiBook</div>
+        <div class="logo" onclick="navigate('/')"><span>Digi</span>Book</div>
         <form class="header-search" id="headerSearchForm">
           <input type="text" placeholder="Tìm sách, tác giả, ISBN..." id="headerSearchInput" />
           <button type="submit">Tìm</button>
@@ -91,7 +91,7 @@ function renderHeader() {
           </a>
           ${user
             ? `<a class="nav-link" href="#" onclick="navigate('/account'); return false;">${user.FULL_NAME.split(' ').pop()}</a>
-               <button class="nav-btn" onclick="handleLogout()" style="background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.3)">Đăng xuất</button>`
+               <button class="nav-btn logout-btn" onclick="handleLogout()" style="background:var(--surface-alt);color:var(--text);border:1px solid var(--border)">Đăng xuất</button>`
             : `<button class="nav-btn" onclick="navigate('/auth')">Đăng nhập</button>`
           }
         </nav>
@@ -105,7 +105,7 @@ function renderFooter() {
     <footer class="site-footer">
       <div class="footer-inner">
         <div class="footer-brand">
-          <div class="logo">DigiBook</div>
+          <div class="logo"><span>Digi</span>Book</div>
           <p>Nền tảng bán sách trực tuyến hàng đầu Việt Nam. Hàng ngàn đầu sách chất lượng với giá tốt nhất.</p>
         </div>
         <div class="footer-col">

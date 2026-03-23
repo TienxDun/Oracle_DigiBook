@@ -154,7 +154,7 @@ async function renderCategoryPage(catId) {
         ${subCats.map(c => `<label class="filter-option"><input type="radio" name="cat" value="${c.CATEGORY_ID}" ${String(catId) === String(c.CATEGORY_ID) ? 'checked' : ''} onchange="browseState.category=${c.CATEGORY_ID};browseState.page=1;loadBooks()"> ${c.CATEGORY_NAME}</label>`).join('')}
       </div>
       <div class="filter-section"><h4>Nhà xuất bản</h4>
-        ${pubs.rows.map(p => `<label class="filter-option"><input type="checkbox" value="${p.PUBLISHER_ID}" onchange="loadBooks()"> ${p.PUBLISHER_NAME}</label>`).join('')}
+        ${pubs.rows.map(p => `<label class="filter-option"><input type="checkbox" name="pub" value="${p.PUBLISHER_ID}" onchange="browseState.page=1;loadBooks()"> ${p.PUBLISHER_NAME}</label>`).join('')}
       </div>
     `;
   }
@@ -168,6 +168,9 @@ async function loadBooks() {
 
   let url = `/books?page=${browseState.page}&sort=${browseState.sort}&limit=12`;
   if (browseState.category) url += `&category=${browseState.category}`;
+
+  const selectedPubs = Array.from(document.querySelectorAll('input[name="pub"]:checked')).map(cb => cb.value);
+  if (selectedPubs.length > 0) url += `&publisher=${selectedPubs.join(',')}`;
 
   try {
     const data = await api(url);

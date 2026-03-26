@@ -28,7 +28,6 @@ Bạn hãy thực hiện TUẦN TỰ từng bước dưới đây. Ở mỗi bư
   3. Thêm các ràng buộc: `NOT NULL`, `UNIQUE`, `CHECK` constraint.
   4. Tạo `SEQUENCE` và `TRIGGER` để tự động tăng cho các PK kiểu số (chuẩn Oracle cũ hoặc dùng tính năng `IDENTITY` của 19c nhưng để tương thích đồ án có thể ưu tiên Sequence + Trigger).
 - **Output kỳ vọng:** File `2_create_tables.sql`.
-
 ### **Bước 3: Tạo dữ liệu mẫu (DML - Data Manipulation Language)**
 - **Yêu cầu:** 
   1. Tạo script chứa lệnh `INSERT` để tạo tối thiểu 100 bản ghi thực tế, có ý nghĩa.

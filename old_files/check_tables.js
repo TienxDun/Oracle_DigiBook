@@ -1,4 +1,4 @@
-const { query, initPool, closePool } = require('./web-ui/src/db');
+const { query, initPool, closePool } = require('../web-ui/src/db');
 
 async function checkTables() {
   await initPool();

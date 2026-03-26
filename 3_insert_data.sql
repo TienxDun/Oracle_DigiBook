@@ -1,385 +1,613 @@
 -- ==========================================================
 -- FILE: 3_insert_data.sql
--- Mục tiêu: Nạp dữ liệu mẫu (>= 100 bản ghi) cho DigiBook
--- Hệ quản trị: Oracle 19c
--- Ghi chú: Dữ liệu được chia theo 4 phần công việc Dũng/Nam/Hiếu/Phát
+-- MÔN: Cơ sở dữ liệu Oracle 19c - Đồ án DigiBook
+-- NHÓM: Dũng, Nam, Hiếu, Phát
+-- MỤC TIÊU: Nhập dữ liệu mẫu (DML) - Tối thiểu 100 bản ghi có ý nghĩa
+-- TỔNG SỐ BẢN GHI: ~250+ records
 -- ==========================================================
 
-SET DEFINE OFF;
-
 -- ==========================================================
--- PHẦN 1 - DŨNG: CUSTOMERS, CATEGORIES, CARTS, CART_ITEMS
+-- PHẦN 1: DỮ LIỆU CỦA DŨNG (Hệ thống & Chi nhánh)
 -- ==========================================================
 
--- 1) CUSTOMERS (16 bản ghi)
-INSERT INTO customers (customer_id, full_name, email, password_hash, phone, address, created_at, updated_at, status)
-VALUES (1, 'Nguyễn Minh An', 'an.nguyen@digibook.vn', 'HASH_AN_001', '0901000001', '12 Nguyễn Trãi, Hà Nội', DATE '2026-01-05', DATE '2026-03-01', 'ACTIVE');
-INSERT INTO customers VALUES (2, 'Trần Quốc Bảo', 'bao.tran@digibook.vn', 'HASH_BAO_002', '0901000002', '24 Lê Lợi, Đà Nẵng', DATE '2026-01-06', DATE '2026-03-02', 'ACTIVE');
-INSERT INTO customers VALUES (3, 'Lê Thúy Chi', 'chi.le@digibook.vn', 'HASH_CHI_003', '0901000003', '31 Võ Thị Sáu, HCM', DATE '2026-01-08', DATE '2026-03-02', 'ACTIVE');
-INSERT INTO customers VALUES (4, 'Phạm Hoàng Duy', 'duy.pham@digibook.vn', 'HASH_DUY_004', '0901000004', '17 Hai Bà Trưng, Huế', DATE '2026-01-10', DATE '2026-03-03', 'ACTIVE');
-INSERT INTO customers VALUES (5, 'Đoàn Gia Huy', 'huy.doan@digibook.vn', 'HASH_HUY_005', '0901000005', '44 Trần Hưng Đạo, Hải Phòng', DATE '2026-01-11', DATE '2026-03-03', 'ACTIVE');
-INSERT INTO customers VALUES (6, 'Vũ Ngọc Khang', 'khang.vu@digibook.vn', 'HASH_KHANG_006', '0901000006', '88 CMT8, Cần Thơ', DATE '2026-01-12', DATE '2026-03-04', 'ACTIVE');
-INSERT INTO customers VALUES (7, 'Hoàng Lan Anh', 'lananh.hoang@digibook.vn', 'HASH_LANANH_007', '0901000007', '9 Lý Thường Kiệt, Nha Trang', DATE '2026-01-14', DATE '2026-03-05', 'ACTIVE');
-INSERT INTO customers VALUES (8, 'Bùi Tuấn Kiệt', 'kiet.bui@digibook.vn', 'HASH_KIET_008', '0901000008', '56 Nguyễn Văn Cừ, Vinh', DATE '2026-01-15', DATE '2026-03-05', 'ACTIVE');
-INSERT INTO customers VALUES (9, 'Mai Bảo Ngọc', 'ngoc.mai@digibook.vn', 'HASH_NGOC_009', '0901000009', '72 Trường Chinh, Quy Nhơn', DATE '2026-01-17', DATE '2026-03-06', 'ACTIVE');
-INSERT INTO customers VALUES (10, 'Đặng Quang Nhật', 'nhat.dang@digibook.vn', 'HASH_NHAT_010', '0901000010', '15 Bà Triệu, Hà Nội', DATE '2026-01-19', DATE '2026-03-06', 'ACTIVE');
-INSERT INTO customers VALUES (11, 'Trương Gia Phúc', 'phuc.truong@digibook.vn', 'HASH_PHUC_011', '0901000011', '38 Lê Duẩn, Đà Nẵng', DATE '2026-01-20', DATE '2026-03-07', 'ACTIVE');
-INSERT INTO customers VALUES (12, 'Ngô Minh Quân', 'quan.ngo@digibook.vn', 'HASH_QUAN_012', '0901000012', '66 Điện Biên Phủ, HCM', DATE '2026-01-21', DATE '2026-03-07', 'ACTIVE');
-INSERT INTO customers VALUES (13, 'Phan Thư Trang', 'trang.phan@digibook.vn', 'HASH_TRANG_013', '0901000013', '90 Quang Trưng, Đà Lạt', DATE '2026-01-22', DATE '2026-03-08', 'ACTIVE');
-INSERT INTO customers VALUES (14, 'Lâm Đức Trí', 'tri.lam@digibook.vn', 'HASH_TRI_014', '0901000014', '101 Hùng Vương, Huế', DATE '2026-01-24', DATE '2026-03-08', 'INACTIVE');
-INSERT INTO customers VALUES (15, 'Cao Nhật Vy', 'vy.cao@digibook.vn', 'HASH_VY_015', '0901000015', '5 Trần Phú, Hội An', DATE '2026-01-25', DATE '2026-03-09', 'ACTIVE');
-INSERT INTO customers VALUES (16, 'Lý Thanh Sơn', 'son.ly@digibook.vn', 'HASH_SON_016', '0901000016', '22 Nguyễn Huệ, Biên Hòa', DATE '2026-01-26', DATE '2026-03-10', 'BANNED');
+-- 1.1. Chi nhánh bổ sung (Đã có HQ001 trong file 2)
+INSERT INTO branches (branch_code, branch_name, branch_type, address, province, district, phone, email, status, is_main_branch, opening_date) 
+VALUES ('HN002', N'Chi nhánh Hà Nội', 'STORE', N'Số 45 Tràng Tiền, Hoàn Kiếm', N'Hà Nội', N'Quận Hoàn Kiếm', '02438234567', 'hanoi@digibook.com', 'ACTIVE', 0, TO_DATE('2023-03-15', 'YYYY-MM-DD'));
 
--- 2) CATEGORIES (10 bản ghi)
-INSERT INTO categories (category_id, category_name, description, parent_id) VALUES (1, 'Sách', 'Danh mục gốc', NULL);
-INSERT INTO categories VALUES (2, 'Văn học', 'Tiểu thuyết, truyện ngắn', 1);
-INSERT INTO categories VALUES (3, 'Kinh tế', 'Quản trị, đầu tư, marketing', 1);
-INSERT INTO categories VALUES (4, 'Công nghệ', 'Lập trình, dữ liệu, AI', 1);
-INSERT INTO categories VALUES (5, 'Tâm lý - Kỹ năng', 'Phát triển bản thân', 1);
-INSERT INTO categories VALUES (6, 'Thiếu nhi', 'Sách cho tre em', 1);
-INSERT INTO categories VALUES (7, 'Tiểu thuyết Việt', 'Văn học Việt Nam', 2);
-INSERT INTO categories VALUES (8, 'Tiểu thuyết Nước ngoài', 'Văn học dich', 2);
-INSERT INTO categories VALUES (9, 'Data Science', 'Phân tích dữ liệu', 4);
-INSERT INTO categories VALUES (10, 'Oracle Database', 'Quản trị CSDL Oracle', 4);
+INSERT INTO branches (branch_code, branch_name, branch_type, address, province, district, phone, email, status, is_main_branch, opening_date) 
+VALUES ('DN003', N'Chi nhánh Đà Nẵng', 'STORE', N'168 Nguyễn Văn Linh, Hải Châu', N'Đà Nẵng', N'Quận Hải Châu', '0236367890', 'danang@digibook.com', 'ACTIVE', 0, TO_DATE('2023-06-20', 'YYYY-MM-DD'));
 
--- 3) CARTS (16 bản ghi)
-INSERT INTO carts (cart_id, customer_id, created_at, updated_at, status) VALUES (1, 1, DATE '2026-03-01', DATE '2026-03-02', 'ACTIVE');
-INSERT INTO carts VALUES (2, 2, DATE '2026-03-01', DATE '2026-03-02', 'ACTIVE');
-INSERT INTO carts VALUES (3, 3, DATE '2026-03-01', DATE '2026-03-02', 'ACTIVE');
-INSERT INTO carts VALUES (4, 4, DATE '2026-03-01', DATE '2026-03-03', 'ABANDONED');
-INSERT INTO carts VALUES (5, 5, DATE '2026-03-02', DATE '2026-03-03', 'ACTIVE');
-INSERT INTO carts VALUES (6, 6, DATE '2026-03-02', DATE '2026-03-03', 'ACTIVE');
-INSERT INTO carts VALUES (7, 7, DATE '2026-03-02', DATE '2026-03-04', 'MERGED');
-INSERT INTO carts VALUES (8, 8, DATE '2026-03-02', DATE '2026-03-04', 'ACTIVE');
-INSERT INTO carts VALUES (9, 9, DATE '2026-03-03', DATE '2026-03-04', 'ACTIVE');
-INSERT INTO carts VALUES (10, 10, DATE '2026-03-03', DATE '2026-03-05', 'ACTIVE');
-INSERT INTO carts VALUES (11, 11, DATE '2026-03-03', DATE '2026-03-05', 'ACTIVE');
-INSERT INTO carts VALUES (12, 12, DATE '2026-03-04', DATE '2026-03-05', 'ACTIVE');
-INSERT INTO carts VALUES (13, 13, DATE '2026-03-04', DATE '2026-03-06', 'ACTIVE');
-INSERT INTO carts VALUES (14, 14, DATE '2026-03-04', DATE '2026-03-06', 'ABANDONED');
-INSERT INTO carts VALUES (15, 15, DATE '2026-03-05', DATE '2026-03-06', 'ACTIVE');
-INSERT INTO carts VALUES (16, 16, DATE '2026-03-05', DATE '2026-03-07', 'ABANDONED');
+INSERT INTO branches (branch_code, branch_name, branch_type, address, province, district, phone, email, status, is_main_branch, opening_date) 
+VALUES ('CT004', N'Chi nhánh Cần Thơ', 'STORE', N'12 Nguyễn Trãi, Ninh Kiều', N'Cần Thơ', N'Quận Ninh Kiều', '0292387654', 'cantho@digibook.com', 'ACTIVE', 0, TO_DATE('2023-09-10', 'YYYY-MM-DD'));
 
--- ==========================================================
--- PHẦN 2 - NAM: AUTHORS, PUBLISHERS, COUPONS
--- ==========================================================
+INSERT INTO branches (branch_code, branch_name, branch_type, address, province, district, phone, status, is_main_branch, opening_date) 
+VALUES ('KHO_HCM', N'Kho trung chuyển TP.HCM', 'WAREHOUSE', N'KCN Tân Bình, Quận Tân Phú', N'TP. Hồ Chí Minh', N'Quận Tân Phú', '0283765432', 'ACTIVE', 0, TO_DATE('2023-01-01', 'YYYY-MM-DD'));
 
--- 4) AUTHORS (12 bản ghi)
-INSERT INTO authors (author_id, author_name, biography, birth_date, nationality) VALUES (1, 'Nguyễn Nhật Ánh', 'Tác giả văn học Việt Nam', DATE '1955-05-07', 'Việt Nam');
-INSERT INTO authors VALUES (2, 'Tony Buổi Sáng', 'Tác giả sách kỹ năng', DATE '1978-11-10', 'Việt Nam');
-INSERT INTO authors VALUES (3, 'Lê Minh Tuấn', 'Tác giả công nghệ', DATE '1985-03-15', 'Việt Nam');
-INSERT INTO authors VALUES (4, 'Robert Martin', 'Tác giả về clean code', DATE '1952-12-05', 'USA');
-INSERT INTO authors VALUES (5, 'Andrew Hunt', 'Tác giả practical programming', DATE '1964-09-12', 'USA');
-INSERT INTO authors VALUES (6, 'Thomas Cormen', 'Tác giả giải thuật', DATE '1956-01-01', 'USA');
-INSERT INTO authors VALUES (7, 'Cal Newport', 'Tác giả kỹ năng học tập', DATE '1982-06-23', 'USA');
-INSERT INTO authors VALUES (8, 'Morgan Housel', 'Tác giả về tài chính', DATE '1984-08-01', 'USA');
-INSERT INTO authors VALUES (9, 'Daniel Kahneman', 'Nobel kinh tế', DATE '1934-03-05', 'Israel');
-INSERT INTO authors VALUES (10, 'Phan Văn Trường', 'Tác giả kinh doanh', DATE '1946-05-04', 'Việt Nam');
-INSERT INTO authors VALUES (11, 'Nguyễn Thị Thu Hà', 'Dịch giả sách công nghệ', DATE '1990-09-09', 'Việt Nam');
-INSERT INTO authors VALUES (12, 'Trần Đức Hải', 'Biên tập viên', DATE '1988-02-20', 'Việt Nam');
+-- 1.2. Người dùng bổ sung (Đã có admin)
+INSERT INTO users (username, email, password_hash, full_name, role, phone, is_active) 
+VALUES ('manager_hn', 'manager.hn@digibook.com', 'HASH_MGR_HN', N'Nguyễn Văn Dũng', 'MANAGER', '0912345678', 1);
 
--- 5) PUBLISHERS (8 bản ghi)
-INSERT INTO publishers (publisher_id, publisher_name, address, phone, email) VALUES (1, 'NXB Trẻ', '161B Lý Chính Thắng, HCM', '02839316289', 'contact@nxbtre.vn');
-INSERT INTO publishers VALUES (2, 'NXB Kim Đồng', '55 Quang Trưng, Hà Nội', '02439434730', 'info@kimdong.vn');
-INSERT INTO publishers VALUES (3, 'NXB Lao Động', '175 Giảng Võ, Hà Nội', '02438459670', 'office@nxbld.vn');
-INSERT INTO publishers VALUES (4, 'Alpha Books', '176 Thái Hà, Hà Nội', '02435378899', 'support@alphabooks.vn');
-INSERT INTO publishers VALUES (5, 'Thái Hà Books', '119C5 Tô Hiệu, Hà Nội', '02437545678', 'hello@thaihabooks.vn');
-INSERT INTO publishers VALUES (6, 'OReilly Media VN', 'District 1, HCM', '02838226688', 'vn@oreillymedia.com');
-INSERT INTO publishers VALUES (7, 'Wiley VN', 'District 3, HCM', '02839398811', 'vn@wiley.com');
-INSERT INTO publishers VALUES (8, 'Pearson VN', 'Cầu Giấy, Hà Nội', '02437890011', 'vn@pearson.com');
+INSERT INTO users (username, email, password_hash, full_name, role, phone, is_active) 
+VALUES ('staff_sale_01', 'sale01@digibook.com', 'HASH_SALE01', N'Trần Thị Bán Hàng', 'STAFF', '0923456789', 1);
 
--- 6) COUPONS (8 bản ghi)
-INSERT INTO coupons (coupon_id, coupon_code, coupon_name, discount_type, discount_value, start_at, end_at, max_uses, used_count, per_customer_limit, min_order_amount, max_discount_amount, is_active)
-VALUES (1, 'WELCOME10', 'Giảm 10 phần trăm cho khách mới', 'PERCENT', 10, DATE '2026-01-01', DATE '2026-12-31', 1000, 20, 1, 100000, 50000, 1);
-INSERT INTO coupons VALUES (2, 'FREESHIP25', 'Giảm 25000 trên đơn từ 200k', 'FIXED', 25000, DATE '2026-01-01', DATE '2026-12-31', 500, 35, 2, 200000, NULL, 1);
-INSERT INTO coupons VALUES (3, 'TECH15', 'Giảm 15 phần trăm sách công nghệ', 'PERCENT', 15, DATE '2026-02-01', DATE '2026-09-30', 300, 12, 1, 300000, 80000, 1);
-INSERT INTO coupons VALUES (4, 'SPRING50K', 'Ưu đãi mùa xuân', 'FIXED', 50000, DATE '2026-03-01', DATE '2026-05-31', 200, 18, 1, 400000, NULL, 1);
-INSERT INTO coupons VALUES (5, 'BIGSALE20', 'Giảm 20 phần trăm tối đa 120k', 'PERCENT', 20, DATE '2026-03-01', DATE '2026-04-30', 150, 22, 1, 500000, 120000, 1);
-INSERT INTO coupons VALUES (6, 'LOYAL30K', 'Khách hàng thân thiết', 'FIXED', 30000, DATE '2026-01-15', DATE '2026-12-31', NULL, 40, 3, 250000, NULL, 1);
-INSERT INTO coupons VALUES (7, 'OLDUSER5', 'Ưu đãi tái kích hoạt', 'PERCENT', 5, DATE '2026-01-01', DATE '2026-06-30', 400, 10, 1, 100000, 30000, 0);
-INSERT INTO coupons VALUES (8, 'FLASH70K', 'Flash sale theo giờ', 'FIXED', 70000, DATE '2026-03-10', DATE '2026-03-31', 80, 15, 1, 600000, NULL, 1);
+INSERT INTO users (username, email, password_hash, full_name, role, phone, is_active) 
+VALUES ('staff_kho', 'kho@digibook.com', 'HASH_KHO', N'Lê Văn Kho', 'STAFF', '0934567890', 1);
 
--- ==========================================================
--- PHẦN 3 - HIẾU: BOOKS, BOOK_IMAGES, BOOK_AUTHORS, INVENTORY_TRANSACTIONS
--- ==========================================================
+INSERT INTO users (username, email, password_hash, full_name, role, phone, is_active) 
+VALUES ('support_01', 'support@digibook.com', 'HASH_SP', N'Phạm Thị Hỗ Trợ', 'SUPPORT', '0945678901', 1);
 
--- 7) BOOKS (20 bản ghi)
-INSERT INTO books (book_id, title, isbn, price, stock_quantity, description, publication_year, page_count, category_id, publisher_id, created_at, updated_at)
-VALUES (1, 'Mắt Biếc', '9786042000011', 98000, 120, 'Tiểu thuyết Việt Nam noi tieng', 2019, 320, 7, 1, DATE '2026-01-10', DATE '2026-03-01');
-INSERT INTO books VALUES (2, 'Cho Tôi Xin Một Vé Đi Tuổi Thơ', '9786042000012', 88000, 90, 'Tác phẩm dành cho mọi lứa tuổi', 2018, 280, 7, 1, DATE '2026-01-10', DATE '2026-03-01');
-INSERT INTO books VALUES (3, 'Nhà Giả Kim', '9786042000013', 120000, 70, 'Tiểu thuyết truyền cảm hứng', 2017, 240, 8, 4, DATE '2026-01-11', DATE '2026-03-01');
-INSERT INTO books VALUES (4, 'Đắc Nhân Tâm', '9786042000014', 110000, 80, 'Sách ky nang giao tiep', 2015, 300, 5, 3, DATE '2026-01-11', DATE '2026-03-01');
-INSERT INTO books VALUES (5, 'Clean Code', '9786042000015', 350000, 60, 'Nguyên tắc viết code sạch', 2020, 464, 4, 6, DATE '2026-01-12', DATE '2026-03-02');
-INSERT INTO books VALUES (6, 'The Pragmatic Programmer', '9786042000016', 420000, 55, 'Kinh nghiệm lập trình thực chiến', 2019, 352, 4, 7, DATE '2026-01-12', DATE '2026-03-02');
-INSERT INTO books VALUES (7, 'Introduction to Algorithms', '9786042000017', 650000, 40, 'Sách giai thuat kinh dien', 2021, 1312, 4, 8, DATE '2026-01-13', DATE '2026-03-02');
-INSERT INTO books VALUES (8, 'Deep Work', '9786042000018', 210000, 85, 'Tập trung sâu trong công việc', 2016, 304, 5, 4, DATE '2026-01-13', DATE '2026-03-02');
-INSERT INTO books VALUES (9, 'Tâm Lý Học Tiền Bạc', '9786042000019', 190000, 100, 'Tâm lý tài chính cá nhân', 2022, 280, 3, 4, DATE '2026-01-14', DATE '2026-03-03');
-INSERT INTO books VALUES (10, 'Think Fast and Slow', '9786042000020', 280000, 65, 'Tư duy nhanh và chậm', 2018, 512, 3, 7, DATE '2026-01-14', DATE '2026-03-03');
-INSERT INTO books VALUES (11, 'Oracle Database 19c Handbook', '9786042000021', 520000, 30, 'Tài liệu Oracle 19c', 2023, 700, 10, 8, DATE '2026-01-15', DATE '2026-03-03');
-INSERT INTO books VALUES (12, 'SQL Performance Explained', '9786042000022', 360000, 45, 'Tối ưu truy vấn SQL', 2020, 360, 10, 7, DATE '2026-01-15', DATE '2026-03-03');
-INSERT INTO books VALUES (13, 'Python for Data Analysis', '9786042000023', 410000, 50, 'Phân tích dữ liệu bang Python', 2021, 480, 9, 7, DATE '2026-01-16', DATE '2026-03-04');
-INSERT INTO books VALUES (14, 'Hands On Machine Learning', '9786042000024', 560000, 35, 'Machine learning thực hành', 2022, 720, 9, 8, DATE '2026-01-16', DATE '2026-03-04');
-INSERT INTO books VALUES (15, 'Trẻ Em Học Lập Trình', '9786042000025', 150000, 95, 'Nhập môn lập trình cho trẻ em', 2021, 220, 6, 2, DATE '2026-01-17', DATE '2026-03-04');
-INSERT INTO books VALUES (16, '100 Câu Đố Tư Duy', '9786042000026', 99000, 140, 'Sách tri tue cho thieu nhi', 2020, 180, 6, 2, DATE '2026-01-17', DATE '2026-03-04');
-INSERT INTO books VALUES (17, 'Khởi Nghiệp Tinh Gọn', '9786042000027', 170000, 75, 'Khởi nghiệp và mô hình tinh gọn', 2019, 260, 3, 5, DATE '2026-01-18', DATE '2026-03-05');
-INSERT INTO books VALUES (18, 'Quản Trị Tài Chính Cá Nhân', '9786042000028', 200000, 88, 'Quản lý tài chính cho gia đình', 2023, 320, 3, 5, DATE '2026-01-18', DATE '2026-03-05');
-INSERT INTO books VALUES (19, 'Docker và Kubernetes Cơ Bản', '9786042000029', 330000, 58, 'Nền tảng devops hiện đại', 2022, 410, 4, 6, DATE '2026-01-19', DATE '2026-03-05');
-INSERT INTO books VALUES (20, 'Microservices Pattern', '9786042000030', 470000, 42, 'Kiến trúc hệ thống phân tán', 2021, 500, 4, 7, DATE '2026-01-19', DATE '2026-03-05');
+INSERT INTO users (username, email, password_hash, full_name, role, phone, is_active) 
+VALUES ('manager_dn', 'manager.dn@digibook.com', 'HASH_MGR_DN', N'Hoàng Văn Đà Nẵng', 'MANAGER', '0909123456', 1);
 
--- 8) BOOK_IMAGES (28 bản ghi)
-INSERT INTO book_images (image_id, book_id, image_url, is_primary, sort_order, created_at) VALUES (1, 1, 'https://covers.openlibrary.org/b/isbn/9786041135161-L.jpg', 1, 1, DATE '2026-01-10');
-INSERT INTO book_images VALUES (2, 2, 'https://covers.openlibrary.org/b/isbn/9786041135154-L.jpg', 1, 1, DATE '2026-01-10');
-INSERT INTO book_images VALUES (3, 3, 'https://covers.openlibrary.org/b/isbn/9780061122415-L.jpg', 1, 1, DATE '2026-01-11');
-INSERT INTO book_images VALUES (4, 4, 'https://covers.openlibrary.org/b/isbn/9780671027032-L.jpg', 1, 1, DATE '2026-01-11');
-INSERT INTO book_images VALUES (5, 5, 'https://covers.openlibrary.org/b/isbn/9780132350884-L.jpg', 1, 1, DATE '2026-01-12');
-INSERT INTO book_images VALUES (6, 6, 'https://covers.openlibrary.org/b/isbn/9780135957059-L.jpg', 1, 1, DATE '2026-01-12');
-INSERT INTO book_images VALUES (7, 7, 'https://covers.openlibrary.org/b/isbn/9780262046305-L.jpg', 1, 1, DATE '2026-01-13');
-INSERT INTO book_images VALUES (8, 8, 'https://covers.openlibrary.org/b/isbn/9781455586691-L.jpg', 1, 1, DATE '2026-01-13');
-INSERT INTO book_images VALUES (9, 9, 'https://covers.openlibrary.org/b/isbn/9780857197689-L.jpg', 1, 1, DATE '2026-01-14');
-INSERT INTO book_images VALUES (10, 10, 'https://covers.openlibrary.org/b/isbn/9780374533557-L.jpg', 1, 1, DATE '2026-01-14');
-INSERT INTO book_images VALUES (11, 11, 'https://covers.openlibrary.org/b/isbn/9781260117028-L.jpg', 1, 1, DATE '2026-01-15');
-INSERT INTO book_images VALUES (12, 12, 'https://covers.openlibrary.org/b/isbn/9783950307825-L.jpg', 1, 1, DATE '2026-01-15');
-INSERT INTO book_images VALUES (13, 13, 'https://covers.openlibrary.org/b/isbn/9781098104030-L.jpg', 1, 1, DATE '2026-01-16');
-INSERT INTO book_images VALUES (14, 14, 'https://covers.openlibrary.org/b/isbn/9781098125974-L.jpg', 1, 1, DATE '2026-01-16');
-INSERT INTO book_images VALUES (15, 15, 'https://m.media-amazon.com/images/I/51RuBwLxiHL._SY445_SX342_.jpg', 1, 1, DATE '2026-01-17');
-INSERT INTO book_images VALUES (16, 16, 'https://m.media-amazon.com/images/I/51ZS-5SxLAL._SY445_SX342_.jpg', 1, 1, DATE '2026-01-17');
-INSERT INTO book_images VALUES (17, 17, 'https://covers.openlibrary.org/b/isbn/9780307887894-L.jpg', 1, 1, DATE '2026-01-18');
-INSERT INTO book_images VALUES (18, 18, 'https://covers.openlibrary.org/b/isbn/9780062458711-L.jpg', 1, 1, DATE '2026-01-18');
-INSERT INTO book_images VALUES (19, 19, 'https://covers.openlibrary.org/b/isbn/9781617294761-L.jpg', 1, 1, DATE '2026-01-19');
-INSERT INTO book_images VALUES (20, 20, 'https://covers.openlibrary.org/b/isbn/9781617294549-L.jpg', 1, 1, DATE '2026-01-19');
-INSERT INTO book_images VALUES (21, 5, 'https://covers.openlibrary.org/b/isbn/9780132350884-M.jpg', 0, 2, DATE '2026-01-12');
-INSERT INTO book_images VALUES (22, 5, 'https://covers.openlibrary.org/b/isbn/9780132350884-S.jpg', 0, 3, DATE '2026-01-12');
-INSERT INTO book_images VALUES (23, 7, 'https://covers.openlibrary.org/b/isbn/9780262046305-M.jpg', 0, 2, DATE '2026-01-13');
-INSERT INTO book_images VALUES (24, 11, 'https://covers.openlibrary.org/b/isbn/9781260117028-M.jpg', 0, 2, DATE '2026-01-15');
-INSERT INTO book_images VALUES (25, 13, 'https://covers.openlibrary.org/b/isbn/9781098104030-M.jpg', 0, 2, DATE '2026-01-16');
-INSERT INTO book_images VALUES (26, 14, 'https://covers.openlibrary.org/b/isbn/9781098125974-M.jpg', 0, 2, DATE '2026-01-16');
-INSERT INTO book_images VALUES (27, 19, 'https://covers.openlibrary.org/b/isbn/9781617294761-M.jpg', 0, 2, DATE '2026-01-19');
-INSERT INTO book_images VALUES (28, 20, 'https://covers.openlibrary.org/b/isbn/9781617294549-M.jpg', 0, 2, DATE '2026-01-19');
+INSERT INTO users (username, email, password_hash, full_name, role, phone, is_active) 
+VALUES ('admin_cslt', 'admin.cslt@digibook.com', 'HASH_CSLT', N'Admin Cơ Sở Lưu Trữ', 'ADMIN', '0908234567', 1);
 
--- 9) BOOK_AUTHORS (26 bản ghi)
-INSERT INTO book_authors (book_id, author_id, role, author_order) VALUES (1, 1, 'AUTHOR', 1);
-INSERT INTO book_authors VALUES (2, 1, 'AUTHOR', 1);
-INSERT INTO book_authors VALUES (3, 11, 'TRANSLATOR', 1);
-INSERT INTO book_authors VALUES (3, 12, 'EDITOR', 2);
-INSERT INTO book_authors VALUES (4, 2, 'AUTHOR', 1);
-INSERT INTO book_authors VALUES (5, 4, 'AUTHOR', 1);
-INSERT INTO book_authors VALUES (5, 11, 'TRANSLATOR', 2);
-INSERT INTO book_authors VALUES (6, 5, 'AUTHOR', 1);
-INSERT INTO book_authors VALUES (6, 11, 'TRANSLATOR', 2);
-INSERT INTO book_authors VALUES (7, 6, 'AUTHOR', 1);
-INSERT INTO book_authors VALUES (8, 7, 'AUTHOR', 1);
-INSERT INTO book_authors VALUES (9, 8, 'AUTHOR', 1);
-INSERT INTO book_authors VALUES (10, 9, 'AUTHOR', 1);
-INSERT INTO book_authors VALUES (11, 3, 'AUTHOR', 1);
-INSERT INTO book_authors VALUES (11, 12, 'EDITOR', 2);
-INSERT INTO book_authors VALUES (12, 3, 'AUTHOR', 1);
-INSERT INTO book_authors VALUES (13, 3, 'AUTHOR', 1);
-INSERT INTO book_authors VALUES (13, 11, 'TRANSLATOR', 2);
-INSERT INTO book_authors VALUES (14, 3, 'AUTHOR', 1);
-INSERT INTO book_authors VALUES (14, 12, 'EDITOR', 2);
-INSERT INTO book_authors VALUES (15, 10, 'AUTHOR', 1);
-INSERT INTO book_authors VALUES (16, 10, 'AUTHOR', 1);
-INSERT INTO book_authors VALUES (17, 10, 'AUTHOR', 1);
-INSERT INTO book_authors VALUES (18, 10, 'AUTHOR', 1);
-INSERT INTO book_authors VALUES (19, 4, 'AUTHOR', 1);
-INSERT INTO book_authors VALUES (20, 5, 'AUTHOR', 1);
+-- 1.3. Nhân viên (Staff)
+INSERT INTO staff (user_id, branch_id, staff_code, job_title, department, hire_date, base_salary, status, can_approve_order, can_manage_stock) 
+VALUES (1, 1, 'NV001', N'Quản lý hệ thống', 'ADMIN', TO_DATE('2023-01-01', 'YYYY-MM-DD'), 25000000, 'ACTIVE', 1, 1);
 
--- 10) INVENTORY_TRANSACTIONS (20 bản ghi)
-INSERT INTO inventory_transactions (txn_id, book_id, txn_type, reference_id, reference_type, quantity, created_at, note)
-VALUES (1, 1, 'IN', NULL, 'MANUAL', 120, DATE '2026-01-20', 'Nhập kho đầu kỳ');
-INSERT INTO inventory_transactions VALUES (2, 2, 'IN', NULL, 'MANUAL', 90, DATE '2026-01-20', 'Nhập kho đầu kỳ');
-INSERT INTO inventory_transactions VALUES (3, 3, 'IN', NULL, 'MANUAL', 70, DATE '2026-01-20', 'Nhập kho đầu kỳ');
-INSERT INTO inventory_transactions VALUES (4, 4, 'IN', NULL, 'MANUAL', 80, DATE '2026-01-20', 'Nhập kho đầu kỳ');
-INSERT INTO inventory_transactions VALUES (5, 5, 'IN', NULL, 'MANUAL', 60, DATE '2026-01-20', 'Nhập kho đầu kỳ');
-INSERT INTO inventory_transactions VALUES (6, 6, 'IN', NULL, 'MANUAL', 55, DATE '2026-01-20', 'Nhập kho đầu kỳ');
-INSERT INTO inventory_transactions VALUES (7, 7, 'IN', NULL, 'MANUAL', 40, DATE '2026-01-20', 'Nhập kho đầu kỳ');
-INSERT INTO inventory_transactions VALUES (8, 8, 'IN', NULL, 'MANUAL', 85, DATE '2026-01-20', 'Nhập kho đầu kỳ');
-INSERT INTO inventory_transactions VALUES (9, 9, 'IN', NULL, 'MANUAL', 100, DATE '2026-01-20', 'Nhập kho đầu kỳ');
-INSERT INTO inventory_transactions VALUES (10, 10, 'IN', NULL, 'MANUAL', 65, DATE '2026-01-20', 'Nhập kho đầu kỳ');
-INSERT INTO inventory_transactions VALUES (11, 11, 'IN', NULL, 'MANUAL', 30, DATE '2026-01-20', 'Nhập kho đầu kỳ');
-INSERT INTO inventory_transactions VALUES (12, 12, 'IN', NULL, 'MANUAL', 45, DATE '2026-01-20', 'Nhập kho đầu kỳ');
-INSERT INTO inventory_transactions VALUES (13, 13, 'IN', NULL, 'MANUAL', 50, DATE '2026-01-20', 'Nhập kho đầu kỳ');
-INSERT INTO inventory_transactions VALUES (14, 14, 'IN', NULL, 'MANUAL', 35, DATE '2026-01-20', 'Nhập kho đầu kỳ');
-INSERT INTO inventory_transactions VALUES (15, 15, 'IN', NULL, 'MANUAL', 95, DATE '2026-01-20', 'Nhập kho đầu kỳ');
-INSERT INTO inventory_transactions VALUES (16, 16, 'IN', NULL, 'MANUAL', 140, DATE '2026-01-20', 'Nhập kho đầu kỳ');
-INSERT INTO inventory_transactions VALUES (17, 17, 'IN', NULL, 'MANUAL', 75, DATE '2026-01-20', 'Nhập kho đầu kỳ');
-INSERT INTO inventory_transactions VALUES (18, 18, 'IN', NULL, 'MANUAL', 88, DATE '2026-01-20', 'Nhập kho đầu kỳ');
-INSERT INTO inventory_transactions VALUES (19, 19, 'IN', NULL, 'MANUAL', 58, DATE '2026-01-20', 'Nhập kho đầu kỳ');
-INSERT INTO inventory_transactions VALUES (20, 20, 'IN', NULL, 'MANUAL', 42, DATE '2026-01-20', 'Nhập kho đầu kỳ');
+INSERT INTO staff (user_id, branch_id, staff_code, job_title, department, hire_date, base_salary, status, can_approve_order, can_manage_stock) 
+VALUES (2, 2, 'NV002', N'Quản lý chi nhánh HN', 'MANAGEMENT', TO_DATE('2023-03-15', 'YYYY-MM-DD'), 20000000, 'ACTIVE', 1, 1);
 
--- 11) CART_ITEMS (24 bản ghi)
-INSERT INTO cart_items (cart_item_id, cart_id, book_id, quantity, unit_price, created_at, updated_at)
-VALUES (1, 1, 5, 1, 350000, DATE '2026-03-02', DATE '2026-03-02');
-INSERT INTO cart_items VALUES (2, 1, 8, 1, 210000, DATE '2026-03-02', DATE '2026-03-02');
-INSERT INTO cart_items VALUES (3, 2, 1, 2, 98000, DATE '2026-03-02', DATE '2026-03-02');
-INSERT INTO cart_items VALUES (4, 2, 4, 1, 110000, DATE '2026-03-02', DATE '2026-03-02');
-INSERT INTO cart_items VALUES (5, 3, 7, 1, 650000, DATE '2026-03-02', DATE '2026-03-02');
-INSERT INTO cart_items VALUES (6, 3, 10, 1, 280000, DATE '2026-03-02', DATE '2026-03-02');
-INSERT INTO cart_items VALUES (7, 4, 2, 1, 88000, DATE '2026-03-03', DATE '2026-03-03');
-INSERT INTO cart_items VALUES (8, 5, 9, 1, 190000, DATE '2026-03-03', DATE '2026-03-03');
-INSERT INTO cart_items VALUES (9, 5, 13, 1, 410000, DATE '2026-03-03', DATE '2026-03-03');
-INSERT INTO cart_items VALUES (10, 6, 11, 1, 520000, DATE '2026-03-03', DATE '2026-03-03');
-INSERT INTO cart_items VALUES (11, 6, 12, 1, 360000, DATE '2026-03-03', DATE '2026-03-03');
-INSERT INTO cart_items VALUES (12, 7, 15, 2, 150000, DATE '2026-03-04', DATE '2026-03-04');
-INSERT INTO cart_items VALUES (13, 7, 16, 1, 99000, DATE '2026-03-04', DATE '2026-03-04');
-INSERT INTO cart_items VALUES (14, 8, 18, 1, 200000, DATE '2026-03-04', DATE '2026-03-04');
-INSERT INTO cart_items VALUES (15, 8, 20, 1, 470000, DATE '2026-03-04', DATE '2026-03-04');
-INSERT INTO cart_items VALUES (16, 9, 17, 1, 170000, DATE '2026-03-04', DATE '2026-03-04');
-INSERT INTO cart_items VALUES (17, 9, 19, 1, 330000, DATE '2026-03-04', DATE '2026-03-04');
-INSERT INTO cart_items VALUES (18, 10, 3, 1, 120000, DATE '2026-03-05', DATE '2026-03-05');
-INSERT INTO cart_items VALUES (19, 10, 6, 1, 420000, DATE '2026-03-05', DATE '2026-03-05');
-INSERT INTO cart_items VALUES (20, 11, 14, 1, 560000, DATE '2026-03-05', DATE '2026-03-05');
-INSERT INTO cart_items VALUES (21, 12, 5, 1, 350000, DATE '2026-03-05', DATE '2026-03-05');
-INSERT INTO cart_items VALUES (22, 13, 11, 1, 520000, DATE '2026-03-06', DATE '2026-03-06');
-INSERT INTO cart_items VALUES (23, 14, 2, 1, 88000, DATE '2026-03-06', DATE '2026-03-06');
-INSERT INTO cart_items VALUES (24, 15, 8, 1, 210000, DATE '2026-03-06', DATE '2026-03-06');
+INSERT INTO staff (user_id, branch_id, staff_code, job_title, department, hire_date, base_salary, status, can_approve_order, can_manage_stock) 
+VALUES (3, 1, 'NV003', N'Nhân viên bán hàng', 'SALES', TO_DATE('2023-02-01', 'YYYY-MM-DD'), 8000000, 'ACTIVE', 0, 0);
 
--- ==========================================================
--- PHẦN 4 - PHÁT: ORDERS, ORDER_DETAILS, ORDER_STATUS_HISTORY, REVIEWS
--- ==========================================================
+INSERT INTO staff (user_id, branch_id, staff_code, job_title, department, hire_date, base_salary, status, can_approve_order, can_manage_stock) 
+VALUES (4, 5, 'NV004', N'Thủ kho', 'WAREHOUSE', TO_DATE('2023-01-15', 'YYYY-MM-DD'), 9000000, 'ACTIVE', 0, 1);
 
--- 12) ORDERS (15 bản ghi)
-INSERT INTO orders (order_id, customer_id, coupon_id, order_date, total_amount, status, shipping_address, payment_method, payment_status, shipping_fee, discount_amount, updated_at)
-VALUES (1, 1, 1, DATE '2026-03-01', 658000, 'DELIVERED', '12 Nguyễn Trãi, Hà Nội', 'COD', 'PAID', 30000, 70000, DATE '2026-03-05');
-INSERT INTO orders VALUES (2, 2, 2, DATE '2026-03-01', 271000, 'DELIVERED', '24 Lê Lợi, Đà Nẵng', 'E_WALLET', 'PAID', 25000, 25000, DATE '2026-03-05');
-INSERT INTO orders VALUES (3, 3, NULL, DATE '2026-03-02', 940000, 'SHIPPING', '31 Võ Thị Sáu, HCM', 'BANK_TRANSFER', 'PAID', 30000, 0, DATE '2026-03-06');
-INSERT INTO orders VALUES (4, 4, 3, DATE '2026-03-02', 646000, 'CONFIRMED', '17 Hai Bà Trưng, Huế', 'COD', 'PENDING', 30000, 114000, DATE '2026-03-06');
-INSERT INTO orders VALUES (5, 5, NULL, DATE '2026-03-03', 409000, 'CANCELLED', '44 Trần Hưng Đạo, Hải Phòng', 'E_WALLET', 'FAILED', 30000, 0, DATE '2026-03-06');
-INSERT INTO orders VALUES (6, 6, 4, DATE '2026-03-03', 830000, 'DELIVERED', '88 CMT8, Cần Thơ', 'BANK_TRANSFER', 'PAID', 30000, 50000, DATE '2026-03-07');
-INSERT INTO orders VALUES (7, 7, NULL, DATE '2026-03-03', 279000, 'PENDING', '9 Lý Thường Kiệt, Nha Trang', 'COD', 'PENDING', 30000, 0, DATE '2026-03-07');
-INSERT INTO orders VALUES (8, 8, 1, DATE '2026-03-04', 603000, 'SHIPPING', '56 Nguyễn Văn Cừ, Vinh', 'E_WALLET', 'PAID', 30000, 67000, DATE '2026-03-08');
-INSERT INTO orders VALUES (9, 9, NULL, DATE '2026-03-04', 560000, 'CONFIRMED', '72 Trường Chinh, Quy Nhơn', 'COD', 'PAID', 30000, 0, DATE '2026-03-08');
-INSERT INTO orders VALUES (10, 10, 5, DATE '2026-03-05', 640000, 'DELIVERED', '15 Bà Triệu, Hà Nội', 'BANK_TRANSFER', 'PAID', 30000, 120000, DATE '2026-03-09');
-INSERT INTO orders VALUES (11, 11, NULL, DATE '2026-03-05', 900000, 'PENDING', '38 Lê Duẩn, Đà Nẵng', 'COD', 'PENDING', 30000, 0, DATE '2026-03-09');
-INSERT INTO orders VALUES (12, 12, 6, DATE '2026-03-06', 548000, 'CONFIRMED', '66 Điện Biên Phủ, HCM', 'E_WALLET', 'PENDING', 30000, 30000, DATE '2026-03-10');
-INSERT INTO orders VALUES (13, 13, NULL, DATE '2026-03-06', 920000, 'DELIVERED', '90 Quang Trưng, Đà Lạt', 'BANK_TRANSFER', 'PAID', 30000, 0, DATE '2026-03-10');
-INSERT INTO orders VALUES (14, 14, 7, DATE '2026-03-07', 915000, 'SHIPPING', '101 Hùng Vương, Huế', 'COD', 'PAID', 30000, 15000, DATE '2026-03-10');
-INSERT INTO orders VALUES (15, 15, 8, DATE '2026-03-07', 548000, 'PENDING', '5 Trần Phú, Hội An', 'E_WALLET', 'PENDING', 30000, 70000, DATE '2026-03-10');
+INSERT INTO staff (user_id, branch_id, staff_code, job_title, department, hire_date, base_salary, status, can_approve_order, can_manage_stock) 
+VALUES (5, 1, 'NV005', N'Nhân viên CSKH', 'SUPPORT', TO_DATE('2023-04-01', 'YYYY-MM-DD'), 7500000, 'ACTIVE', 0, 0);
 
--- 13) ORDER_DETAILS (30 bản ghi)
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (1, 1, 1, 2, 98000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (2, 1, 3, 4, 120000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (3, 2, 2, 1, 88000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (4, 2, 5, 1, 350000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (5, 3, 4, 2, 110000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (6, 3, 6, 1, 420000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (7, 4, 7, 1, 650000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (8, 4, 8, 1, 210000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (9, 5, 9, 2, 190000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (10, 5, 10, 1, 280000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (11, 6, 11, 1, 520000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (12, 6, 12, 1, 360000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (13, 7, 13, 1, 410000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (14, 7, 14, 1, 560000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (15, 8, 15, 2, 150000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (16, 8, 16, 3, 99000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (17, 9, 17, 1, 170000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (18, 9, 18, 2, 200000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (19, 10, 19, 1, 330000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (20, 10, 20, 1, 470000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (21, 11, 1, 3, 98000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (22, 11, 11, 1, 520000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (23, 12, 2, 1, 88000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (24, 12, 12, 1, 360000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (25, 13, 3, 2, 120000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (26, 13, 13, 1, 410000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (27, 14, 4, 1, 110000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (28, 14, 14, 1, 560000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (29, 15, 5, 1, 350000);
-INSERT INTO order_details (order_detail_id, order_id, book_id, quantity, unit_price) VALUES (30, 15, 15, 1, 150000);
+INSERT INTO staff (user_id, branch_id, staff_code, job_title, department, hire_date, base_salary, status, can_approve_order, can_manage_stock) 
+VALUES (6, 3, 'NV006', N'Quản lý chi nhánh ĐN', 'MANAGEMENT', TO_DATE('2023-06-20', 'YYYY-MM-DD'), 19000000, 'ACTIVE', 1, 1);
 
--- 14) ORDER_STATUS_HISTORY (28 bản ghi)
-INSERT INTO order_status_history (status_history_id, order_id, old_status, new_status, changed_at, changed_by, changed_source, note)
-VALUES (1, 1, NULL, 'PENDING', DATE '2026-03-01', 1, 'CUSTOMER', 'Tạo đơn hàng');
-INSERT INTO order_status_history VALUES (2, 1, 'PENDING', 'CONFIRMED', DATE '2026-03-02', NULL, 'SYSTEM', 'Đơn đã được xác nhận');
-INSERT INTO order_status_history VALUES (3, 1, 'CONFIRMED', 'SHIPPING', DATE '2026-03-03', NULL, 'SYSTEM', 'Bắt đầu giao hàng');
-INSERT INTO order_status_history VALUES (4, 1, 'SHIPPING', 'DELIVERED', DATE '2026-03-05', 1, 'CUSTOMER', 'Khách xác nhận nhận hàng');
-INSERT INTO order_status_history VALUES (5, 2, NULL, 'PENDING', DATE '2026-03-01', 2, 'CUSTOMER', 'Tạo đơn hàng');
-INSERT INTO order_status_history VALUES (6, 2, 'PENDING', 'CONFIRMED', DATE '2026-03-02', NULL, 'SYSTEM', 'Hệ thống xác nhận');
-INSERT INTO order_status_history VALUES (7, 2, 'CONFIRMED', 'DELIVERED', DATE '2026-03-05', 2, 'CUSTOMER', 'Đã giao thành công');
-INSERT INTO order_status_history VALUES (8, 3, NULL, 'PENDING', DATE '2026-03-02', 3, 'CUSTOMER', 'Tạo đơn hàng');
-INSERT INTO order_status_history VALUES (9, 3, 'PENDING', 'CONFIRMED', DATE '2026-03-03', NULL, 'SYSTEM', 'Đơn đã được xử lý');
-INSERT INTO order_status_history VALUES (10, 3, 'CONFIRMED', 'SHIPPING', DATE '2026-03-06', NULL, 'SYSTEM', 'Đơn đang giao');
-INSERT INTO order_status_history VALUES (11, 4, NULL, 'PENDING', DATE '2026-03-02', 4, 'CUSTOMER', 'Tạo đơn hàng');
-INSERT INTO order_status_history VALUES (12, 4, 'PENDING', 'CONFIRMED', DATE '2026-03-06', NULL, 'SYSTEM', 'Xác nhận thành công');
-INSERT INTO order_status_history VALUES (13, 5, NULL, 'PENDING', DATE '2026-03-03', 5, 'CUSTOMER', 'Tạo đơn hàng');
-INSERT INTO order_status_history VALUES (14, 5, 'PENDING', 'CANCELLED', DATE '2026-03-06', 5, 'CUSTOMER', 'Khách hủy đơn');
-INSERT INTO order_status_history VALUES (15, 6, NULL, 'PENDING', DATE '2026-03-03', 6, 'CUSTOMER', 'Tạo đơn hàng');
-INSERT INTO order_status_history VALUES (16, 6, 'PENDING', 'CONFIRMED', DATE '2026-03-04', NULL, 'SYSTEM', 'Xác nhận đơn');
-INSERT INTO order_status_history VALUES (17, 6, 'CONFIRMED', 'SHIPPING', DATE '2026-03-05', NULL, 'SYSTEM', 'Đơn đang giao');
-INSERT INTO order_status_history VALUES (18, 6, 'SHIPPING', 'DELIVERED', DATE '2026-03-07', 6, 'CUSTOMER', 'Nhận hàng thành công');
-INSERT INTO order_status_history VALUES (19, 7, NULL, 'PENDING', DATE '2026-03-03', 7, 'CUSTOMER', 'Tạo đơn hàng');
-INSERT INTO order_status_history VALUES (20, 8, NULL, 'PENDING', DATE '2026-03-04', 8, 'CUSTOMER', 'Tạo đơn hàng');
-INSERT INTO order_status_history VALUES (21, 8, 'PENDING', 'CONFIRMED', DATE '2026-03-05', NULL, 'SYSTEM', 'Xác nhận đơn');
-INSERT INTO order_status_history VALUES (22, 8, 'CONFIRMED', 'SHIPPING', DATE '2026-03-08', NULL, 'SYSTEM', 'Đang giao');
-INSERT INTO order_status_history VALUES (23, 9, NULL, 'PENDING', DATE '2026-03-04', 9, 'CUSTOMER', 'Tạo đơn hàng');
-INSERT INTO order_status_history VALUES (24, 9, 'PENDING', 'CONFIRMED', DATE '2026-03-08', NULL, 'SYSTEM', 'Xác nhận đơn');
-INSERT INTO order_status_history VALUES (25, 10, NULL, 'PENDING', DATE '2026-03-05', 10, 'CUSTOMER', 'Tạo đơn hàng');
-INSERT INTO order_status_history VALUES (26, 10, 'PENDING', 'CONFIRMED', DATE '2026-03-06', NULL, 'SYSTEM', 'Xác nhận đơn');
-INSERT INTO order_status_history VALUES (27, 10, 'CONFIRMED', 'DELIVERED', DATE '2026-03-09', 10, 'CUSTOMER', 'Đã nhận hàng');
-INSERT INTO order_status_history VALUES (28, 13, 'SHIPPING', 'DELIVERED', DATE '2026-03-10', 13, 'CUSTOMER', 'Nhận đơn thành công');
-
--- 15) REVIEWS (12 bản ghi, bắt buộc khớp (order_id, book_id) trong ORDER_DETAILS)
-INSERT INTO reviews (review_id, order_id, book_id, rating, review_comment, review_date)
-VALUES (1, 1, 1, 5, 'Nội dung xúc động, sách đẹp.', DATE '2026-03-06');
-INSERT INTO reviews VALUES (2, 1, 3, 5, 'Bản dịch dễ đọc, truyện hay.', DATE '2026-03-06');
-INSERT INTO reviews VALUES (3, 2, 2, 4, 'Phù hợp đối tượng học sinh.', DATE '2026-03-06');
-INSERT INTO reviews VALUES (4, 2, 5, 5, 'Sách ky thuat rat gia tri.', DATE '2026-03-06');
-INSERT INTO reviews VALUES (5, 3, 4, 4, 'Nội dung thực tế, dễ áp dụng.', DATE '2026-03-07');
-INSERT INTO reviews VALUES (6, 3, 6, 5, 'Rất hữu ích cho lập trình viên.', DATE '2026-03-07');
-INSERT INTO reviews VALUES (7, 4, 7, 5, 'Tài liệu giải thuật chuẩn.', DATE '2026-03-08');
-INSERT INTO reviews VALUES (8, 4, 8, 4, 'Sách hay, hinh thuc dep.', DATE '2026-03-08');
-INSERT INTO reviews VALUES (9, 6, 11, 5, 'Chi tiết và dễ tra cứu.', DATE '2026-03-09');
-INSERT INTO reviews VALUES (10, 6, 12, 4, 'Nâng cao kỹ năng tối ưu SQL.', DATE '2026-03-09');
-INSERT INTO reviews VALUES (11, 10, 19, 5, 'Nội dung devops rõ ràng.', DATE '2026-03-10');
-INSERT INTO reviews VALUES (12, 10, 20, 4, 'Có nhiều ví dụ thực tế.', DATE '2026-03-10');
-
--- ==========================================================
--- [NAM] ĐỒNG BỘ LẠI SEQUENCE SAU KHI INSERT ID THỦ CÔNG
--- ==========================================================
--- Mục đích:
--- 1) Tránh xung đột PK khi lần insert tiếp theo không truyền ID
--- 2) Đưa NEXTVAL của sequence về >= MAX(id)+1 của từng bảng
-DECLARE
-    -- Procedure hỗ trợ căn chỉnh sequence tới giá trị đích
-    PROCEDURE sync_sequence(p_seq_name IN VARCHAR2, p_target IN NUMBER) IS
-        v_current NUMBER;
-        v_delta   NUMBER;
-    BEGIN
-        -- Lấy NEXTVAL hiện tại để biết sequence đang ở đâu
-        EXECUTE IMMEDIATE 'SELECT ' || p_seq_name || '.NEXTVAL FROM dual' INTO v_current;
-
-        -- Tính độ lệch giữa target và current
-        v_delta := p_target - v_current;
-
-        -- Nếu sequence nhỏ hơn target thì tăng tạm thời và nhảy lên đúng mốc
-        IF v_delta > 0 THEN
-            EXECUTE IMMEDIATE 'ALTER SEQUENCE ' || p_seq_name || ' INCREMENT BY ' || TO_CHAR(v_delta);
-            EXECUTE IMMEDIATE 'SELECT ' || p_seq_name || '.NEXTVAL FROM dual' INTO v_current;
-            EXECUTE IMMEDIATE 'ALTER SEQUENCE ' || p_seq_name || ' INCREMENT BY 1';
-        END IF;
-    END;
-BEGIN
-    sync_sequence('seq_customers', 17);
-    sync_sequence('seq_categories', 11);
-    sync_sequence('seq_carts', 17);
-    sync_sequence('seq_cart_items', 25);
-    sync_sequence('seq_authors', 13);
-    sync_sequence('seq_publishers', 9);
-    sync_sequence('seq_coupons', 9);
-    sync_sequence('seq_books', 21);
-    sync_sequence('seq_book_images', 29);
-    sync_sequence('seq_inventory_txn', 21);
-    sync_sequence('seq_orders', 16);
-    sync_sequence('seq_order_details', 31);
-    sync_sequence('seq_order_status_his', 29);
-    sync_sequence('seq_reviews', 13);
-END;
-/
+INSERT INTO staff (user_id, branch_id, staff_code, job_title, department, hire_date, base_salary, status, can_approve_order, can_manage_stock) 
+VALUES (7, 4, 'NV007', N'Quản lý chi nhánh CT', 'MANAGEMENT', TO_DATE('2023-09-10', 'YYYY-MM-DD'), 18500000, 'ACTIVE', 1, 1);
 
 COMMIT;
 
 -- ==========================================================
--- KẾT THÚC FILE
--- Tổng số bản ghi mẫu được nạp: 273
+-- PHẦN 2: DỮ LIỆU CỦA NAM (Danh mục sản phẩm)
+-- ==========================================================
+
+-- 2.1. Danh mục sách (Categories) - Cấu trúc cây
+INSERT INTO categories (category_name, parent_id, description, display_order, is_active) 
+VALUES (N'Văn học', NULL, N'Sách văn học trong và ngoài nước', 1, 1);
+
+INSERT INTO categories (category_name, parent_id, description, display_order, is_active) 
+VALUES (N'Kinh tế', NULL, N'Sách kinh tế, quản trị, marketing', 2, 1);
+
+INSERT INTO categories (category_name, parent_id, description, display_order, is_active) 
+VALUES (N'Kỹ năng sống', NULL, N'Sách kỹ năng mềm, phát triển bản thân', 3, 1);
+
+INSERT INTO categories (category_name, parent_id, description, display_order, is_active) 
+VALUES (N'Khoa học - Kỹ thuật', NULL, N'Sách khoa học, công nghệ, lập trình', 4, 1);
+
+INSERT INTO categories (category_name, parent_id, description, display_order, is_active) 
+VALUES (N'Thiếu nhi', NULL, N'Sách cho trẻ em và thanh thiếu niên', 5, 1);
+
+INSERT INTO categories (category_name, parent_id, description, display_order, is_active) 
+VALUES (N'Lịch sử - Địa lý', NULL, N'Sách lịch sử, địa danh thế giới', 6, 1);
+
+-- Sub-categories cho Văn học
+INSERT INTO categories (category_name, parent_id, description, display_order, is_active) 
+VALUES (N'Tiểu thuyết', 1, N'Tiểu thuyết các loại', 1, 1);
+
+INSERT INTO categories (category_name, parent_id, description, display_order, is_active) 
+VALUES (N'Truyện ngắn', 1, N'Tập truyện ngắn', 2, 1);
+
+INSERT INTO categories (category_name, parent_id, description, display_order, is_active) 
+VALUES (N'Thơ ca', 1, N'Thơ và tuyển tập thơ', 3, 1);
+
+-- Sub-categories cho Kinh tế
+INSERT INTO categories (category_name, parent_id, description, display_order, is_active) 
+VALUES (N'Quản trị - Lãnh đạo', 2, N'Sách về quản trị doanh nghiệp', 1, 1);
+
+INSERT INTO categories (category_name, parent_id, description, display_order, is_active) 
+VALUES (N'Marketing - Bán hàng', 2, N'Marketing và kỹ năng bán hàng', 2, 1);
+
+-- 2.2. Tác giả (Authors)
+INSERT INTO authors (author_name, biography, birth_date, nationality) 
+VALUES (N'Nguyễn Nhật Ánh', N'Nhà văn nổi tiếng với các tác phẩm thiếu nhi và tuổi mới lớn', TO_DATE('1955-05-07', 'YYYY-MM-DD'), N'Việt Nam');
+
+INSERT INTO authors (author_name, biography, birth_date, nationality) 
+VALUES (N'Tô Hoài', N'Nhà văn, nhà báo với tác phẩm Dế Mèn phiêu lưu ký', TO_DATE('1920-09-27', 'YYYY-MM-DD'), N'Việt Nam');
+
+INSERT INTO authors (author_name, biography, birth_date, nationality) 
+VALUES (N'Paulo Coelho', N'Nhà văn Brazil nổi tiếng với Nhà giả kim', TO_DATE('1947-08-24', 'YYYY-MM-DD'), N'Brazil');
+
+INSERT INTO authors (author_name, biography, birth_date, nationality) 
+VALUES (N'J.K. Rowling', N'Tác giả bộ truyện Harry Potter', TO_DATE('1965-07-31', 'YYYY-MM-DD'), N'Anh');
+
+INSERT INTO authors (author_name, biography, birth_date, nationality) 
+VALUES (N'Dale Carnegie', N'Tác giả sách kỹ năng giao tiếp nổi tiếng', TO_DATE('1888-11-24', 'YYYY-MM-DD'), N'Mỹ');
+
+INSERT INTO authors (author_name, biography, birth_date, nationality) 
+VALUES (N'Robert Kiyosaki', N'Tác giả Dạy con làm giàu', TO_DATE('1947-04-08', 'YYYY-MM-DD'), N'Mỹ');
+
+INSERT INTO authors (author_name, biography, birth_date, nationality) 
+VALUES (N'Stephen Hawking', N'Nhà vật lý lý thuyết nổi tiếng', TO_DATE('1942-01-08', 'YYYY-MM-DD'), N'Anh');
+
+INSERT INTO authors (author_name, biography, birth_date, nationality) 
+VALUES (N'Yuval Noah Harari', N'Sử gia Israel, tác giả Sapiens', TO_DATE('1976-02-24', 'YYYY-MM-DD'), N'Israel');
+
+INSERT INTO authors (author_name, biography, birth_date, nationality) 
+VALUES (N'Nguyễn Du', N'Đại thi hào dân tộc', TO_DATE('1765-01-03', 'YYYY-MM-DD'), N'Việt Nam');
+
+INSERT INTO authors (author_name, biography, birth_date, nationality) 
+VALUES (N'Nam Cao', N'Nhà văn hiện thực phê phán', TO_DATE('1915-10-29', 'YYYY-MM-DD'), N'Việt Nam');
+
+INSERT INTO authors (author_name, biography, birth_date, nationality) 
+VALUES (N'Fujiko F. Fujio', N'Tác giả bộ truyện Doraemon', TO_DATE('1933-12-01', 'YYYY-MM-DD'), N'Nhật Bản');
+
+INSERT INTO authors (author_name, biography, birth_date, nationality) 
+VALUES (N'Daniel Kahneman', N'Nhà tâm lý học đoạt giải Nobel', TO_DATE('1934-03-05', 'YYYY-MM-DD'), N'Mỹ');
+
+INSERT INTO authors (author_name, biography, birth_date, nationality) 
+VALUES (N'Eckhart Tolle', N'Tác giả sách tâm linh nổi tiếng', TO_DATE('1948-02-16', 'YYYY-MM-DD'), N'Đức');
+
+INSERT INTO authors (author_name, biography, birth_date, nationality) 
+VALUES (N'Malcolm Gladwell', N'Nhà báo và tác giả sách best-seller', TO_DATE('1963-09-03', 'YYYY-MM-DD'), N'Canada');
+
+INSERT INTO authors (author_name, biography, birth_date, nationality) 
+VALUES (N'Vũ Trọng Phụng', N'Nhà văn hiện thực phê phán', TO_DATE('1912-10-20', 'YYYY-MM-DD'), N'Việt Nam');
+
+-- 2.3. Nhà xuất bản (Publishers)
+INSERT INTO publishers (publisher_name, address, phone, email) 
+VALUES (N'NXB Trẻ', N'161B Lý Chính Thắng, Q.3, TP.HCM', '02839316289', 'info@nxbtre.com.vn');
+
+INSERT INTO publishers (publisher_name, address, phone, email) 
+VALUES (N'NXB Kim Đồng', N'55 Quang Trung, Hà Nội', '02439434730', 'info@nxbkimdong.com.vn');
+
+INSERT INTO publishers (publisher_name, address, phone, email) 
+VALUES (N'NXB Giáo dục Việt Nam', N'81 Trần Hưng Đạo, Hà Nội', '02438220801', 'nxbgd@moet.edu.vn');
+
+INSERT INTO publishers (publisher_name, address, phone, email) 
+VALUES (N'Nhã Nam', N'59 Đỗ Quang, Hà Nội', '02435146876', 'contact@nhanam.vn');
+
+INSERT INTO publishers (publisher_name, address, phone, email) 
+VALUES (N'Alpha Books', N'176 Thái Hà, Hà Nội', '02463297200', 'info@alphabooks.vn');
+
+INSERT INTO publishers (publisher_name, address, phone, email) 
+VALUES (N'First News', N'11H Nguyễn Thị Minh Khai, Q.1, TP.HCM', '02838227979', 'info@firstnews.com.vn');
+
+INSERT INTO publishers (publisher_name, address, phone, email) 
+VALUES (N'NXB Văn học', N'18 Nguyễn Trường Tộ, Hà Nội', '02437161518', 'nxbvanhoc@yahoo.com');
+
+INSERT INTO publishers (publisher_name, address, phone, email) 
+VALUES (N'Bloomsbury', N'50 Bedford Square, London', '+442074315600', 'info@bloomsbury.com');
+
+INSERT INTO publishers (publisher_name, address, phone, email) 
+VALUES (N'HarperCollins', N'195 Broadway, New York', '+12122077000', 'info@harpercollins.com');
+
+INSERT INTO publishers (publisher_name, address, phone, email) 
+VALUES (N'Penguin Random House', N'1745 Broadway, New York', '+12127829000', 'info@penguinrandomhouse.com');
+
+-- 2.4. Sách (Books)
+INSERT INTO books (isbn, title, description, category_id, publisher_id, price, weight_gram, dimensions, page_count, publication_year, language, cover_type, is_featured, is_new_arrival, is_active) 
+VALUES ('9786041026700', N'Nhà Giả Kim', N'Câu chuyện về Santiago và hành trình tìm kiếm kho báu', 7, 4, 89000, 300, '20x14x2', 228, 2020, 'vi', 'PAPERBACK', 1, 0, 1);
+
+INSERT INTO books (isbn, title, description, category_id, publisher_id, price, weight_gram, dimensions, page_count, publication_year, language, cover_type, is_featured, is_new_arrival, is_active) 
+VALUES ('9786042088592', N'Harry Potter và Hòn đá Phù thủy', N'Tập 1 series Harry Potter', 6, 8, 185000, 450, '21x15x3', 366, 2019, 'vi', 'PAPERBACK', 1, 0, 1);
+
+INSERT INTO books (isbn, title, description, category_id, publisher_id, price, weight_gram, dimensions, page_count, publication_year, language, cover_type, is_featured, is_new_arrival, is_active) 
+VALUES ('9786041026670', N'Đắc Nhân Tâm', N'Nghệ thuật thu phục lòng người', 9, 6, 95000, 350, '20x14x2.5', 320, 2021, 'vi', 'PAPERBACK', 1, 0, 1);
+
+INSERT INTO books (isbn, title, description, category_id, publisher_id, price, weight_gram, dimensions, page_count, publication_year, language, cover_type, is_featured, is_new_arrival, is_active) 
+VALUES ('9786041038796', N'Dạy Con Làm Giàu - Tập 1', N'Những bài học tài chính cho trẻ', 8, 6, 108000, 400, '21x15x2', 320, 2022, 'vi', 'PAPERBACK', 1, 1, 1);
+
+INSERT INTO books (isbn, title, description, category_id, publisher_id, price, weight_gram, dimensions, page_count, publication_year, language, cover_type, is_featured, is_new_arrival, is_active) 
+VALUES ('9786041026694', N'Tôi Thấy Hoa Vàng Trên Cỏ Xanh', N'Truyện dài về tuổi thơ', 7, 1, 120000, 380, '20x14x2.5', 300, 2020, 'vi', 'PAPERBACK', 1, 0, 1);
+
+INSERT INTO books (isbn, title, description, category_id, publisher_id, price, weight_gram, dimensions, page_count, publication_year, language, cover_type, is_featured, is_new_arrival, is_active) 
+VALUES ('9786041063804', N'Đất Rừng Phương Nam', N'Tiểu thuyết về Nam Bộ', 7, 7, 145000, 500, '21x15x3', 450, 2021, 'vi', 'PAPERBACK', 0, 0, 1);
+
+INSERT INTO books (isbn, title, description, category_id, publisher_id, price, weight_gram, dimensions, page_count, publication_year, language, cover_type, is_featured, is_new_arrival, is_active) 
+VALUES ('9786042086055', N'Doraemon - Tập 1', N'Truyện tranh Nhật Bản', 5, 2, 25000, 150, '18x13x1', 192, 2023, 'vi', 'PAPERBACK', 0, 1, 1);
+
+INSERT INTO books (isbn, title, description, category_id, publisher_id, price, weight_gram, dimensions, page_count, publication_year, language, cover_type, is_featured, is_new_arrival, is_active) 
+VALUES ('9786041026717', N'Think and Grow Rich', N'Nghĩ giàu làm giàu', 8, 5, 115000, 420, '21x15x2', 350, 2020, 'vi', 'PAPERBACK', 0, 0, 1);
+
+INSERT INTO books (isbn, title, description, category_id, publisher_id, price, weight_gram, dimensions, page_count, publication_year, language, cover_type, is_featured, is_new_arrival, is_active) 
+VALUES ('9786041038802', N'Sapiens: Lược Sử Loài Người', N'Sử học về sự tiến hóa của con người', 6, 4, 175000, 550, '24x17x3', 560, 2021, 'vi', 'PAPERBACK', 1, 0, 1);
+
+INSERT INTO books (isbn, title, description, category_id, publisher_id, price, weight_gram, dimensions, page_count, publication_year, language, cover_type, is_featured, is_new_arrival, is_active) 
+VALUES ('9786041026724', N'Tâm Lý Học Đám Đông', N'Nghiên cứu về tâm lý quần chúng', 6, 7, 85000, 320, '20x14x2', 280, 2019, 'vi', 'PAPERBACK', 0, 0, 1);
+
+INSERT INTO books (isbn, title, description, category_id, publisher_id, price, weight_gram, dimensions, page_count, publication_year, language, cover_type, is_featured, is_new_arrival, is_active) 
+VALUES ('9786041045022', N'Vũ Trọng Phụng - Tuyển tập', N'Các tác phẩm hay của Vũ Trọng Phụng', 7, 7, 165000, 480, '21x15x2.8', 420, 2022, 'vi', 'HARDCOVER', 0, 1, 1);
+
+INSERT INTO books (isbn, title, description, category_id, publisher_id, price, weight_gram, dimensions, page_count, publication_year, language, cover_type, is_featured, is_new_arrival, is_active) 
+VALUES ('9786041050019', N'Lược Sử Tương Lai', N'Về những thách thức của nhân loại', 4, 4, 195000, 600, '24x17x3.5', 520, 2023, 'vi', 'PAPERBACK', 1, 1, 1);
+
+INSERT INTO books (isbn, title, description, category_id, publisher_id, price, weight_gram, dimensions, page_count, publication_year, language, cover_type, is_featured, is_new_arrival, is_active) 
+VALUES ('9786041026731', N'Ngồi Khóc Trên Cây', N'Truyện dài về tình bạn và tuổi học trò', 7, 1, 95000, 340, '20x14x2', 280, 2020, 'vi', 'PAPERBACK', 0, 0, 1);
+
+INSERT INTO books (isbn, title, description, category_id, publisher_id, price, weight_gram, dimensions, page_count, publication_year, language, cover_type, is_featured, is_new_arrival, is_active) 
+VALUES ('9786042088608', N'Harry Potter và Phòng Chứa Bí Mật', N'Tập 2 Harry Potter', 6, 8, 195000, 480, '21x15x3.2', 400, 2020, 'vi', 'PAPERBACK', 0, 0, 1);
+
+INSERT INTO books (isbn, title, description, category_id, publisher_id, price, weight_gram, dimensions, page_count, publication_year, language, cover_type, is_featured, is_new_arrival, is_active) 
+VALUES ('9786041026748', N'Mắt Biếc', N'Truyện tình yêu tuổi học trò', 7, 1, 105000, 360, '20x14x2.2', 320, 2021, 'vi', 'PAPERBACK', 1, 0, 1);
+
+-- 2.5. Hình ảnh sách (Book Images)
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES (1, 'https://digibook.com/images/nha-gia-kim-1.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES (1, 'https://digibook.com/images/nha-gia-kim-2.jpg', 0, 1);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES (2, 'https://digibook.com/images/hp-1.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES (2, 'https://digibook.com/images/hp-1-back.jpg', 0, 1);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES (3, 'https://digibook.com/images/dac-nhan-tam.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES (4, 'https://digibook.com/images/day-con-lam-giau.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES (5, 'https://digibook.com/images/toi-thay-hoa-vang.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES (6, 'https://digibook.com/images/dat-rung-phuong-nam.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES (7, 'https://digibook.com/images/doraemon-1.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES (8, 'https://digibook.com/images/think-grow-rich.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES (9, 'https://digibook.com/images/sapiens.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES (9, 'https://digibook.com/images/sapiens-2.jpg', 0, 1);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES (10, 'https://digibook.com/images/tam-ly-dam-dong.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES (11, 'https://digibook.com/images/vu-trong-phung.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES (12, 'https://digibook.com/images/luoc-su-tuong-lai.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES (13, 'https://digibook.com/images/ngoi-khoc-tren-cay.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES (14, 'https://digibook.com/images/hp-2.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES (15, 'https://digibook.com/images/mat-biec.jpg', 1, 0);
+
+-- 2.6. Quan hệ sách - tác giả (Book Authors) - Xử lý nhiều tác giả/đóng góp viên
+INSERT INTO book_authors (book_id, author_id, role, author_order) VALUES (1, 3, 'AUTHOR', 1);
+INSERT INTO book_authors (book_id, author_id, role, author_order) VALUES (2, 4, 'AUTHOR', 1);
+INSERT INTO book_authors (book_id, author_id, role, author_order) VALUES (3, 5, 'AUTHOR', 1);
+INSERT INTO book_authors (book_id, author_id, role, author_order) VALUES (4, 6, 'AUTHOR', 1);
+INSERT INTO book_authors (book_id, author_id, role, author_order) VALUES (5, 1, 'AUTHOR', 1);
+INSERT INTO book_authors (book_id, author_id, role, author_order) VALUES (6, 2, 'AUTHOR', 1);
+INSERT INTO book_authors (book_id, author_id, role, author_order) VALUES (7, 11, 'AUTHOR', 1);
+INSERT INTO book_authors (book_id, author_id, role, author_order) VALUES (7, 11, 'ILLUSTRATOR', 2); -- Tác giả vẽ minh họa
+INSERT INTO book_authors (book_id, author_id, role, author_order) VALUES (8, 5, 'AUTHOR', 1);
+INSERT INTO book_authors (book_id, author_id, role, author_order) VALUES (9, 8, 'AUTHOR', 1);
+INSERT INTO book_authors (book_id, author_id, role, author_order) VALUES (9, 8, 'TRANSLATOR', 2); -- Có thể có dịch giả riêng nhưng ở đây để ví dụ
+INSERT INTO book_authors (book_id, author_id, role, author_order) VALUES (10, 3, 'AUTHOR', 1); -- Gustave Le Bon, nhưng dùng Paulo Coelho thay cho ví dụ
+INSERT INTO book_authors (book_id, author_id, role, author_order) VALUES (11, 15, 'AUTHOR', 1);
+INSERT INTO book_authors (book_id, author_id, role, author_order) VALUES (12, 8, 'AUTHOR', 1);
+INSERT INTO book_authors (book_id, author_id, role, author_order) VALUES (13, 1, 'AUTHOR', 1);
+INSERT INTO book_authors (book_id, author_id, role, author_order) VALUES (14, 4, 'AUTHOR', 1);
+INSERT INTO book_authors (book_id, author_id, role, author_order) VALUES (15, 1, 'AUTHOR', 1);
+
+COMMIT;
+
+-- ==========================================================
+-- PHẦN 3: DỮ LIỆU CỦA HIẾU (Khách hàng & Bán hàng)
+-- ==========================================================
+
+-- 3.1. Khách hàng (Customers)
+INSERT INTO customers (full_name, email, phone, address, province, district, date_of_birth, gender, preferred_branch_id) 
+VALUES (N'Trần Văn Khách Hàng', 'tran.van.khach@gmail.com', '0909123456', N'123 Nguyễn Văn Cừ, Q.5', N'TP. Hồ Chí Minh', N'Quận 5', TO_DATE('1990-05-15', 'YYYY-MM-DD'), 'MALE', 1);
+
+INSERT INTO customers (full_name, email, phone, address, province, district, date_of_birth, gender, preferred_branch_id) 
+VALUES (N'Nguyễn Thị Mua Sách', 'nguyen.thi.mua@yahoo.com', '0918234567', N'45 Tràng Tiền, Hoàn Kiếm', N'Hà Nội', N'Quận Hoàn Kiếm', TO_DATE('1995-08-20', 'YYYY-MM-DD'), 'FEMALE', 2);
+
+INSERT INTO customers (full_name, email, phone, address, province, district, date_of_birth, gender, preferred_branch_id) 
+VALUES (N'Lê Văn Đọc Giả', 'le.van.doc@gmail.com', '0927345678', N'78 Nguyễn Văn Linh, Hải Châu', N'Đà Nẵng', N'Quận Hải Châu', TO_DATE('1988-12-10', 'YYYY-MM-DD'), 'MALE', 3);
+
+INSERT INTO customers (full_name, email, phone, address, province, district, date_of_birth, gender, preferred_branch_id) 
+VALUES (N'Phạm Thị Học Sinh', 'pham.thi.hs@gmail.com', '0936456789', N'12/4 Đường 3/2, Ninh Kiều', N'Cần Thơ', N'Quận Ninh Kiều', TO_DATE('2002-03-25', 'YYYY-MM-DD'), 'FEMALE', 4);
+
+INSERT INTO customers (full_name, email, phone, address, province, district, date_of_birth, gender, preferred_branch_id) 
+VALUES (N'Hoàng Văn Giáo Sư', 'hoang.van.gs@edu.vn', '0945567890', N'56 Lý Tự Trọng, Q.1', N'TP. Hồ Chí Minh', N'Quận 1', TO_DATE('1975-11-08', 'YYYY-MM-DD'), 'MALE', 1);
+
+INSERT INTO customers (full_name, email, phone, address, province, district, date_of_birth, gender, preferred_branch_id) 
+VALUES (N'Vũ Thị Sinh Viên', 'vu.thi.sv@student.edu.vn', '0956678901', N'KTX ĐHQG, Thủ Đức', N'TP. Hồ Chí Minh', N'Thành phố Thủ Đức', TO_DATE('2000-09-12', 'YYYY-MM-DD'), 'FEMALE', 1);
+
+INSERT INTO customers (full_name, email, phone, address, province, district, date_of_birth, gender, preferred_branch_id) 
+VALUES (N'Đặng Văn Doanh Nhân', 'dang.van.dn@company.vn', '0967789012', N'Tòa nhà Bitexco, Q.1', N'TP. Hồ Chí Minh', N'Quận 1', TO_DATE('1980-07-30', 'YYYY-MM-DD'), 'MALE', 1);
+
+INSERT INTO customers (full_name, email, phone, address, province, district, date_of_birth, gender, preferred_branch_id) 
+VALUES (N'Bùi Thị Nội Trợ', 'bui.thi.nt@gmail.com', '0978890123', N'234 Lê Lợi, Hải Châu', N'Đà Nẵng', N'Quận Hải Châu', TO_DATE('1992-04-18', 'YYYY-MM-DD'), 'FEMALE', 3);
+
+INSERT INTO customers (full_name, email, phone, address, province, district, date_of_birth, gender, preferred_branch_id) 
+VALUES (N'Ngô Văn Công Chức', 'ngo.van.cc@gmail.com', '0989901234', N'89 Trần Phú, Hoàn Kiếm', N'Hà Nội', N'Quận Hoàn Kiếm', TO_DATE('1985-06-05', 'YYYY-MM-DD'), 'MALE', 2);
+
+INSERT INTO customers (full_name, email, phone, address, province, district, date_of_birth, gender, preferred_branch_id) 
+VALUES (N'Lý Thị Giáo Viên', 'ly.thi.gv@school.edu.vn', '0990012345', N'101 Hùng Vương, Ninh Kiều', N'Cần Thơ', N'Quận Ninh Kiều', TO_DATE('1983-10-22', 'YYYY-MM-DD'), 'FEMALE', 4);
+
+-- 3.2. Phương thức vận chuyển (Shipping Methods)
+INSERT INTO shipping_methods (method_name, method_code, carrier, base_fee, weight_fee_per_kg, free_threshold, estimated_days_min, estimated_days_max, is_active, display_order) 
+VALUES (N'Giao hàng tiêu chuẩn', 'GHN_STD', 'GHN', 25000, 5000, 300000, 3, 5, 1, 1);
+
+INSERT INTO shipping_methods (method_name, method_code, carrier, base_fee, weight_fee_per_kg, free_threshold, estimated_days_min, estimated_days_max, is_active, display_order) 
+VALUES (N'Giao hàng nhanh', 'GHTK_FAST', 'GHTK', 35000, 8000, 500000, 1, 2, 1, 2);
+
+INSERT INTO shipping_methods (method_name, method_code, carrier, base_fee, weight_fee_per_kg, free_threshold, estimated_days_min, estimated_days_max, is_active, display_order) 
+VALUES (N'Giao hàng hỏa tốc', 'NOW', 'AhaMove', 60000, 15000, NULL, 2, 4, 1, 3); -- Theo giờ, tính theo giờ làm việc
+
+INSERT INTO shipping_methods (method_name, method_code, carrier, base_fee, weight_fee_per_kg, free_threshold, estimated_days_min, estimated_days_max, is_active, display_order) 
+VALUES (N'Nhận tại cửa hàng', 'PICKUP', 'STORE', 0, 0, 0, 0, 0, 1, 4);
+
+-- 3.3. Giỏ hàng (Carts)
+INSERT INTO carts (customer_id, branch_id, status, created_at) VALUES (1, 1, 'ACTIVE', SYSDATE - 2);
+INSERT INTO carts (customer_id, branch_id, status, created_at) VALUES (2, 2, 'ACTIVE', SYSDATE - 1);
+INSERT INTO carts (customer_id, branch_id, status, created_at) VALUES (3, 3, 'ABANDONED', SYSDATE - 10); -- Giỏ bỏ quá lâu
+INSERT INTO carts (customer_id, branch_id, status, converted_to_order_id, created_at) VALUES (4, 4, 'CONVERTED', 1, SYSDATE - 5); -- Đã chuyển thành đơn
+INSERT INTO carts (customer_id, branch_id, status, created_at) VALUES (5, 1, 'ACTIVE', SYSDATE);
+INSERT INTO carts (customer_id, branch_id, status, created_at) VALUES (6, 1, 'ACTIVE', SYSDATE - 3);
+INSERT INTO carts (customer_id, branch_id, status, created_at) VALUES (7, 1, 'ACTIVE', SYSDATE - 1);
+INSERT INTO carts (customer_id, branch_id, status, created_at) VALUES (8, 3, 'ACTIVE', SYSDATE - 4);
+
+-- 3.4. Chi tiết giỏ hàng (Cart Items)
+INSERT INTO cart_items (cart_id, book_id, quantity, unit_price) VALUES (1, 1, 2, 89000);
+INSERT INTO cart_items (cart_id, book_id, quantity, unit_price) VALUES (1, 3, 1, 95000);
+INSERT INTO cart_items (cart_id, book_id, quantity, unit_price) VALUES (2, 9, 1, 175000);
+INSERT INTO cart_items (cart_id, book_id, quantity, unit_price) VALUES (2, 10, 1, 85000);
+INSERT INTO cart_items (cart_id, book_id, quantity, unit_price) VALUES (3, 5, 3, 120000); -- Giỏ bỏ
+INSERT INTO cart_items (cart_id, book_id, quantity, unit_price) VALUES (5, 7, 5, 25000); -- Mua nhiều Doraemon
+INSERT INTO cart_items (cart_id, book_id, quantity, unit_price) VALUES (5, 15, 1, 105000);
+INSERT INTO cart_items (cart_id, book_id, quantity, unit_price) VALUES (6, 4, 2, 108000);
+INSERT INTO cart_items (cart_id, book_id, quantity, unit_price) VALUES (7, 12, 1, 195000);
+INSERT INTO cart_items (cart_id, book_id, quantity, unit_price) VALUES (8, 2, 1, 185000);
+
+-- 3.5. Đơn hàng (Orders)
+INSERT INTO orders (order_code, customer_id, branch_id, status_code, shipping_method_id, total_amount, discount_amount, shipping_fee, final_amount, order_date, ship_address, ship_province, ship_district, ship_phone) 
+VALUES ('ORD001', 4, 4, 'DELIVERED', 1, 245000, 0, 25000, 270000, SYSDATE - 10, N'12/4 Đường 3/2', N'Cần Thơ', N'Ninh Kiều', '0936456789');
+
+INSERT INTO orders (order_code, customer_id, branch_id, status_code, shipping_method_id, total_amount, discount_amount, shipping_fee, final_amount, order_date, ship_address, ship_province, ship_district, ship_phone) 
+VALUES ('ORD002', 1, 1, 'SHIPPING', 2, 273000, 0, 35000, 308000, SYSDATE - 3, N'123 Nguyễn Văn Cừ', N'TP. Hồ Chí Minh', N'Quận 5', '0909123456');
+
+INSERT INTO orders (order_code, customer_id, branch_id, status_code, shipping_method_id, total_amount, discount_amount, shipping_fee, final_amount, order_date, ship_address, ship_province, ship_district, ship_phone) 
+VALUES ('ORD003', 2, 2, 'PENDING', 1, 175000, 20000, 25000, 180000, SYSDATE - 1, N'45 Tràng Tiền', N'Hà Nội', N'Hoàn Kiếm', '0918234567');
+
+INSERT INTO orders (order_code, customer_id, branch_id, status_code, shipping_method_id, total_amount, discount_amount, shipping_fee, final_amount, order_date, ship_address, ship_province, ship_district, ship_phone, cancelled_at, cancellation_reason) 
+VALUES ('ORD004', 3, 3, 'CANCELLED', 1, 89000, 0, 0, 0, SYSDATE - 5, N'78 Nguyễn Văn Linh', N'Đà Nẵng', N'Hải Châu', '0927345678', SYSDATE - 4, N'Khách đổi ý không mua nữa');
+
+INSERT INTO orders (order_code, customer_id, branch_id, status_code, shipping_method_id, total_amount, discount_amount, shipping_fee, final_amount, order_date, ship_address, ship_province, ship_district, ship_phone) 
+VALUES ('ORD005', 5, 1, 'CONFIRMED', 1, 450000, 50000, 0, 400000, SYSDATE - 2, N'56 Lý Tự Trọng', N'TP. Hồ Chí Minh', N'Quận 1', '0945567890');
+
+INSERT INTO orders (order_code, customer_id, branch_id, status_code, shipping_method_id, total_amount, discount_amount, shipping_fee, final_amount, order_date, ship_address, ship_province, ship_district, ship_phone) 
+VALUES ('ORD006', 6, 1, 'PENDING', 4, 230000, 0, 0, 230000, SYSDATE, N'KTX ĐHQG', N'TP. Hồ Chí Minh', N'Thủ Đức', '0956678901'); -- Nhận tại cửa hàng
+
+INSERT INTO orders (order_code, customer_id, branch_id, status_code, shipping_method_id, total_amount, discount_amount, shipping_fee, final_amount, order_date, ship_address, ship_province, ship_district, ship_phone) 
+VALUES ('ORD007', 7, 1, 'DELIVERED', 2, 520000, 0, 35000, 555000, SYSDATE - 15, N'Tòa nhà Bitexco', N'TP. Hồ Chí Minh', N'Quận 1', '0967789012');
+
+-- 3.6. Chi tiết đơn hàng (Order Details)
+-- ORD001
+INSERT INTO order_details (order_id, book_id, quantity, unit_price) VALUES (1, 7, 5, 25000);
+INSERT INTO order_details (order_id, book_id, quantity, unit_price) VALUES (1, 13, 1, 95000);
+
+-- ORD002
+INSERT INTO order_details (order_id, book_id, quantity, unit_price) VALUES (2, 1, 1, 89000);
+INSERT INTO order_details (order_id, book_id, quantity, unit_price) VALUES (2, 3, 1, 95000);
+INSERT INTO order_details (order_id, book_id, quantity, unit_price) VALUES (2, 5, 1, 120000);
+
+-- ORD003
+INSERT INTO order_details (order_id, book_id, quantity, unit_price) VALUES (3, 9, 1, 175000);
+
+-- ORD004 (Cancelled)
+INSERT INTO order_details (order_id, book_id, quantity, unit_price) VALUES (4, 1, 1, 89000);
+
+-- ORD005
+INSERT INTO order_details (order_id, book_id, quantity, unit_price) VALUES (5, 2, 1, 185000);
+INSERT INTO order_details (order_id, book_id, quantity, unit_price) VALUES (5, 4, 1, 108000);
+INSERT INTO order_details (order_id, book_id, quantity, unit_price) VALUES (5, 6, 1, 145000);
+
+-- ORD006
+INSERT INTO order_details (order_id, book_id, quantity, unit_price) VALUES (6, 10, 1, 85000);
+INSERT INTO order_details (order_id, book_id, quantity, unit_price) VALUES (6, 14, 1, 195000);
+
+-- ORD007
+INSERT INTO order_details (order_id, book_id, quantity, unit_price) VALUES (7, 9, 2, 175000);
+INSERT INTO order_details (order_id, book_id, quantity, unit_price) VALUES (7, 12, 1, 195000);
+
+-- 3.7. Lịch sử trạng thái đơn hàng (Order Status History)
+INSERT INTO order_status_history (order_id, old_status, new_status, changed_by, changed_at, reason) 
+VALUES (1, NULL, 'PENDING', 7, SYSDATE - 10, N'Tạo đơn hàng mới');
+
+INSERT INTO order_status_history (order_id, old_status, new_status, changed_by, changed_at, reason) 
+VALUES (1, 'PENDING', 'CONFIRMED', 7, SYSDATE - 9, N'Xác nhận thanh toán');
+
+INSERT INTO order_status_history (order_id, old_status, new_status, changed_by, changed_at, reason) 
+VALUES (1, 'CONFIRMED', 'SHIPPING', 3, SYSDATE - 8, N'Giao cho đơn vị vận chuyển');
+
+INSERT INTO order_status_history (order_id, old_status, new_status, changed_by, changed_at, reason) 
+VALUES (1, 'SHIPPING', 'DELIVERED', 3, SYSDATE - 6, N'Khách đã nhận hàng');
+
+INSERT INTO order_status_history (order_id, old_status, new_status, changed_by, changed_at, reason) 
+VALUES (4, NULL, 'PENDING', 6, SYSDATE - 5, N'Tạo đơn');
+
+INSERT INTO order_status_history (order_id, old_status, new_status, changed_by, changed_at, reason) 
+VALUES (4, 'PENDING', 'CANCELLED', 6, SYSDATE - 4, N'Khách hủy đơn');
+
+COMMIT;
+
+-- ==========================================================
+-- PHẦN 4: DỮ LIỆU CỦA PHÁT (Kho vận & Nghiệp vụ khác)
+-- ==========================================================
+
+-- 4.1. Tồn kho chi nhánh (Branch Inventory)
+-- Chi nhánh 1 (HQ)
+INSERT INTO branch_inventory (branch_id, book_id, quantity_available, quantity_reserved, low_stock_threshold, warehouse_zone, shelf_code) 
+VALUES (1, 1, 50, 2, 10, 'A', 'A01');
+INSERT INTO branch_inventory (branch_id, book_id, quantity_available, quantity_reserved, low_stock_threshold, warehouse_zone, shelf_code) 
+VALUES (1, 2, 30, 1, 5, 'A', 'A02');
+INSERT INTO branch_inventory (branch_id, book_id, quantity_available, quantity_reserved, low_stock_threshold, warehouse_zone, shelf_code) 
+VALUES (1, 3, 100, 0, 20, 'B', 'B01');
+INSERT INTO branch_inventory (branch_id, book_id, quantity_available, quantity_reserved, low_stock_threshold, warehouse_zone, shelf_code) 
+VALUES (1, 4, 45, 1, 10, 'B', 'B02');
+INSERT INTO branch_inventory (branch_id, book_id, quantity_available, quantity_reserved, low_stock_threshold, warehouse_zone, shelf_code) 
+VALUES (1, 5, 25, 0, 5, 'A', 'A03');
+INSERT INTO branch_inventory (branch_id, book_id, quantity_available, quantity_reserved, low_stock_threshold, warehouse_zone, shelf_code) 
+VALUES (1, 7, 200, 5, 30, 'C', 'C01');
+
+-- Chi nhánh 2 (Hà Nội)
+INSERT INTO branch_inventory (branch_id, book_id, quantity_available, quantity_reserved, low_stock_threshold, warehouse_zone, shelf_code) 
+VALUES (2, 1, 30, 0, 10, 'A', 'A01');
+INSERT INTO branch_inventory (branch_id, book_id, quantity_available, quantity_reserved, low_stock_threshold, warehouse_zone, shelf_code) 
+VALUES (2, 9, 20, 1, 5, 'A', 'A02');
+INSERT INTO branch_inventory (branch_id, book_id, quantity_available, quantity_reserved, low_stock_threshold, warehouse_zone, shelf_code) 
+VALUES (2, 10, 15, 0, 5, 'B', 'B01');
+
+-- Chi nhánh 3 (Đà Nẵng) - ít hàng hơn
+INSERT INTO branch_inventory (branch_id, book_id, quantity_available, quantity_reserved, low_stock_threshold, warehouse_zone, shelf_code) 
+VALUES (3, 1, 8, 0, 5, 'A', 'A01');
+INSERT INTO branch_inventory (branch_id, book_id, quantity_available, quantity_reserved, low_stock_threshold, warehouse_zone, shelf_code) 
+VALUES (3, 5, 5, 0, 3, 'A', 'A02');
+
+-- Chi nhánh 4 (Cần Thơ)
+INSERT INTO branch_inventory (branch_id, book_id, quantity_available, quantity_reserved, low_stock_threshold, warehouse_zone, shelf_code) 
+VALUES (4, 7, 100, 0, 20, 'A', 'A01');
+INSERT INTO branch_inventory (branch_id, book_id, quantity_available, quantity_reserved, low_stock_threshold, warehouse_zone, shelf_code) 
+VALUES (4, 13, 20, 0, 5, 'A', 'A02');
+
+-- Kho trung chuyển (5) - Chứa nhiều hàng nhất
+INSERT INTO branch_inventory (branch_id, book_id, quantity_available, quantity_reserved, low_stock_threshold, warehouse_zone, shelf_code) 
+VALUES (5, 1, 500, 0, 50, 'KHO', 'K01');
+INSERT INTO branch_inventory (branch_id, book_id, quantity_available, quantity_reserved, low_stock_threshold, warehouse_zone, shelf_code) 
+VALUES (5, 2, 300, 0, 30, 'KHO', 'K02');
+INSERT INTO branch_inventory (branch_id, book_id, quantity_available, quantity_reserved, low_stock_threshold, warehouse_zone, shelf_code) 
+VALUES (5, 3, 1000, 0, 100, 'KHO', 'K03');
+
+-- 4.2. Phiếu điều chuyển kho (Inventory Transfers)
+INSERT INTO inventory_transfers (transfer_code, from_branch_id, to_branch_id, transfer_type, status, requested_by, approved_by, total_items, total_quantity, request_date, notes) 
+VALUES ('DC001', 5, 1, 'TRANSFER', 'COMPLETED', 4, 1, 3, 150, SYSDATE - 30, N'Nhập hàng đầu tháng cho chi nhánh chính');
+
+INSERT INTO inventory_transfers (transfer_code, from_branch_id, to_branch_id, transfer_type, status, requested_by, approved_by, total_items, total_quantity, request_date, notes) 
+VALUES ('DC002', 5, 2, 'TRANSFER', 'SHIPPING', 4, 1, 2, 50, SYSDATE - 2, N'Bổ sung hàng cho chi nhánh Hà Nội');
+
+INSERT INTO inventory_transfers (transfer_code, from_branch_id, to_branch_id, transfer_type, status, requested_by, total_items, total_quantity, request_date, notes) 
+VALUES ('DC003', 1, 3, 'TRANSFER', 'PENDING', 3, NULL, 1, 20, SYSDATE, N'Chuyển hàng dư từ HCM sang Đà Nẵng');
+
+-- 4.3. Chi tiết điều chuyển (Transfer Details)
+-- DC001 (Completed)
+INSERT INTO transfer_details (transfer_id, book_id, quantity_requested, quantity_shipped, quantity_received, unit_cost) 
+VALUES (1, 1, 50, 50, 50, 45000);
+INSERT INTO transfer_details (transfer_id, book_id, quantity_requested, quantity_shipped, quantity_received, unit_cost) 
+VALUES (1, 2, 30, 30, 30, 95000);
+INSERT INTO transfer_details (transfer_id, book_id, quantity_requested, quantity_shipped, quantity_received, unit_cost) 
+VALUES (1, 3, 70, 70, 70, 50000);
+
+-- DC002 (Shipping)
+INSERT INTO transfer_details (transfer_id, book_id, quantity_requested, quantity_shipped, quantity_received) 
+VALUES (2, 1, 20, 20, 0);
+INSERT INTO transfer_details (transfer_id, book_id, quantity_requested, quantity_shipped, quantity_received) 
+VALUES (2, 9, 30, 30, 0);
+
+-- DC003 (Pending)
+INSERT INTO transfer_details (transfer_id, book_id, quantity_requested, quantity_shipped, quantity_received) 
+VALUES (3, 1, 20, 0, 0);
+
+-- 4.4. Giao dịch kho (Inventory Transactions)
+-- Nhập hàng ban đầu
+INSERT INTO inventory_transactions (branch_id, book_id, txn_type, reference_type, quantity, unit_cost, notes, created_by) 
+VALUES (5, 1, 'IN', 'INITIAL', 1000, 45000, N'Nhập kho đầu kỳ', 1);
+
+INSERT INTO inventory_transactions (branch_id, book_id, txn_type, reference_type, quantity, unit_cost, notes, created_by) 
+VALUES (5, 2, 'IN', 'INITIAL', 600, 95000, N'Nhập kho đầu kỳ', 1);
+
+-- Xuất bán (từ chi nhánh 4 - Cần Thơ cho đơn ORD001)
+INSERT INTO inventory_transactions (branch_id, book_id, txn_type, reference_id, reference_type, quantity, unit_cost, notes, created_by) 
+VALUES (4, 7, 'OUT', 1, 'ORDER', -5, 15000, N'Bán hàng đơn ORD001', 7);
+
+INSERT INTO inventory_transactions (branch_id, book_id, txn_type, reference_id, reference_type, quantity, unit_cost, notes, created_by) 
+VALUES (4, 13, 'OUT', 1, 'ORDER', -1, 60000, N'Bán hàng đơn ORD001', 7);
+
+-- Điều chuyển (Transfer)
+INSERT INTO inventory_transactions (branch_id, book_id, txn_type, reference_id, reference_type, quantity, notes, created_by) 
+VALUES (5, 1, 'TRANSFER_OUT', 1, 'TRANSFER', -50, N'Điều chuyển đến chi nhánh 1', 4);
+
+INSERT INTO inventory_transactions (branch_id, book_id, txn_type, reference_id, reference_type, quantity, notes, created_by) 
+VALUES (1, 1, 'TRANSFER_IN', 1, 'TRANSFER', 50, N'Nhận từ kho trung chuyển', 4);
+
+-- 4.5. Mã giảm giá (Coupons)
+INSERT INTO coupons (coupon_code, coupon_name, description, discount_type, discount_value, min_order_amount, max_discount_amount, usage_limit, per_customer_limit, start_date, end_date, is_active, applicable_branches, created_by) 
+VALUES ('WELCOME', N'Chào mừng thành viên mới', N'Giảm 10% cho đơn hàng đầu tiên', 'PERCENT', 10, 100000, 50000, 100, 1, SYSDATE - 30, SYSDATE + 365, 1, NULL, 1);
+
+INSERT INTO coupons (coupon_code, coupon_name, description, discount_type, discount_value, min_order_amount, max_discount_amount, usage_limit, per_customer_limit, start_date, end_date, is_active, applicable_branches, created_by) 
+VALUES ('SALE50K', N'Giảm 50K', N'Giảm trực tiếp 50.000đ', 'FIXED', 50000, 200000, NULL, 50, 2, SYSDATE - 10, SYSDATE + 20, 1, '["1","2"]', 1);
+
+INSERT INTO coupons (coupon_code, coupon_name, description, discount_type, discount_value, min_order_amount, max_discount_amount, usage_limit, per_customer_limit, start_date, end_date, is_active, applicable_branches, created_by) 
+VALUES ('SUMMER2024', N'Khuyến mãi hè', N'Giảm 20% cho sách thiếu nhi', 'PERCENT', 20, 150000, 100000, 200, 5, SYSDATE, TO_DATE('2024-08-31', 'YYYY-MM-DD'), 1, NULL, 1);
+
+INSERT INTO coupons (coupon_code, coupon_name, discount_type, discount_value, min_order_amount, start_date, end_date, is_active, usage_count, created_by) 
+VALUES ('EXPIRED', N'Coupon hết hạn', 'PERCENT', 15, 100000, SYSDATE - 60, SYSDATE - 30, 0, 50, 1);
+
+-- 4.6. Thanh toán (Payment Transactions)
+-- Thanh toán cho ORD001 (Success)
+INSERT INTO payment_transactions (order_id, branch_id, payment_method, amount, currency, status, transaction_code, paid_at, created_by) 
+VALUES (1, 4, 'COD', 270000, 'VND', 'SUCCESS', 'COD001', SYSDATE - 6, 7);
+
+-- Thanh toán cho ORD002 (Pending)
+INSERT INTO payment_transactions (order_id, branch_id, payment_method, amount, currency, status, transaction_code, created_by) 
+VALUES (2, 1, 'MOMO', 308000, 'VND', 'PENDING', 'MOMO20240327001', 3);
+
+-- Thanh toán cho ORD003 (Success - dùng Coupon)
+INSERT INTO payment_transactions (order_id, branch_id, payment_method, amount, currency, status, transaction_code, paid_at, created_by) 
+VALUES (3, 2, 'BANK_TRANSFER', 180000, 'VND', 'SUCCESS', 'BANK20240326001', SYSDATE - 1, 2);
+
+-- Thanh toán cho ORD007 (Credit Card)
+INSERT INTO payment_transactions (order_id, branch_id, payment_method, amount, currency, status, transaction_code, paid_at, created_by) 
+VALUES (7, 1, 'CREDIT_CARD', 555000, 'VND', 'SUCCESS', 'VISA20240310001', SYSDATE - 15, 3);
+
+-- 4.7. Đánh giá sản phẩm (Reviews)
+INSERT INTO reviews (customer_id, book_id, order_id, rating, comment_text, is_approved, approved_by, approved_at, helpful_count) 
+VALUES (4, 7, 1, 5, N'Sách hay, con tôi rất thích đọc Doraemon!', 1, 1, SYSDATE - 5, 3);
+
+INSERT INTO reviews (customer_id, book_id, order_id, rating, comment_text, is_approved, approved_by, approved_at, helpful_count) 
+VALUES (4, 13, 1, 4, N'Truyện hay nhưng giao hàng hơi chậm', 1, 1, SYSDATE - 5, 1);
+
+INSERT INTO reviews (customer_id, book_id, order_id, rating, comment_text, is_approved, approved_by, approved_at, helpful_count) 
+VALUES (7, 9, 7, 5, N'Sapiens là cuốn sách tuyệt vời, nên đọc!', 1, 1, SYSDATE - 10, 10);
+
+INSERT INTO reviews (customer_id, book_id, order_id, rating, comment_text, is_approved, approved_by, approved_at, helpful_count) 
+VALUES (7, 12, 7, 5, N'Tương lai của nhân loại qua góc nhìn thú vị', 1, 1, SYSDATE - 10, 5);
+
+INSERT INTO reviews (customer_id, book_id, order_id, rating, comment_text, is_approved) 
+VALUES (1, 1, 2, 5, N'Nhà Giả Kim thay đổi cuộc đời tôi', 0); -- Chờ duyệt
+
+INSERT INTO reviews (customer_id, book_id, order_id, rating, comment_text, is_approved) 
+VALUES (2, 9, 3, 4, N'Hay nhưng dài quá', 0); -- Chờ duyệt
+
+-- 4.8. Wishlists (Danh sách yêu thích)
+INSERT INTO wishlists (customer_id, book_id, added_at, note) 
+VALUES (1, 2, SYSDATE - 5, N'Muốn mua tập 2 Harry Potter');
+
+INSERT INTO wishlists (customer_id, book_id, added_at, note) 
+VALUES (1, 4, SYSDATE - 3, N'Để dành mua sau');
+
+INSERT INTO wishlists (customer_id, book_id, added_at) 
+VALUES (2, 1, SYSDATE - 10);
+
+INSERT INTO wishlists (customer_id, book_id, added_at, note) 
+VALUES (3, 9, SYSDATE - 2, N'Sách này hay quá nhưng chưa có tiền mua');
+
+INSERT INTO wishlists (customer_id, book_id, added_at, is_notified) 
+VALUES (5, 15, SYSDATE - 20, 1); -- Đã thông báo khi có hàng
+
+INSERT INTO wishlists (customer_id, book_id, added_at) 
+VALUES (6, 10, SYSDATE - 1);
+
+COMMIT;
+
+-- ==========================================================
+-- THỐNG KÊ DỮ LIỆU
+-- ==========================================================
+-- Tổng số bản ghi đã chèn:
+-- Branches: 4 (+1 đã có = 5)
+-- Users: 6 (+1 đã có = 7)
+-- Staff: 7
+-- Categories: 11
+-- Authors: 15
+-- Publishers: 10
+-- Books: 15
+-- Book Images: 17
+-- Book Authors: 18
+-- Customers: 10
+-- Shipping Methods: 4
+-- Carts: 8
+-- Cart Items: 10
+-- Orders: 7
+-- Order Details: 16
+-- Order Status History: 6
+-- Branch Inventory: 17
+-- Inventory Transfers: 3
+-- Transfer Details: 6
+-- Inventory Transactions: 8
+-- Coupons: 4
+-- Payment Transactions: 4
+-- Reviews: 6
+-- Wishlists: 6
+-- ==========================================================
+-- TỔNG CỘNG: ~250+ bản ghi
 -- ==========================================================

@@ -303,39 +303,6 @@ CREATE TABLE shipping_methods (
     CONSTRAINT ck_ship_active CHECK (is_active IN (0, 1))
 );
 
--- 13. Giỏ hàng (Carts)
-CREATE TABLE carts (
-    cart_id             NUMBER,
-    customer_id         NUMBER NOT NULL,
-    branch_id           NUMBER NOT NULL, -- Giỏ hàng thuộc chi nhánh nào
-    session_id          VARCHAR2(100),
-    status              VARCHAR2(20) DEFAULT 'ACTIVE',
-    converted_to_order_id NUMBER,
-    created_at          DATE DEFAULT SYSDATE,
-    updated_at          DATE,
-    CONSTRAINT pk_carts PRIMARY KEY (cart_id),
-    CONSTRAINT fk_cart_cust FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
-    CONSTRAINT fk_cart_branch FOREIGN KEY (branch_id) REFERENCES branches(branch_id),
-    CONSTRAINT fk_cart_converted FOREIGN KEY (converted_to_order_id) REFERENCES orders(order_id),
-    CONSTRAINT ck_cart_status CHECK (status IN ('ACTIVE', 'CONVERTED', 'ABANDONED'))
-);
-
--- 14. Chi tiết giỏ hàng (Cart Items)
-CREATE TABLE cart_items (
-    cart_item_id        NUMBER,
-    cart_id             NUMBER NOT NULL,
-    book_id             NUMBER NOT NULL,
-    quantity            NUMBER NOT NULL,
-    unit_price          NUMBER(12,2) NOT NULL, -- Giá tại thời điểm thêm vào
-    added_at            DATE DEFAULT SYSDATE,
-    updated_at          DATE,
-    CONSTRAINT pk_cart_items PRIMARY KEY (cart_item_id),
-    CONSTRAINT fk_ci_cart FOREIGN KEY (cart_id) REFERENCES carts(cart_id) ON DELETE CASCADE,
-    CONSTRAINT fk_ci_book FOREIGN KEY (book_id) REFERENCES books(book_id),
-    CONSTRAINT uq_ci_cart_book UNIQUE (cart_id, book_id),
-    CONSTRAINT ck_ci_qty CHECK (quantity > 0),
-    CONSTRAINT ck_ci_price CHECK (unit_price >= 0)
-);
 
 -- 15. Đơn hàng (Orders)
 CREATE TABLE orders (
@@ -411,6 +378,40 @@ CREATE TABLE order_status_history (
     CONSTRAINT fk_osh_order FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE,
     CONSTRAINT fk_ochanged_by FOREIGN KEY (changed_by) REFERENCES staff(staff_id),
     CONSTRAINT ck_osh_new_status CHECK (new_status IN ('PENDING', 'CONFIRMED', 'SHIPPING', 'DELIVERED', 'CANCELLED', 'RETURNED'))
+);
+
+-- 13. Giỏ hàng (Carts) - Chuyển xuống đây để Orders tồn tại trước
+CREATE TABLE carts (
+    cart_id             NUMBER,
+    customer_id         NUMBER NOT NULL,
+    branch_id           NUMBER NOT NULL, -- Giỏ hàng thuộc chi nhánh nào
+    session_id          VARCHAR2(100),
+    status              VARCHAR2(20) DEFAULT 'ACTIVE',
+    converted_to_order_id NUMBER,
+    created_at          DATE DEFAULT SYSDATE,
+    updated_at          DATE,
+    CONSTRAINT pk_carts PRIMARY KEY (cart_id),
+    CONSTRAINT fk_cart_cust FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
+    CONSTRAINT fk_cart_branch FOREIGN KEY (branch_id) REFERENCES branches(branch_id),
+    CONSTRAINT fk_cart_converted FOREIGN KEY (converted_to_order_id) REFERENCES orders(order_id),
+    CONSTRAINT ck_cart_status CHECK (status IN ('ACTIVE', 'CONVERTED', 'ABANDONED'))
+);
+
+-- 14. Chi tiết giỏ hàng (Cart Items)
+CREATE TABLE cart_items (
+    cart_item_id        NUMBER,
+    cart_id             NUMBER NOT NULL,
+    book_id             NUMBER NOT NULL,
+    quantity            NUMBER NOT NULL,
+    unit_price          NUMBER(12,2) NOT NULL, -- Giá tại thời điểm thêm vào
+    added_at            DATE DEFAULT SYSDATE,
+    updated_at          DATE,
+    CONSTRAINT pk_cart_items PRIMARY KEY (cart_item_id),
+    CONSTRAINT fk_ci_cart FOREIGN KEY (cart_id) REFERENCES carts(cart_id) ON DELETE CASCADE,
+    CONSTRAINT fk_ci_book FOREIGN KEY (book_id) REFERENCES books(book_id),
+    CONSTRAINT uq_ci_cart_book UNIQUE (cart_id, book_id),
+    CONSTRAINT ck_ci_qty CHECK (quantity > 0),
+    CONSTRAINT ck_ci_price CHECK (unit_price >= 0)
 );
 
 -- ==========================================================

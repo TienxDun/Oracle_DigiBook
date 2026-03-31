@@ -14,9 +14,15 @@ export async function GET(request: NextRequest) {
     const conditions: string[] = ["b.is_active = 1"];
     const binds: Record<string, string | number> = {};
     
-    if (branchId) {
+    const bookId = searchParams.get("book_id");
+
+    if (branchId && branchId !== "ALL") {
       conditions.push("bi.branch_id = :branch_id");
-      binds.branch_id = parseInt(branchId);
+      binds.branch_id = Number(branchId);
+    }
+    if (bookId) {
+      conditions.push("bi.book_id = :book_id");
+      binds.book_id = Number(bookId);
     }
     if (lowStockOnly) {
       conditions.push("bi.quantity_available <= bi.low_stock_threshold");
@@ -29,17 +35,17 @@ export async function GET(request: NextRequest) {
         bi.inventory_id,
         bi.branch_id,
         br.branch_name,
-        bi.book_id,
+        b.book_id,
         b.title AS book_title,
         b.isbn,
-        bi.quantity_available,
-        bi.low_stock_threshold,
+        NVL(bi.quantity_available, 0) as quantity_available,
+        NVL(bi.low_stock_threshold, 10) as low_stock_threshold,
         bi.last_stock_in_at
-      FROM branch_inventory bi
-      JOIN branches br ON bi.branch_id = br.branch_id
-      JOIN books b ON bi.book_id = b.book_id
+      FROM books b
+      LEFT JOIN branch_inventory bi ON b.book_id = bi.book_id
+      LEFT JOIN branches br ON bi.branch_id = br.branch_id
       ${whereClause}
-      ORDER BY br.branch_name, b.title
+      ORDER BY b.title, br.branch_name
     `;
 
     const rows = await query<BranchInventory>(sql, binds);

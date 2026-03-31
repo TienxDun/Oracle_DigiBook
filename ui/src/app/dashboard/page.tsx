@@ -221,7 +221,7 @@ export default function Dashboard() {
             </select>
           </div>
           
-          <div className="h-[300px] w-full">
+          <div className="h-[300px] w-full min-w-0">
             {loading ? (
               <div className="h-full w-full flex items-center justify-center bg-accent/5 rounded-xl border border-dashed border-border">
                 <div className="flex flex-col items-center gap-2">
@@ -230,7 +230,7 @@ export default function Dashboard() {
                 </div>
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <AreaChart data={chartData}>
                   <defs>
                     <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">

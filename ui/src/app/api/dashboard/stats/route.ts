@@ -8,15 +8,43 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const sql = `
-      SELECT
-        (SELECT COUNT(*) FROM orders) AS TOTAL_ORDERS,
-        (SELECT NVL(SUM(final_amount), 0) FROM orders WHERE status_code != 'CANCELLED') AS TOTAL_REVENUE,
-        (SELECT NVL(SUM(quantity_available), 0) FROM branch_inventory) AS TOTAL_STOCK,
-        (SELECT COUNT(*) FROM customers) AS TOTAL_CUSTOMERS,
-        (SELECT COUNT(*) FROM orders WHERE status_code = 'PENDING') AS PENDING_ORDERS,
-        (SELECT COUNT(*) FROM branch_inventory WHERE quantity_available <= low_stock_threshold) AS LOW_STOCK_COUNT
-      FROM DUAL
+      WITH stats AS (
+        SELECT
+          (SELECT COUNT(*) FROM orders) AS TOTAL_ORDERS,
+          (SELECT COUNT(*) FROM orders WHERE order_date >= SYSDATE - 30) AS O_CUR,
+          (SELECT COUNT(*) FROM orders WHERE order_date >= SYSDATE - 60 AND order_date < SYSDATE - 30) AS O_PREV,
+          
+          (SELECT NVL(SUM(final_amount), 0) FROM orders WHERE status_code != 'CANCELLED') AS TOTAL_REVENUE,
+          (SELECT NVL(SUM(final_amount), 0) FROM orders WHERE status_code != 'CANCELLED' AND order_date >= SYSDATE - 30) AS R_CUR,
+          (SELECT NVL(SUM(final_amount), 0) FROM orders WHERE status_code != 'CANCELLED' AND order_date >= SYSDATE - 60 AND order_date < SYSDATE - 30) AS R_PREV,
+          
+          (SELECT NVL(SUM(quantity_available), 0) FROM branch_inventory) AS TOTAL_STOCK,
+          (SELECT NVL(SUM(CASE WHEN txn_type IN ('IN', 'TRANSFER_IN', 'RETURN') THEN quantity ELSE -quantity END), 0) 
+           FROM inventory_transactions WHERE created_at >= SYSDATE - 30) AS S_NET_CUR,
+          (SELECT NVL(SUM(CASE WHEN txn_type IN ('IN', 'TRANSFER_IN', 'RETURN') THEN quantity ELSE -quantity END), 0) 
+           FROM inventory_transactions WHERE created_at >= SYSDATE - 60 AND created_at < SYSDATE - 30) AS S_NET_PREV,
+
+          (SELECT COUNT(*) FROM customers) AS TOTAL_CUSTOMERS,
+          (SELECT COUNT(*) FROM customers WHERE created_at >= SYSDATE - 30) AS C_CUR,
+          (SELECT COUNT(*) FROM customers WHERE created_at >= SYSDATE - 60 AND created_at < SYSDATE - 30) AS C_PREV,
+          
+          (SELECT COUNT(*) FROM orders WHERE status_code = 'PENDING') AS PENDING_ORDERS,
+          (SELECT COUNT(*) 
+           FROM branch_inventory bi
+           JOIN books b ON bi.book_id = b.book_id
+           WHERE b.is_active = 1 
+           AND bi.quantity_available <= bi.low_stock_threshold) AS LOW_STOCK_COUNT
+        FROM DUAL
+      )
+      SELECT 
+        TOTAL_ORDERS, TOTAL_REVENUE, TOTAL_STOCK, TOTAL_CUSTOMERS, PENDING_ORDERS, LOW_STOCK_COUNT,
+        ROUND(NVL((O_CUR - O_PREV) / NULLIF(O_PREV, 0) * 100, 0), 1) AS ORDERS_CHANGE,
+        ROUND(NVL((R_CUR - R_PREV) / NULLIF(R_PREV, 0) * 100, 0), 1) AS REVENUE_CHANGE,
+        ROUND(NVL((S_NET_CUR - S_NET_PREV) / NULLIF(ABS(S_NET_PREV), 0) * 100, 0), 1) AS STOCK_CHANGE,
+        ROUND(NVL((C_CUR - C_PREV) / NULLIF(C_PREV, 0) * 100, 0), 1) AS CUSTOMERS_CHANGE
+      FROM stats
     `;
+
 
     const rows = await query<DashboardStats>(sql);
     const stats = rows[0];

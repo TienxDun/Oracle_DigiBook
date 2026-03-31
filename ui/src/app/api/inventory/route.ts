@@ -11,9 +11,9 @@ export async function GET(request: NextRequest) {
   const lowStockOnly = searchParams.get("low_stock") === "true";
 
   try {
-    const conditions: string[] = [];
+    const conditions: string[] = ["b.is_active = 1"];
     const binds: Record<string, string | number> = {};
-
+    
     if (branchId) {
       conditions.push("bi.branch_id = :branch_id");
       binds.branch_id = parseInt(branchId);

@@ -56,8 +56,8 @@ export default function InventoryPage() {
         BRANCHES: {}
       };
     }
-    acc[item.BOOK_ID].BRANCHES[item.BRANCH_NAME] = item.QUANTITY;
-    acc[item.BOOK_ID].TOTAL += item.QUANTITY;
+    acc[item.BOOK_ID].BRANCHES[item.BRANCH_NAME] = Number(item.QUANTITY_AVAILABLE || 0);
+    acc[item.BOOK_ID].TOTAL += Number(item.QUANTITY_AVAILABLE || 0);
     return acc;
   }, {});
 

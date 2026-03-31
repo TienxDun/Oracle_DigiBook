@@ -15,6 +15,7 @@ interface BookDrawerProps {
 export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps) {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
+  const [publishers, setPublishers] = useState<any[]>([]);
   
   // Form State
   const [formData, setFormData] = useState({
@@ -34,19 +35,20 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
   useEffect(() => {
     if (isOpen) {
       fetchCategories();
+      fetchPublishers();
       if (book) {
         setFormData({
           title: book.TITLE || "",
           isbn: book.ISBN || "",
-          price: book.PRICE || 0,
-          category_id: book.CATEGORY_ID || 0,
-          publisher_id: book.PUBLISHER_ID || 0,
-          publication_year: book.PUBLICATION_YEAR || new Date().getFullYear(),
-          page_count: book.PAGE_COUNT || 0,
+          price: Number(book.PRICE || 0),
+          category_id: Number(book.CATEGORY_ID || 0),
+          publisher_id: Number(book.PUBLISHER_ID || 0),
+          publication_year: Number(book.PUBLICATION_YEAR || new Date().getFullYear()),
+          page_count: Number(book.PAGE_COUNT || 0),
           language: book.LANGUAGE || "vi",
           cover_type: book.COVER_TYPE || "Bìa mềm",
           description: book.DESCRIPTION || "",
-          is_active: book.IS_ACTIVE ?? 1
+          is_active: Number(book.IS_ACTIVE ?? 1)
         });
       } else {
         setFormData({ 
@@ -73,6 +75,16 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
       if (data.success) setCategories(data.data);
     } catch (e) {
       console.error("Failed to fetch categories");
+    }
+  };
+
+  const fetchPublishers = async () => {
+    try {
+      const res = await fetch("/api/publishers");
+      const data = await res.json();
+      if (data.success) setPublishers(data.data);
+    } catch (e) {
+      console.error("Failed to fetch publishers");
     }
   };
 
@@ -135,6 +147,7 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
                     value={formData.title}
                     onChange={(e) => setFormData({...formData, title: e.target.value})}
                     className="w-full rounded-lg border border-border px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-primary"
+                    placeholder="Nhập tên sách..."
                   />
                 </div>
                 <div className="space-y-2">
@@ -144,6 +157,7 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
                     value={formData.isbn}
                     onChange={(e) => setFormData({...formData, isbn: e.target.value})}
                     className="w-full rounded-lg border border-border px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-primary"
+                    placeholder="978..."
                   />
                 </div>
                 <div className="space-y-2">
@@ -172,6 +186,22 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
                   </select>
                 </div>
                 <div className="space-y-2">
+                  <label className="text-sm font-semibold text-foreground">Nhà xuất bản</label>
+                  <select 
+                    value={formData.publisher_id}
+                    onChange={(e) => setFormData({...formData, publisher_id: Number(e.target.value)})}
+                    className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value={0}>Chọn nhà xuất bản</option>
+                    {publishers.map((p: any) => (
+                      <option key={p.PUBLISHER_ID} value={p.PUBLISHER_ID}>{p.PUBLISHER_NAME}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
                   <label className="text-sm font-semibold text-foreground">Trạng thái</label>
                   <select 
                     value={formData.is_active}
@@ -182,9 +212,6 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
                     <option value={0}>Ngừng kinh doanh</option>
                   </select>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-foreground">Năm xuất bản</label>
                   <input 
@@ -259,5 +286,6 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
         </div>
       </div>
     </>
+
   );
 }

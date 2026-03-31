@@ -14,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { BookDrawer } from "@/components/catalog/book-drawer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 import type { Book } from "@/types/database";
 
 export default function CatalogPage() {
@@ -23,18 +24,37 @@ export default function CatalogPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<any>(null);
   const [search, setSearch] = useState("");
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedSort, setSelectedSort] = useState<string>("newest");
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
   const limit = 10;
 
   useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
     fetchBooks();
-  }, [page, search]);
+  }, [page, search, selectedCategory, selectedSort]);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch("/api/categories");
+      const data = await res.json();
+      if (data.success) setCategories(data.data);
+    } catch (e) {
+      console.error("Failed to fetch categories");
+    }
+  };
 
   const fetchBooks = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/catalog?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`);
+      const categoryParam = selectedCategory !== "all" ? `&category_id=${selectedCategory}` : "";
+      const sortParam = `&sort=${selectedSort}`;
+      const res = await fetch(`/api/catalog?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}${categoryParam}${sortParam}`);
       const data = await res.json();
       if (data.success) {
         setBooks(data.data);
@@ -76,6 +96,21 @@ export default function CatalogPage() {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
     setPage(1); // Reset to first page on search
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Bạn có chắc chắn muốn ngừng kinh doanh đầu sách này?")) return;
+    
+    try {
+      const res = await fetch(`/api/catalog/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Đã cập nhật trạng thái sách");
+        fetchBooks();
+      }
+    } catch (e) {
+      toast.error("Lỗi khi xóa sách");
+    }
   };
 
   return (
@@ -135,14 +170,36 @@ export default function CatalogPage() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 text-sm font-medium hover:bg-accent transition-colors">
-              <Filter size={16} />
-              Danh mục
-            </button>
-            <button className="flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 text-sm font-medium hover:bg-accent text-secondary-foreground transition-colors">
-              Sắp xếp
-              <ArrowUpDown size={14} />
-            </button>
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-foreground pointer-events-none" size={16} />
+              <select 
+                value={selectedCategory}
+                onChange={(e) => {
+                  setSelectedCategory(e.target.value);
+                  setPage(1);
+                }}
+                className="appearance-none rounded-lg border border-border bg-white py-2 pl-9 pr-8 text-sm font-medium outline-none hover:bg-accent transition-all cursor-pointer"
+              >
+                <option value="all">Tất cả danh mục</option>
+                {categories.map((c: any) => (
+                  <option key={c.CATEGORY_ID} value={c.CATEGORY_ID}>{c.CATEGORY_NAME}</option>
+                ))}
+              </select>
+            </div>
+            <div className="relative">
+              <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-foreground pointer-events-none" size={14} />
+              <select 
+                value={selectedSort}
+                onChange={(e) => setSelectedSort(e.target.value)}
+                className="appearance-none rounded-lg border border-border bg-white py-2 pl-9 pr-8 text-sm font-medium outline-none hover:bg-accent transition-all cursor-pointer"
+              >
+                <option value="newest">Mới nhất</option>
+                <option value="oldest">Cũ nhất</option>
+                <option value="price_asc">Giá: Thấp đến Cao</option>
+                <option value="price_desc">Giá: Cao đến Thấp</option>
+                <option value="alphabetical">Tên: A-Z</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -225,14 +282,19 @@ export default function CatalogPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                         <button 
+                        <button 
                           onClick={() => handleEdit(book)}
                           className="rounded-md p-1.5 text-secondary-foreground hover:bg-primary/10 hover:text-primary transition-all"
-                         >
+                          title="Chỉnh sửa"
+                        >
                           <Edit2 size={16} />
                         </button>
-                        <button className="rounded-md p-1.5 text-secondary-foreground hover:bg-accent hover:text-foreground transition-all">
-                          <MoreHorizontal size={18} />
+                        <button 
+                          onClick={() => handleDelete(book.BOOK_ID)}
+                          className="rounded-md p-1.5 text-secondary-foreground hover:bg-error/10 hover:text-error transition-all"
+                          title="Ngừng kinh doanh"
+                        >
+                          <Plus size={16} className="rotate-45" />
                         </button>
                       </div>
                     </td>

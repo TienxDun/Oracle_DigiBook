@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const sql = "SELECT branch_id, branch_name, branch_code, branch_type, address FROM branches WHERE status = 'ACTIVE' ORDER BY branch_id ASC";
+    const sql = "SELECT publisher_id, publisher_name FROM publishers ORDER BY publisher_name ASC";
     const result = await query(sql);
     return NextResponse.json({ success: true, data: result });
   } catch (error: any) {

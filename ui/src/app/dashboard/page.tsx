@@ -90,35 +90,36 @@ export default function Dashboard() {
       label: "Tổng đơn hàng", 
       value: stats?.TOTAL_ORDERS.toLocaleString() || "0", 
       icon: ShoppingCart, 
-      change: "+12.5%", 
-      isPositive: true, 
+      change: stats ? `${stats.ORDERS_CHANGE >= 0 ? '+' : ''}${stats.ORDERS_CHANGE}%` : "0%", 
+      isPositive: (stats?.ORDERS_CHANGE ?? 0) >= 0, 
       color: "indigo" 
     },
     { 
       label: "Doanh thu hệ thống", 
-      value: stats ? `${(stats.TOTAL_REVENUE / 1000000).toFixed(1)}M` : "0M", 
+      value: stats ? `${(stats.TOTAL_REVENUE / 1000000).toFixed(1)}M` : "0.0M", 
       icon: TrendingUp, 
-      change: "+8.4%", 
-      isPositive: true, 
+      change: stats ? `${stats.REVENUE_CHANGE >= 0 ? '+' : ''}${stats.REVENUE_CHANGE}%` : "0%", 
+      isPositive: (stats?.REVENUE_CHANGE ?? 0) >= 0, 
       color: "emerald" 
     },
     { 
       label: "Tồn kho tổng", 
       value: stats?.TOTAL_STOCK.toLocaleString() || "0", 
       icon: Package, 
-      change: "-2.1%", 
-      isPositive: false, 
+      change: stats ? `${stats.STOCK_CHANGE >= 0 ? '+' : ''}${stats.STOCK_CHANGE}%` : "0%", 
+      isPositive: (stats?.STOCK_CHANGE ?? 0) >= 0, 
       color: "rose" 
     },
     { 
       label: "Tổng khách hàng", 
       value: stats?.TOTAL_CUSTOMERS.toLocaleString() || "0", 
       icon: Users, 
-      change: "+24%", 
-      isPositive: true, 
+      change: stats ? `${stats.CUSTOMERS_CHANGE >= 0 ? '+' : ''}${stats.CUSTOMERS_CHANGE}%` : "0%", 
+      isPositive: (stats?.CUSTOMERS_CHANGE ?? 0) >= 0, 
       color: "amber" 
     },
   ];
+
 
   return (
     <motion.div 

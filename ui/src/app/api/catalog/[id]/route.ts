@@ -40,26 +40,42 @@ export async function PUT(
   try {
     const { id: book_id } = await params;
     const body = await request.json();
-    const { title, isbn, price, is_active, category_id } = body;
+    const { 
+      title, isbn, price, category_id, publisher_id,
+      description, page_count, publication_year, 
+      language, cover_type, is_active 
+    } = body;
 
     const sql = `
-      UPDATE books 
-      SET title = :title, 
-          isbn = :isbn, 
-          price = :price, 
-          is_active = :is_active, 
-          category_id = :category_id,
-          updated_at = SYSDATE 
+      UPDATE books SET
+        title = :title,
+        isbn = :isbn,
+        price = :price,
+        category_id = :category_id,
+        publisher_id = :publisher_id,
+        description = :description,
+        page_count = :page_count,
+        publication_year = :publication_year,
+        language = :language,
+        cover_type = :cover_type,
+        is_active = :is_active,
+        updated_at = SYSDATE
       WHERE book_id = :book_id
     `;
 
     const binds = {
+      book_id,
       title,
       isbn,
-      price,
-      is_active: is_active ? 1 : 0,
-      category_id,
-      book_id
+      price: Number(price),
+      category_id: Number(category_id),
+      publisher_id: Number(publisher_id || 1),
+      description: description || null,
+      page_count: page_count ? Number(page_count) : null,
+      publication_year: publication_year ? Number(publication_year) : null,
+      language: language || "vi",
+      cover_type: cover_type || "Bìa mềm",
+      is_active: is_active ?? 1
     };
 
     const result: any = await query(sql, binds, { autoCommit: true });
@@ -71,6 +87,22 @@ export async function PUT(
     });
   } catch (error: any) {
     console.error("Update Book Error:", error);
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+  }
+}
+
+// DELETE: Xóa mềm (Ngừng kinh doanh)
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: book_id } = await params;
+    const sql = "UPDATE books SET is_active = 0, updated_at = SYSDATE WHERE book_id = :book_id";
+    await query(sql, { book_id }, { autoCommit: true });
+
+    return NextResponse.json({ success: true, message: "Đã ngừng kinh doanh sách này" });
+  } catch (error: any) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }

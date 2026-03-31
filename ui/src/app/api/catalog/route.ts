@@ -4,13 +4,13 @@ import type { Book } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
-
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get("page") ?? "1");
   const limit = parseInt(searchParams.get("limit") ?? "20");
   const search = searchParams.get("search") ?? "";
   const categoryId = searchParams.get("category_id");
+  const sort = searchParams.get("sort") || "newest";
   const offset = (page - 1) * limit;
 
   try {
@@ -21,15 +21,23 @@ export async function GET(request: NextRequest) {
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
-    // Build bind params, only include what's needed
+    // Build bind params
     const binds: Record<string, string | number> = { limit, offset };
     if (search) binds.search = `%${search}%`;
     if (categoryId) binds.category_id = parseInt(categoryId);
 
-    // Separate bind params for count query (no limit/offset)
     const countBinds: Record<string, string | number> = {};
     if (search) countBinds.search = `%${search}%`;
     if (categoryId) countBinds.category_id = parseInt(categoryId);
+
+    // Sorting logic
+    let orderBy = "b.created_at DESC";
+    switch (sort) {
+      case "oldest": orderBy = "b.created_at ASC"; break;
+      case "price_asc": orderBy = "b.price ASC"; break;
+      case "price_desc": orderBy = "b.price DESC"; break;
+      case "alphabetical": orderBy = "b.title ASC"; break;
+    }
 
     const sql = `
       SELECT
@@ -37,7 +45,7 @@ export async function GET(request: NextRequest) {
         b.isbn,
         b.title,
         b.price,
-        b.stock_quantity,
+        (SELECT NVL(SUM(quantity_available), 0) FROM branch_inventory WHERE book_id = b.book_id) AS STOCK_QUANTITY,
         b.page_count,
         b.publication_year,
         b.is_featured,
@@ -62,7 +70,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN categories c ON b.category_id = c.category_id
       LEFT JOIN publishers p ON b.publisher_id = p.publisher_id
       ${whereClause}
-      ORDER BY b.created_at DESC
+      ORDER BY ${orderBy}
       OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY
     `;
 
@@ -99,22 +107,40 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { title, isbn, price, category_id, is_active } = body;
+    const { 
+      title, isbn, price, category_id, publisher_id,
+      description, page_count, publication_year, 
+      language, cover_type, is_active 
+    } = body;
 
     if (!title || !isbn || !price || !category_id) {
-      return NextResponse.json({ success: false, message: "Thiếu thông tin bắt buộc" }, { status: 400 });
+      return NextResponse.json({ success: false, message: "Thiếu thông tin bắt buộc (Tiêu đề, ISBN, Giá, Danh mục)" }, { status: 400 });
     }
 
     const sql = `
-      INSERT INTO books (isbn, title, price, category_id, is_active, publisher_id)
-      VALUES (:isbn, :title, :price, :category_id, :is_active, 1)
+      INSERT INTO books (
+        isbn, title, description, category_id, publisher_id, 
+        price, page_count, publication_year, language, 
+        cover_type, is_active
+      )
+      VALUES (
+        :isbn, :title, :description, :category_id, :publisher_id, 
+        :price, :page_count, :publication_year, :language, 
+        :cover_type, :is_active
+      )
     `;
 
     const binds = {
       isbn,
       title,
-      price,
-      category_id,
+      description: description || null,
+      category_id: Number(category_id),
+      publisher_id: Number(publisher_id || 1), // Default to 1 if not provided
+      price: Number(price),
+      page_count: page_count ? Number(page_count) : null,
+      publication_year: publication_year ? Number(publication_year) : null,
+      language: language || "vi",
+      cover_type: cover_type || "Bìa mềm",
       is_active: is_active ?? 1
     };
 

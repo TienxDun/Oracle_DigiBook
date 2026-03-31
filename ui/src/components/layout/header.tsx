@@ -10,11 +10,11 @@ import {
   MapPin,
   Building2
 } from "lucide-react";
-import { useBranch, branches } from "@/context/branch-context";
+import { useBranch } from "@/context/branch-context";
 import { cn } from "@/lib/utils";
 
 export function Header() {
-  const { currentBranch, setCurrentBranch, currentUser, logout } = useBranch();
+  const { branches, currentBranch, setCurrentBranch, currentUser, logout } = useBranch();
   const [showBranches, setShowBranches] = useState(false);
 
   return (

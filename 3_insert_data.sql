@@ -9,7 +9,7 @@
 -- ==========================================================
 -- PHẦN 0: DỌN DẸP DỮ LIỆU CŨ (Để hỗ trợ chạy lại script nhiều lần)
 -- ==========================================================
-SET DEFINE OFF;
+SET DEFINE ON;
 
 -- 0.1. Xóa dữ liệu các bảng theo thứ tự ngược lại (bảng con trước, bảng cha sau)
 DELETE FROM wishlists;
@@ -264,7 +264,6 @@ INSERT INTO books (isbn, title, description, category_id, publisher_id, price, w
 VALUES ('9786041026748', N'Mắt Biếc', N'Truyện tình yêu tuổi học trò', (SELECT category_id FROM categories WHERE category_name = N'Tiểu thuyết'), (SELECT publisher_id FROM publishers WHERE publisher_name = N'NXB Trẻ'), 105000, 360, '20x14x2.2', 320, 2021, 'vi', 'PAPERBACK', 1, 0, 1);
 
 -- 2.5. Hình ảnh sách (Book Images)
--- 2.5. Hình ảnh sách (Book Images)
 INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041026700'), 'https://digibook.com/images/nha-gia-kim-1.jpg', 1, 0);
 INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041026700'), 'https://digibook.com/images/nha-gia-kim-2.jpg', 0, 1);
 INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786042088592'), 'https://digibook.com/images/hp-1.jpg', 1, 0);
@@ -285,7 +284,6 @@ INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELEC
 INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041026748'), 'https://digibook.com/images/mat-biec.jpg', 1, 0);
 
 -- 2.6. Quan hệ sách - tác giả (Book Authors) - Xử lý nhiều tác giả/đóng góp viên
--- 2.6. Quan hệ sách - tác giả (Book Authors)
 INSERT INTO book_authors (book_id, author_id, role, author_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041026700'), (SELECT author_id FROM authors WHERE author_name = N'Paulo Coelho'), 'AUTHOR', 1);
 INSERT INTO book_authors (book_id, author_id, role, author_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786042088592'), (SELECT author_id FROM authors WHERE author_name = N'J.K. Rowling'), 'AUTHOR', 1);
 INSERT INTO book_authors (book_id, author_id, role, author_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041026670'), (SELECT author_id FROM authors WHERE author_name = N'Dale Carnegie'), 'AUTHOR', 1);
@@ -427,7 +425,6 @@ INSERT INTO order_details (order_id, book_id, quantity, unit_price) VALUES ((SEL
 INSERT INTO order_details (order_id, book_id, quantity, unit_price) VALUES ((SELECT order_id FROM orders WHERE order_code = 'ORD007'), (SELECT book_id FROM books WHERE isbn = '9786041038802'), 2, 175000);
 INSERT INTO order_details (order_id, book_id, quantity, unit_price) VALUES ((SELECT order_id FROM orders WHERE order_code = 'ORD007'), (SELECT book_id FROM books WHERE isbn = '9786041050019'), 1, 195000);
 
--- 3.7. Lịch sử trạng thái đơn hàng (Order Status History)
 -- 3.7. Lịch sử trạng thái đơn hàng (Order Status History)
 INSERT INTO order_status_history (order_id, old_status, new_status, changed_by, changed_at, reason) 
 VALUES ((SELECT order_id FROM orders WHERE order_code = 'ORD001'), NULL, 'PENDING', (SELECT staff_id FROM staff WHERE staff_code = 'NV007'), SYSDATE - 10, N'Tạo đơn hàng mới');
@@ -577,7 +574,6 @@ VALUES ((SELECT order_id FROM orders WHERE order_code = 'ORD003'), (SELECT branc
 INSERT INTO payment_transactions (order_id, branch_id, payment_method, amount, currency, status, transaction_code, paid_at, created_by) 
 VALUES ((SELECT order_id FROM orders WHERE order_code = 'ORD007'), (SELECT branch_id FROM branches WHERE branch_code = 'HQ001'), 'CREDIT_CARD', 555000, 'VND', 'SUCCESS', 'VISA20240310001', SYSDATE - 15, (SELECT staff_id FROM staff WHERE staff_code = 'NV003'));
 
--- 4.7. Đánh giá sản phẩm (Reviews)
 -- 4.7. Đánh giá sản phẩm (Reviews)
 INSERT INTO reviews (customer_id, book_id, order_id, rating, comment_text, is_approved, approved_by, approved_at, helpful_count) 
 VALUES ((SELECT customer_id FROM customers WHERE email = 'pham.thi.hs@gmail.com'), (SELECT book_id FROM books WHERE isbn = '9786042086055'), (SELECT order_id FROM orders WHERE order_code = 'ORD001'), 5, N'Sách hay, con tôi rất thích đọc Doraemon!', 1, (SELECT staff_id FROM staff WHERE staff_code = 'NV001'), SYSDATE - 5, 3);

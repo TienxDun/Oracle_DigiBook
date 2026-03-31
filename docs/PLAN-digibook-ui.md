@@ -1,85 +1,91 @@
-# PLAN: UI Back-office DigiBook (Admin & Staff) - [COMPLETED]
+# 🗺️ KẾ HOẠCH TRIỂN KHAI UI DIGIBOOK (SONG SONG ORACLE 19c)
 
-Bản kế hoạch này đã được hoàn thiện và triển khai thực tế. Tài liệu mô tả cấu trúc, tính năng và các công nghệ đã sử dụng cho giao diện quản trị của hệ thống DigiBook.
-
-## 0. Tổng quan (Status)
-Dự án đã hoàn thành giai đoạn xây dựng UI Mockup chuyên nghiệp, tích hợp đầy đủ các luồng nghiệp vụ cốt lõi và hệ thống định danh chi nhánh.
-
-**Trạng thái:** ✅ Hoàn thành (UI/UX Layer)
-**Project Type:** WEB (Next.js 15 App Router)
+**Mục tiêu:** Xây dựng hệ thống quản trị (Back-office) DigiBook có đầy đủ chức năng, kết nối trực tiếp và khai thác triệt để sức mạnh của Oracle 19c (Procedures, Views, Triggers).
 
 ---
 
-## 1. Mục tiêu đã đạt được (Success Criteria)
-*   **Thẩm mỹ:** Giao diện Dashboard hiện đại, sử dụng bảng màu Indigo/Slate, phong cách **Light Mode** tối giản và chuyên nghiệp.
-*   **Tính năng cốt lõi:** Quản lý Sách (Catalog), Tồn kho đa chi nhánh (Inventory), Đơn hàng (Orders), Điều chuyển kho (Transfers) và Cài đặt (Settings).
-*   **Dữ liệu trực quan:** Tích hợp biểu đồ xu hướng doanh thu và theo dõi hiệu suất chi nhánh.
-*   **Phân quyền & Context:** Triển khai `BranchContext` để quản lý người dùng và chi nhánh trên toàn ứng dụng.
+## 🏗️ CẤU TRÚC TRIỂN KHAI THEO GIAI ĐOẠN
+
+Kế hoạch này được thiết kế để chạy **SONG SONG** với các file SQL trong `ai_execution_plan.md`.
+
+### **GIAI ĐOẠN 1: NỀN TẢNG & XÁC THỰC (Đồng bộ: File 2 & 8)**
+*Trọng tâm: Kết nối DB và Phân quyền người dùng.*
+
+1.  **Kết nối Oracle (Thin Mode):**
+    *   Sử dụng `oracledb` v6+ (Thin mode) không cần cài Instant Client.
+    *   Xây dựng Connection Pool tại `src/lib/db.ts`.
+2.  **Xác thực người dùng (Authentication):**
+    *   Xây dựng API `/api/auth/login` truy vấn bảng `USERS`.
+    *   Xử lý logic so sánh mật khẩu (hiện tại là so sánh chuỗi đơn giản theo demo).
+3.  **Phân quyền (RBAC):**
+    *   Xử lý UI dựa trên `ROLE` (ADMIN, MANAGER, STAFF, SUPPORT).
+    *   Xây dựng `BranchContext` để lưu trữ thông tin chi nhánh và người dùng hiện tại.
+
+### **GIAI ĐOẠN 2: QUẢN LÝ DANH MỤC & SÁCH (Đồng bộ: File 2 & 3 - Phần Nam)**
+*Trọng tâm: Hiển thị và quản lý sản phẩm.*
+
+1.  **Quản lý Category:**
+    *   UI hiển thị cấu trúc cây (Parent/Child) từ bảng `CATEGORIES`.
+    *   Chức năng Thêm/Sửa/Xóa danh mục.
+2.  **Quản lý Sách (Books):**
+    *   Trang Catalog liệt kê sách với thông tin từ bảng `BOOKS`, `AUTHORS`, `PUBLISHERS`.
+    *   Tích hợp upload/hiện ảnh từ bảng `BOOK_IMAGES`.
+3.  **API Integration:**
+    *   Xây dựng các API lấy danh sách sách có phân trang (Pagination) sử dụng `OFFSET/FETCH` của Oracle 19c.
+
+### **GIAI ĐOẠN 3: KHO VẬN & ĐIỀU CHUYỂN (Đồng bộ: File 3 & 4 - Phần Phát)**
+*Trọng tâm: Đa chi nhánh và tồn kho.*
+
+1.  **Quản lý Tồn kho (Branch Inventory):**
+    *   Theo dõi số lượng `quantity_available` và `quantity_reserved` tại từng chi nhánh.
+    *   Cảnh báo tồn kho thấp (Low stock alerts) dựa trên `low_stock_threshold`.
+2.  **Điều chuyển kho (Transfers):**
+    *   Xây dựng quy trình tạo phiếu điều chuyển `DC001`, `DC002`.
+    *   Xử lý trạng thái phiếu (Pending -> Shipping -> Completed).
+3.  **API Triggers Test:**
+    *   Kiểm tra xem khi điều chuyển, Trigger trong DB có tự động cập nhật số lượng ở 2 chi nhánh không.
+
+### **GIAI ĐOẠN 4: BÁN HÀNG & KHÁCH HÀNG (Đồng bộ: File 3 - Phần Hiếu)**
+*Trọng tâm: Quy trình đơn hàng.*
+
+1.  **Quản lý đơn hàng (Orders):**
+    *   Trang danh sách đơn hàng lấy từ bảng `ORDERS`.
+    *   Trang chi tiết đơn hàng hiển thị `ORDER_DETAILS`.
+2.  **Luồng trạng thái đơn hàng:**
+    *   Cập nhật trạng thái đơn hàng (Confirm, Ship, Deliver, Cancel).
+    *   Ghi log tự động vào bảng `ORDER_STATUS_HISTORY`.
+3.  **Quản lý khách hàng (Customers):**
+    *   Hiển thị thông tin khách hàng, lịch sử mua hàng và danh sách yêu thích (Wishlists).
+
+### **GIAI ĐOẠN 5: BÁO CÁO & TỐI ƯU (Đồng bộ: File 4, 6, 7)**
+*Trọng tâm: Khai thác SQL nâng cao lên UI.*
+
+1.  **Dashboard Thống kê:**
+    *   Sử dụng các **Database Views** (File 6) để vẽ biểu đồ doanh thu, hiệu suất chi nhánh.
+    *   Gọi **Stored Procedures** (File 4) để tính toán báo cáo phức tạp phía server trước khi trả về UI.
+2.  **Audit Logs UI:**
+    *   Trang dành cho Admin xem lịch sử thao tác hệ thống (từ Triggers ghi log ở File 5).
+3.  **Kiểm tra Performance:**
+    *   Test tốc độ phản hồi của UI trước và sau khi đánh **Indexes** (File 7) trên các bảng lớn như `ORDERS` hoặc `BOOKS`.
 
 ---
 
-## 2. Tech Stack thực tế (Final Tech Stack)
-*   **Framework:** Next.js 15 (Turbopack) - Tối ưu tốc độ phát triển.
-*   **Styling:** Tailwind CSS - Xây dựng Design System linh hoạt và đồng bộ.
-*   **Icons:** Lucide React.
-*   **Animations:** Framer Motion - Hiệu ứng chuyển cảnh và Staggered menu.
-*   **Charts:** Recharts - Biểu đồ doanh thu và xu hướng.
-*   **Notifications:** Sonner - Hệ thống Toast notification thông minh.
+## 📈 QUY TRÌNH PHÁT TRIỂN SONG SONG
+
+| Tuần | Công việc Database (SQL) | Công việc Giao diện (UI) | Cách Test |
+| :--- | :--- | :--- | :--- |
+| **1** | File 2 & 8 (Tables, Roles) | Phase 1 (Nền tảng, Login) | Đăng nhập bằng user `admin` từ DB. |
+| **2** | File 3 (Dữ liệu mẫu - Catalog) | Phase 2 (Catalog, Books) | Hiển thị sách từ bảng `BOOKS` lên UI. |
+| **3** | File 3 & 4 (Inventory, SPs) | Phase 3 (Kho, Tồn kho) | Kiểm tra số lượng tồn kho theo chi nhánh. |
+| **4** | File 3 & 5 (Orders, Triggers) | Phase 4 (Bán hàng, Đơn hàng) | Tạo đơn hàng và check Log tự động. |
+| **5** | File 6 & 7 (Views, Indexes) | Phase 5 (Dashboard, Báo cáo) | Xem biểu đồ doanh thu từ View. |
 
 ---
 
-## 3. Kiến trúc trang thực tế (Final Page Map)
+## 📝 ĐẦU RA KỲ VỌNG (DELIVERABLES)
+1.  **Hệ thống UI hoàn chỉnh:** Sử dụng Next.js, Tailwind CSS, Lucide Icons.
+2.  **Backend API:** Viết bằng Next.js API Routes kết nối trực tiếp Oracle 19c.
+3.  **Bộ tài liệu:** File `docs/PLAN-digibook-ui.md` này làm kim chỉ nam.
 
-### 3.1. Trang nền tảng (Foundation)
-*   **Login Page (`/login`):** Giao diện đăng nhập tập trung.
-*   **Root Redirect (`/`):** Tự động chuyển hướng người dùng sang Dashboard.
-*   **Main Layout:** Sidebar (Navigation), Header (Branch Switcher, User Profile), Toast Container.
-
-### 3.2. Danh mục trang (Pages)
-1.  **Dashboard (`/dashboard`):** [NEW]
-    *   Tổng hợp KPI toàn hệ thống.
-    *   Biểu đồ doanh thu (Area Chart).
-    *   So sánh hiệu suất chi nhánh (Progress Bars).
-    *   Cảnh báo tồn kho thấp & Hoạt động gần đây.
-2.  **Quản lý Sách (`/catalog`):**
-    *   Bảng danh mục tích hợp **Bulk Action Bar** (Thao tác hàng loạt).
-    *   **Book Drawer**: Thêm/Sửa sách nhanh chóng ở thanh trượt bên phải.
-3.  **Quản lý Tồn kho (`/inventory`):**
-    *   Theo dõi tồn kho thực tế tại từng chi nhánh.
-4.  **Điều chuyển kho (`/transfers`):**
-    *   Quản lý các lệnh điều động hàng hóa nội bộ.
-5.  **Quản lý Đơn hàng (`/orders`):**
-    *   Danh sách đơn hàng toàn hệ thống với trạng thái trực quan.
-    *   **Order Details Drawer**: Xem chi tiết và Timeline lịch sử đơn hàng.
-6.  **Cài đặt (`/settings`):** [NEW]
-    *   Quản lý Hồ sơ cá nhân (Profile).
-    *   Thông tin chi nhánh (Branch info).
-    *   Bảo mật & Mật khẩu (Security).
-
----
-
-## 4. Các Use Case đã triển khai
-- **A. Xử lý đơn hàng**: Xem chi tiết -> Theo dõi Timeline -> Cập nhật trạng thái.
-- **B. Điều phối kho**: Theo dõi tồn kho thấp -> Tạo lệnh điều chuyển -> Xác nhận.
-- **C. Quản trị danh mục**: Chọn hàng loạt (Bulk select) -> Cập nhật trạng thái/Xóa -> Thông báo Toast.
-
----
-
-## 5. Kết quả triển khai (Task Status)
-
-- [x] Phase 1: Foundation (Setup Next.js, Tailwind, Design Tokens).
-- [x] Phase 2: Auth & Layout (Login, Sidebar, Header, Branch Switcher).
-- [x] Phase 3: Catalog & Orders (Book Table, Order Details, Timelines).
-- [x] Phase 4: Inventory & Logic (Transfers, Stock Alerts).
-- [x] Phase 5: Polish & WOW (Recharts, Framer Motion, Dashboard upgrades).
-- [x] Phase X: Verification (Responsive check, Build success, No 404s).
-
----
-
-## 6. Ghi chú về Thiết kế
-*   **Màu sắc:** Tuyệt đối không dùng màu Purple/Violet. Sử dụng Indigo làm màu chủ đạo.
-*   **Minimalism:** Loại bỏ phần "Top sách bán chạy" để giữ giao diện sạch sẽ, tập trung vào công cụ quản trị.
-*   **Navigation:** Tất cả các menu chính đã được khắc phục lỗi 404 và hoạt động ổn định.
-
----
-*Tài liệu được cập nhật lần cuối vào: 30/03/2026 bởi Antigravity AI.*
+> [!IMPORTANT]
+> Toàn bộ logic nghiệp vụ nặng (tính toán doanh thu, cập nhật tồn kho đa chi nhánh) phải được thực hiện ở tầng **Database (Stored Procs/Triggers)** để đảm bảo tính nhất quán dữ liệu, UI chỉ đóng vai trò hiển thị và gọi lệnh.

@@ -107,4 +107,9 @@ export interface DashboardStats {
   TOTAL_CUSTOMERS: number;
   PENDING_ORDERS: number;
   LOW_STOCK_COUNT: number;
+  ORDERS_CHANGE: number;
+  REVENUE_CHANGE: number;
+  STOCK_CHANGE: number;
+  CUSTOMERS_CHANGE: number;
 }
+

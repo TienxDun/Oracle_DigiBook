@@ -73,7 +73,12 @@ export function OrderDetailDrawer({ isOpen, onClose, onRefresh, order }: OrderDe
                   Ngày tạo: {order.ORDER_DATE ? new Date(order.ORDER_DATE).toLocaleDateString("vi-VN") : "---"}
                </p>
             </div>
-            <button onClick={onClose} className="rounded-full p-2 text-secondary-foreground hover:bg-accent hover:text-foreground">
+            <button
+              onClick={onClose}
+              aria-label="Đóng chi tiết đơn hàng"
+              title="Đóng"
+              className="rounded-full p-2 text-secondary-foreground hover:bg-accent hover:text-foreground"
+            >
               <X size={20} />
             </button>
           </div>

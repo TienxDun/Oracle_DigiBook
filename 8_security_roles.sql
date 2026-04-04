@@ -16,6 +16,8 @@ DEFINE APP_SCHEMA = 'AUTO';
 DECLARE
     v_owner  VARCHAR2(128) := UPPER('&&APP_SCHEMA');
     v_found  VARCHAR2(128);
+    v_con_name VARCHAR2(128);
+    v_pdb_name VARCHAR2(128);
 
     PROCEDURE exec_optional(p_sql IN VARCHAR2) IS
     BEGIN
@@ -55,7 +57,41 @@ DECLARE
         WHEN OTHERS THEN
             DBMS_OUTPUT.PUT_LINE('WARN: Grant loi (' || p_obj || ' -> ' || p_role || '): ' || SQLERRM);
     END;
+
+    PROCEDURE ensure_working_container IS
+    BEGIN
+        SELECT SYS_CONTEXT('USERENV', 'CON_NAME')
+          INTO v_con_name
+          FROM dual;
+
+        IF USER = 'SYS' AND v_con_name = 'CDB$ROOT' THEN
+            BEGIN
+                SELECT name
+                  INTO v_pdb_name
+                  FROM (
+                        SELECT name
+                          FROM v$pdbs
+                         WHERE name <> 'PDB$SEED'
+                           AND open_mode = 'READ WRITE'
+                         ORDER BY con_id
+                       )
+                 WHERE ROWNUM = 1;
+
+                EXECUTE IMMEDIATE 'ALTER SESSION SET CONTAINER = ' || DBMS_ASSERT.SIMPLE_SQL_NAME(v_pdb_name);
+                DBMS_OUTPUT.PUT_LINE('INFO: Dang chay bang SYS o CDB$ROOT, da chuyen sang PDB ' || v_pdb_name || '.');
+            EXCEPTION
+                WHEN NO_DATA_FOUND THEN
+                    RAISE_APPLICATION_ERROR(
+                        -20801,
+                        'Dang o CDB$ROOT nhung khong co PDB nao dang READ WRITE. ' ||
+                        'Hay ALTER SESSION SET CONTAINER vao PDB ung dung truoc khi chay script.'
+                    );
+            END;
+        END IF;
+    END;
 BEGIN
+    ensure_working_container;
+
     -- Auto detect owner nếu cần.
     IF v_owner = 'AUTO' THEN
         BEGIN
@@ -85,6 +121,9 @@ BEGIN
     exec_optional('DROP USER DIGIBOOK_GUEST CASCADE');
     exec_optional('DROP USER DIGIBOOK_STAFF CASCADE');
     exec_optional('DROP USER DIGIBOOK_ADMIN CASCADE');
+    exec_optional('DROP ROLE DIGIBOOK_GUEST');
+    exec_optional('DROP ROLE DIGIBOOK_STAFF');
+    exec_optional('DROP ROLE DIGIBOOK_ADMIN');
     exec_optional('DROP ROLE GUEST_ROLE');
     exec_optional('DROP ROLE STAFF_ROLE');
     exec_optional('DROP ROLE ADMIN_ROLE');

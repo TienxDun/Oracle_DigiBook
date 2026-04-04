@@ -100,7 +100,14 @@ export default function InventoryPage() {
     }
     acc[item.BOOK_ID].TOTAL += qty;
     
-    if (qty <= threshold) {
+    // Store LOW_STOCK_THRESHOLD from any row (should be same for all branches)
+    if (!acc[item.BOOK_ID].LOW_STOCK_THRESHOLD) {
+      acc[item.BOOK_ID].LOW_STOCK_THRESHOLD = threshold;
+    }
+
+    // Match dashboard stats logic: low stock if any branch qty <= threshold
+    // or book has no inventory row yet.
+    if (qty <= threshold || !item.INVENTORY_ID) {
       acc[item.BOOK_ID].IS_LOW_STOCK = true;
     }
     
@@ -114,7 +121,8 @@ export default function InventoryPage() {
     const matchesSearch = item.TITLE.toLowerCase().includes(search.toLowerCase()) || 
                          item.ISBN.includes(search);
     
-    const matchesBranch = branchFilter === "ALL" || (item.BRANCHES[branchFilter] !== undefined);
+    // When low stock filter is active, ignore branch filter to show all low stock items
+    const matchesBranch = showLowStockOnly ? true : (branchFilter === "ALL" || (item.BRANCHES[branchFilter] !== undefined));
     
     const matchesLowStock = !showLowStockOnly || item.IS_LOW_STOCK;
 

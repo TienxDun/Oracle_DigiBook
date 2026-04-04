@@ -8,6 +8,7 @@ import {
   CheckCircle2, 
   Truck,
   FileText,
+  X,
   Search,
   Filter
 } from "lucide-react";
@@ -20,6 +21,8 @@ export default function TransfersPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("ALL");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [selectedTransfer, setSelectedTransfer] = useState<any>(null);
 
   useEffect(() => {
     fetchTransfers();
@@ -47,6 +50,11 @@ export default function TransfersPage() {
       case "APPROVED": return { label: "Đã duyệt", color: "bg-primary/10 text-primary", icon: CheckCircle2 };
       default: return { label: "Chờ duyệt", color: "bg-warning/10 text-warning", icon: Clock };
     }
+  };
+
+  const handleOpenDetails = (transfer: any) => {
+    setSelectedTransfer(transfer);
+    setIsDetailOpen(true);
   };
 
   return (
@@ -180,7 +188,12 @@ export default function TransfersPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button className="rounded-md p-1.5 text-secondary-foreground hover:bg-accent hover:text-foreground transition-all">
+                        <button
+                          onClick={() => handleOpenDetails(item)}
+                          aria-label="Xem chi tiết lệnh điều chuyển"
+                          title="Xem chi tiết"
+                          className="rounded-md p-1.5 text-secondary-foreground hover:bg-accent hover:text-foreground transition-all"
+                        >
                           <FileText size={18} />
                         </button>
                       </td>
@@ -198,6 +211,60 @@ export default function TransfersPage() {
           </table>
         </div>
       </div>
+
+      {isDetailOpen && selectedTransfer && (
+        <>
+          <div
+            className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm"
+            onClick={() => setIsDetailOpen(false)}
+          />
+          <div className="fixed left-1/2 top-1/2 z-[70] w-[92vw] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border px-5 py-4">
+              <div>
+                <h3 className="text-base font-bold text-foreground">Chi tiết lệnh điều chuyển</h3>
+                <p className="text-xs text-secondary-foreground">Thông tin tổng quan của phiếu điều chuyển.</p>
+              </div>
+              <button
+                onClick={() => setIsDetailOpen(false)}
+                aria-label="Đóng chi tiết lệnh điều chuyển"
+                title="Đóng"
+                className="rounded-md p-1.5 text-secondary-foreground hover:bg-accent hover:text-foreground"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-3 px-5 py-4 text-sm">
+              <div className="flex items-center justify-between rounded-lg bg-accent/30 px-3 py-2">
+                <span className="text-secondary-foreground">Mã lệnh</span>
+                <span className="font-bold text-foreground">#{selectedTransfer.TRANSFER_CODE}</span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg bg-accent/30 px-3 py-2">
+                <span className="text-secondary-foreground">Tuyến chuyển</span>
+                <span className="font-medium text-foreground text-right">{selectedTransfer.FROM_BRANCH_NAME}{" -> "}{selectedTransfer.TO_BRANCH_NAME}</span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg bg-accent/30 px-3 py-2">
+                <span className="text-secondary-foreground">Trạng thái</span>
+                <span className="font-medium text-foreground">{getStatusConfig(selectedTransfer.STATUS).label}</span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg bg-accent/30 px-3 py-2">
+                <span className="text-secondary-foreground">Ngày tạo</span>
+                <span className="font-medium text-foreground">
+                  {selectedTransfer.REQUEST_DATE ? new Date(selectedTransfer.REQUEST_DATE).toLocaleString("vi-VN") : "---"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg bg-accent/30 px-3 py-2">
+                <span className="text-secondary-foreground">Số lượng</span>
+                <span className="font-medium text-foreground">{selectedTransfer.TOTAL_QUANTITY} cuốn ({selectedTransfer.TOTAL_ITEMS} đầu sách)</span>
+              </div>
+              <div className="rounded-lg border border-border bg-white p-3">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-secondary-foreground">Ghi chú</p>
+                <p className="text-sm text-foreground">{selectedTransfer.NOTES || "Không có ghi chú."}</p>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

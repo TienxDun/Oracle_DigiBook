@@ -81,8 +81,14 @@ export function OrderDetailDrawer({ isOpen, onClose, onRefresh, order }: OrderDe
   return (
     <>
       <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed inset-y-0 right-0 z-50 w-full max-w-2xl bg-white shadow-2xl animate-in slide-in-from-right duration-300">
-        <div className="flex h-full flex-col">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Chi tiết đơn hàng ${order.ORDER_CODE}`}
+          onClick={(e) => e.stopPropagation()}
+          className="flex h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-border bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-300"
+        >
           <div className="flex items-center justify-between border-b border-border bg-accent/10 px-6 py-4">
             <div>
                <h2 className="text-xl font-bold text-foreground">Chi tiết Đơn hàng #{order.ORDER_CODE}</h2>

@@ -5,13 +5,30 @@ import oracledb from "oracledb";
 
 let pool: oracledb.Pool | null = null;
 
+function readEnv(...keys: string[]): string {
+  for (const key of keys) {
+    const value = process.env[key];
+    if (value && value.trim().length > 0) {
+      return value.trim();
+    }
+  }
+
+  throw new Error(
+    `[DB] Missing required environment variable. Provide one of: ${keys.join(", ")}`
+  );
+}
+
 export async function getPool(): Promise<oracledb.Pool> {
   if (pool) return pool;
 
+  const user = readEnv("ORACLE_USER", "DB_USER");
+  const password = readEnv("ORACLE_PASSWORD", "DB_PASSWORD");
+  const connectString = readEnv("ORACLE_CONNECTION_STRING", "DB_CONNECTION_STRING");
+
   pool = await oracledb.createPool({
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    connectString: process.env.DB_CONNECTION_STRING,
+    user,
+    password,
+    connectString,
     poolMin: 2,
     poolMax: 10,
     poolIncrement: 1,

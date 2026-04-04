@@ -32,7 +32,7 @@ export default function OrdersPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const limit = 10;
 
@@ -59,7 +59,7 @@ export default function OrdersPage() {
 
   const handleRowClick = (order: any) => {
     setSelectedOrder(order);
-    setIsDrawerOpen(true);
+    setIsPopupOpen(true);
   };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -183,11 +183,15 @@ export default function OrdersPage() {
                       <div className="flex items-center justify-end gap-2">
                           <button 
                               onClick={() => handleRowClick(order)}
+                              title="Xem chi tiết đơn hàng"
                               className="rounded-md p-1.5 text-primary hover:bg-primary/10 transition-all"
                           >
                               <Eye size={18} />
                           </button>
-                          <button className="rounded-md p-1.5 text-secondary-foreground hover:bg-accent hover:text-foreground transition-all">
+                            <button
+                              title="Tác vụ khác"
+                              className="rounded-md p-1.5 text-secondary-foreground hover:bg-accent hover:text-foreground transition-all"
+                            >
                               <MoreHorizontal size={18} />
                           </button>
                       </div>
@@ -225,10 +229,10 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {/* Order Detail Drawer */}
+      {/* Order Detail Popup */}
       <OrderDetailDrawer 
-        isOpen={isDrawerOpen} 
-        onClose={() => setIsDrawerOpen(false)} 
+        isOpen={isPopupOpen} 
+        onClose={() => setIsPopupOpen(false)} 
         onRefresh={fetchOrders}
         order={selectedOrder}
       />

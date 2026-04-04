@@ -5,21 +5,39 @@ import { Sidebar } from "./sidebar";
 import { Header } from "./header";
 import { usePathname, useRouter } from "next/navigation";
 import { useBranch } from "@/context/branch-context";
-import { cn } from "@/lib/utils";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
+const routeRoleRules: Array<{ prefix: string; allowedRoles: Array<"ADMIN" | "MANAGER" | "STAFF" | "SUPPORT"> }> = [
+  { prefix: "/settings", allowedRoles: ["ADMIN"] },
+  { prefix: "/transfers", allowedRoles: ["ADMIN", "MANAGER"] },
+  { prefix: "/inventory", allowedRoles: ["ADMIN", "MANAGER", "STAFF"] },
+  { prefix: "/dashboard", allowedRoles: ["ADMIN", "MANAGER", "STAFF", "SUPPORT"] },
+  { prefix: "/catalog", allowedRoles: ["ADMIN", "MANAGER", "STAFF", "SUPPORT"] },
+  { prefix: "/orders", allowedRoles: ["ADMIN", "MANAGER", "STAFF", "SUPPORT"] },
+];
+
+function isRouteAllowed(pathname: string, role: "ADMIN" | "MANAGER" | "STAFF" | "SUPPORT") {
+  const matchingRule = routeRoleRules.find((rule) => pathname.startsWith(rule.prefix));
+  if (!matchingRule) {
+    return true;
+  }
+
+  return matchingRule.allowedRoles.includes(role);
+}
+
 export function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { currentUser } = useBranch();
+  const { logout } = useBranch();
   const [isReady, setIsReady] = useState(false);
   
   const isLoginPage = pathname === "/login";
 
   useEffect(() => {
+    setIsReady(false);
     const storedUser = localStorage.getItem("digibook_user");
     
     if (!storedUser) {
@@ -32,10 +50,22 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       if (isLoginPage) {
         router.push("/dashboard");
       } else {
-        setIsReady(true);
+        try {
+          const parsedUser = JSON.parse(storedUser) as { role?: "ADMIN" | "MANAGER" | "STAFF" | "SUPPORT" };
+
+          if (!parsedUser.role || !isRouteAllowed(pathname, parsedUser.role)) {
+            router.push("/dashboard");
+            return;
+          }
+
+          setIsReady(true);
+        } catch {
+          logout();
+          router.push("/login");
+        }
       }
     }
-  }, [isLoginPage, router, pathname]);
+  }, [isLoginPage, router, pathname, logout]);
 
   if (isLoginPage) {
     return <div className="min-h-screen bg-background">{children}</div>;

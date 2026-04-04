@@ -12,7 +12,7 @@ import {
   Building2,
   Package,
   History,
-  Info
+  Globe
 } from "lucide-react";
 import { 
   AreaChart, 
@@ -21,11 +21,18 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
 } from "recharts";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useBranch, SYSTEM_BRANCH } from "@/context/branch-context";
+import { StockInDrawer } from "@/components/inventory/stock-in-drawer";
+import { toast } from "sonner";
 import type { DashboardStats, BranchInventory } from "@/types/database";
 
 const containerVariants = {
@@ -44,27 +51,34 @@ const itemVariants = {
 };
 
 export default function Dashboard() {
-  const [activeBranchTab, setActiveBranchTab] = useState("ALL");
+  const { currentBranch, currentUser } = useBranch();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [lowStock, setLowStock] = useState<BranchInventory[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   const [branchPerformance, setBranchPerformance] = useState<any[]>([]);
+  const [orderStatus, setOrderStatus] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
+  const [mounted, setMounted] = useState(false);
+  const [isStockInOpen, setIsStockInOpen] = useState(false);
+  const [selectedStockData, setSelectedStockData] = useState<{bookId?: number, branchId?: number}>({});
 
   useEffect(() => {
+    setMounted(true);
     fetchDashboardData();
-  }, []);
+  }, [currentBranch]);
 
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const [statsRes, inventoryRes, revenueRes, performanceRes, activityRes] = await Promise.all([
-        fetch("/api/dashboard/stats"),
-        fetch("/api/inventory?low_stock=true"),
-        fetch("/api/dashboard/revenue"),
-        fetch("/api/dashboard/branch-performance"),
-        fetch("/api/dashboard/activity")
+      const branchId = currentBranch?.id || "ALL";
+      const [statsRes, inventoryRes, revenueRes, performanceRes, activityRes, statusRes] = await Promise.all([
+        fetch(`/api/dashboard/stats?branchId=${branchId}`),
+        fetch(`/api/inventory?low_stock=true&branchId=${branchId}`),
+        fetch(`/api/dashboard/revenue?branchId=${branchId}`),
+        fetch(`/api/dashboard/branch-performance?branchId=${branchId}`),
+        fetch(`/api/dashboard/activity?branchId=${branchId}`),
+        fetch(`/api/dashboard/order-status?branchId=${branchId}`)
       ]);
 
       const statsData = await statsRes.json();
@@ -72,12 +86,14 @@ export default function Dashboard() {
       const revenueData = await revenueRes.json();
       const performanceData = await performanceRes.json();
       const activityData = await activityRes.json();
+      const statusData = await statusRes.json();
 
       if (statsData.success) setStats(statsData.data);
       if (inventoryData.success) setLowStock(inventoryData.data);
       if (revenueData.success) setChartData(revenueData.data);
       if (performanceData.success) setBranchPerformance(performanceData.data);
       if (activityData.success) setActivities(activityData.data);
+      if (statusData.success) setOrderStatus(statusData.data);
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
     } finally {
@@ -96,9 +112,9 @@ export default function Dashboard() {
     },
     { 
       label: "Doanh thu hệ thống", 
-      value: stats ? `${(stats.TOTAL_REVENUE / 1000000).toFixed(1)}M` : "0.0M", 
+      value: stats ? `${((stats.TOTAL_REVENUE || 0) / 1000000).toFixed(1)}M` : "0.0M", 
       icon: TrendingUp, 
-      change: stats ? `${stats.REVENUE_CHANGE >= 0 ? '+' : ''}${stats.REVENUE_CHANGE}%` : "0%", 
+      change: stats ? `${(stats.REVENUE_CHANGE || 0) >= 0 ? '+' : ''}${stats.REVENUE_CHANGE || 0}%` : "0%", 
       isPositive: (stats?.REVENUE_CHANGE ?? 0) >= 0, 
       color: "emerald" 
     },
@@ -131,25 +147,23 @@ export default function Dashboard() {
       {/* Page Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Trung tâm Quản trị</h1>
-          <p className="text-secondary-foreground font-medium">Báo cáo tổng hợp hoạt động kinh doanh toàn hệ thống DigiBook.</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
+            {currentBranch?.id === "ALL" ? "Hệ thống DigiBook" : `Chi nhánh ${currentBranch?.name}`}
+          </h1>
+          <p className="text-secondary-foreground font-medium">
+            {currentBranch?.id === "ALL" 
+              ? "Báo cáo tổng hợp hoạt động kinh doanh toàn hệ thống." 
+              : `Báo cáo chi tiết hoạt động kinh doanh tại ${currentBranch?.name}.`
+            }
+          </p>
         </div>
-        <div className="flex items-center gap-2 rounded-xl bg-accent/20 p-1 border border-border">
-          <button 
-            onClick={() => setActiveBranchTab("ALL")}
-            className={cn(
-              "px-4 py-1.5 text-xs font-bold rounded-lg transition-all",
-              activeBranchTab === "ALL" ? "bg-white text-primary shadow-sm" : "text-secondary-foreground hover:bg-white/50"
-            )}
-          >Hệ thống</button>
-          <button 
-            onClick={() => setActiveBranchTab("BRANCH")}
-            className={cn(
-              "px-4 py-1.5 text-xs font-bold rounded-lg transition-all",
-              activeBranchTab === "BRANCH" ? "bg-white text-primary shadow-sm" : "text-secondary-foreground hover:bg-white/50"
-            )}
-          >Chi nhánh</button>
-        </div>
+        
+        {currentBranch?.id === "ALL" && (
+          <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 shadow-sm">
+             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+             <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Chế độ Tổng kết Toàn hệ thống</span>
+          </div>
+        )}
       </div>
 
       {/* Stats Grid */}
@@ -204,8 +218,8 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Main Analysis Section */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      {/* Charts Grid */}
+      <div className="grid gap-8 lg:grid-cols-3">
         {/* Revenue Chart */}
         <motion.div 
           variants={itemVariants}
@@ -214,29 +228,33 @@ export default function Dashboard() {
           <div className="mb-8 flex items-center justify-between">
             <div>
               <h3 className="text-lg font-bold text-foreground">Xu hướng doanh thu</h3>
-              <p className="text-xs text-secondary-foreground font-medium">Theo dõi tăng trưởng doanh số trong 7 ngày gần nhất.</p>
+              <p className="text-xs text-secondary-foreground font-medium">Phân tích biến động doanh số trong 30 ngày gần nhất.</p>
             </div>
-            <select className="rounded-lg border border-border bg-accent/10 px-3 py-1.5 text-xs font-bold outline-none focus:ring-1 focus:ring-primary">
-              <option>Theo tuần</option>
-              <option>Theo tháng</option>
-            </select>
+            <div className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider",
+              currentBranch?.id === "ALL" ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-indigo-50 text-indigo-600 border-indigo-100"
+            )}>
+              {currentBranch?.id === "ALL" ? <Globe size={12} /> : <Building2 size={12} />}
+              {currentBranch?.id === "ALL" ? "Toàn hệ thống" : "Chi nhánh hiện tại"}
+            </div>
           </div>
           
-          <div className="h-[300px] w-full min-w-0">
+          <div className="h-[350px] w-full min-w-0">
             {loading ? (
               <div className="h-full w-full flex items-center justify-center bg-accent/5 rounded-xl border border-dashed border-border">
                 <div className="flex flex-col items-center gap-2">
                   <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                  <span className="text-xs font-bold text-secondary-foreground">Đang tải biểu đồ...</span>
+                  <span className="text-xs font-bold text-secondary-foreground">Đang tải phân tích...</span>
                 </div>
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                <AreaChart data={chartData}>
+              mounted && chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={currentBranch?.id === "ALL" ? "#10b981" : "#6366f1"} stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor={currentBranch?.id === "ALL" ? "#10b981" : "#6366f1"} stopOpacity={0}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -244,90 +262,176 @@ export default function Dashboard() {
                     dataKey="name" 
                     axisLine={false} 
                     tickLine={false} 
-                    tick={{ fill: "#64748b", fontSize: 11, fontWeight: 600 }}
+                    tick={{ fill: "#64748b", fontSize: 10, fontWeight: 600 }}
+                    minTickGap={30}
                     dy={10}
                   />
                   <YAxis 
                     axisLine={false} 
                     tickLine={false} 
-                    tick={{ fill: "#64748b", fontSize: 11, fontWeight: 600 }}
+                    tick={{ fill: "#64748b", fontSize: 10, fontWeight: 600 }}
                     tickFormatter={(val) => `${(val / 1000000).toFixed(1)}M`}
                   />
                   <Tooltip 
-                    contentStyle={{ 
-                      borderRadius: "12px", 
-                      border: "none", 
-                      boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
-                      fontSize: "12px",
-                      fontWeight: "bold"
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="glass rounded-xl border border-border/50 p-3 shadow-xl">
+                            <p className="mb-1 text-[10px] font-black uppercase text-secondary-foreground/60">{label}</p>
+                            <p className="text-sm font-black text-foreground">
+                              {Number(payload[0].value).toLocaleString('vi-VN')}
+                              <span className="ml-1 text-[10px] text-secondary-foreground">VNĐ</span>
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
                     }}
                   />
                   <Area 
                     type="monotone" 
                     dataKey="total" 
-                    stroke="#6366f1" 
-                    strokeWidth={3}
+                    stroke={currentBranch?.id === "ALL" ? "#10b981" : "#6366f1"} 
+                    strokeWidth={4}
                     fillOpacity={1} 
-                    fill="url(#colorTotal)" 
+                    fill="url(#colorRevenue)" 
                     animationDuration={2000}
                   />
                 </AreaChart>
               </ResponsiveContainer>
+              ) : (
+                <div className="h-full w-full flex items-center justify-center bg-accent/5 rounded-xl border border-dashed border-border text-center p-6">
+                  <div className="flex flex-col items-center gap-2 text-secondary-foreground/40">
+                    <TrendingUp size={48} />
+                    <span className="text-sm font-bold">Chưa có dữ liệu giao dịch trong 30 ngày</span>
+                  </div>
+                </div>
+              )
             )}
           </div>
         </motion.div>
 
+        {/* Order Status Pie Chart */}
+        <motion.div 
+          variants={itemVariants}
+          className="card-shadow rounded-2xl border border-border bg-white p-6"
+        >
+          <div className="mb-8">
+            <h3 className="text-lg font-bold text-foreground">Trạng thái đơn hàng</h3>
+            <p className="text-xs text-secondary-foreground font-medium">Tỷ lệ phân bổ trạng thái đơn hàng.</p>
+          </div>
+
+          <div className="h-[350px] w-full flex items-center justify-center">
+            {loading ? (
+               <Skeleton className="h-48 w-48 rounded-full" />
+            ) : orderStatus.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={orderStatus}
+                    cx="50%"
+                    cy="45%"
+                    innerRadius={70}
+                    outerRadius={100}
+                    paddingAngle={5}
+                    dataKey="value"
+                    animationDuration={1500}
+                  >
+                    {orderStatus.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                     content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="glass rounded-xl border border-border/50 p-3 shadow-xl">
+                            <div className="flex items-center gap-2 mb-1">
+                               <div className="h-2 w-2 rounded-full" style={{ backgroundColor: payload[0].payload.color }} />
+                               <span className="text-xs font-bold text-foreground">{payload[0].name}</span>
+                            </div>
+                            <p className="text-sm font-black text-foreground">
+                              {payload[0].value} <span className="text-[10px] text-secondary-foreground font-medium">đơn hàng</span>
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Legend 
+                    verticalAlign="bottom" 
+                    height={36}
+                    content={({ payload }) => (
+                      <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-4">
+                        {payload?.map((entry: any, index) => (
+                          <div key={index} className="flex items-center gap-1.5">
+                            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                            <span className="text-[10px] font-bold text-secondary-foreground whitespace-nowrap">
+                              {entry.value}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-center text-secondary-foreground/40">
+                <ShoppingCart size={48} className="mx-auto mb-2" />
+                <p className="text-sm font-bold">Chưa có dữ liệu đơn hàng</p>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Row 3: Branch Performance & Recent Activity */}
+      <div className="grid gap-8 lg:grid-cols-3">
         {/* Branch Performance */}
         <motion.div 
           variants={itemVariants}
           className="card-shadow rounded-2xl border border-border bg-white p-6"
         >
           <div className="mb-8">
-            <h3 className="text-lg font-bold text-foreground">Hiệu suất chi nhánh</h3>
-            <p className="text-xs text-secondary-foreground font-medium">So sánh doanh số thực tế so với mục tiêu đề ra.</p>
+            <h3 className="text-lg font-bold text-foreground">Xếp hạng chi nhánh</h3>
+            <p className="text-xs text-secondary-foreground font-medium">Tỷ trọng đóng góp doanh thu thực tế.</p>
           </div>
 
-          <div className="space-y-8">
-            {branchPerformance.map((branch) => {
+          <div className="space-y-6">
+            {branchPerformance.length > 0 ? branchPerformance.map((branch, index) => {
               return (
-                <div key={branch.name} className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-primary" />
-                      <span className="font-bold text-foreground">{branch.name}</span>
-                    </div>
-                    <span className="font-bold text-foreground">{(branch.value / 1000000).toFixed(1)}M <span className="text-[10px] text-secondary-foreground">/ 0.5M</span></span>
+                <div key={`${branch.name}-${index}`} className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-foreground truncate max-w-[150px]">{branch.name}</span>
+                    <span className="font-black text-primary">
+                      {Math.min(branch.progress || 0, 100)}%
+                    </span>
                   </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-accent/30">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent/30">
                     <motion.div 
                       initial={{ width: 0 }}
-                      animate={{ width: `${Math.min(branch.progress, 100)}%` }}
+                      animate={{ width: `${Math.min(branch.progress || 0, 100)}%` }}
                       transition={{ duration: 1.5, ease: "easeOut" }}
-                      className="h-full rounded-full bg-primary" 
+                      className={cn(
+                        "h-full rounded-full shadow-sm",
+                        currentBranch?.id === "ALL" ? "bg-emerald-500" : "bg-primary"
+                      )} 
                     />
-                  </div>
-                  <div className="flex justify-end">
-                    <span className="text-[10px] font-black uppercase text-secondary-foreground/60">{branch.progress.toFixed(1)}% Hoàn thành</span>
                   </div>
                 </div>
               );
-            })}
-          </div>
-
-          <div className="mt-10 rounded-xl bg-accent/20 p-4 border border-border border-dashed">
-             <div className="flex gap-3">
-                <div className="shrink-0 pt-1">
-                   <Info className="text-primary" size={16} />
-                </div>
-                <p className="text-[11px] font-medium leading-relaxed text-secondary-foreground">Hệ thống đang hoạt động ổn định. Các chỉ số doanh thu được cập nhật theo thời gian thực từ Oracle 19c.</p>
-             </div>
+            }) : (
+              <div className="flex flex-col items-center justify-center py-8 text-secondary-foreground/30">
+                <TrendingUp size={32} className="mb-2" />
+                <p className="text-xs font-bold">Chưa có báo cáo đóng góp</p>
+              </div>
+            )}
           </div>
         </motion.div>
-      </div>
 
-      {/* Bottom Grid: Activity & Alerts */}
-      <div className="grid gap-6 lg:grid-cols-2">
-         {/* Activity Feed */}
+        {/* Activity Feed */}
          <motion.div 
           variants={itemVariants}
           className="card-shadow rounded-2xl border border-border bg-white p-6"
@@ -342,8 +446,8 @@ export default function Dashboard() {
           
           <div className="space-y-6">
             {activities.length > 0 ? (
-              activities.map((activity) => (
-                <div key={activity.id} className="group relative flex gap-4 pl-4 transition-all">
+              activities.map((activity, index) => (
+                <div key={activity.id || `activity-${index}`} className="group relative flex gap-4 pl-4 transition-all">
                   <div className={cn(
                     "absolute left-0 h-full w-[2px] transition-colors",
                     activity.status === 'success' ? "bg-emerald-500" : activity.status === 'info' ? "bg-blue-500" : "bg-amber-500"
@@ -396,23 +500,58 @@ export default function Dashboard() {
                   </div>
                 ))
              ) : lowStock.length > 0 ? (
-                lowStock.slice(0, 5).map((item) => (
-                  <div key={item.INVENTORY_ID} className="flex items-center justify-between p-3 rounded-xl border border-border hover:bg-accent/10 transition-colors">
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 overflow-hidden rounded bg-accent/30 flex items-center justify-center">
-                          <BookOpen size={16} className="text-secondary-foreground" />
-                        </div>
-                        <div className="max-w-[200px] overflow-hidden">
-                          <h4 className="text-sm font-bold text-foreground truncate">{item.BOOK_TITLE}</h4>
-                          <span className="text-[10px] font-medium text-secondary-foreground uppercase">{item.BRANCH_NAME}</span>
-                        </div>
+                lowStock.slice(0, 5).map((item, index) => {
+                  const isNotDistributed = !item.BRANCH_NAME;
+                  const isOutOfStock = Number(item.QUANTITY_AVAILABLE) === 0;
+                  
+                  return (
+                    <div key={item.INVENTORY_ID || `lowstock-${item.BOOK_ID || index}`} className="group flex items-center justify-between p-3 rounded-xl border border-border hover:bg-accent/10 transition-all">
+                      <div className="flex items-center gap-3 overflow-hidden">
+                          <div className={cn(
+                            "h-10 w-10 shrink-0 overflow-hidden rounded flex items-center justify-center border",
+                            isNotDistributed ? "bg-indigo-50 border-indigo-100" : "bg-accent/30 border-border"
+                          )}>
+                            <BookOpen size={16} className={cn(isNotDistributed ? "text-indigo-600" : "text-secondary-foreground")} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">{item.BOOK_TITLE}</h4>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {isNotDistributed ? (
+                                <span className="flex items-center gap-1 text-[9px] font-black bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-100 uppercase tracking-tighter">
+                                  <Globe size={10} /> Chưa phân phối
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-medium text-secondary-foreground uppercase truncate max-w-[120px]">{item.BRANCH_NAME}</span>
+                              )}
+                            </div>
+                          </div>
+                      </div>
+                      <div className="flex flex-col items-end shrink-0 ml-4">
+                          <span className={cn(
+                            "text-xs font-black",
+                            isOutOfStock ? "text-rose-600" : "text-amber-600"
+                          )}>
+                            {item.QUANTITY_AVAILABLE} cuốn
+                          </span>
+                          <span 
+                            onClick={() => {
+                              setSelectedStockData({
+                                bookId: item.BOOK_ID,
+                                branchId: item.BRANCH_ID || (currentBranch?.id !== "ALL" ? Number(currentBranch?.id) : undefined)
+                              });
+                              setIsStockInOpen(true);
+                            }}
+                            className={cn(
+                              "text-[9px] font-bold uppercase tracking-tighter cursor-pointer hover:underline mt-1",
+                              isNotDistributed ? "text-indigo-600" : "text-primary"
+                            )}
+                          >
+                            {isNotDistributed ? "Phân bổ ngay →" : "Hàng về →"}
+                          </span>
+                      </div>
                     </div>
-                    <div className="flex flex-col items-end">
-                        <span className="text-xs font-black text-rose-600">{item.QUANTITY_AVAILABLE} cuốn</span>
-                        <span className="text-[9px] font-bold uppercase text-secondary-foreground tracking-tighter cursor-pointer hover:text-primary">Điều phối ngay →</span>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
              ) : (
                 <div className="flex flex-col items-center justify-center py-10 text-center space-y-2">
                   <div className="h-12 w-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
@@ -425,6 +564,14 @@ export default function Dashboard() {
           </div>
         </motion.div>
       </div>
+
+      <StockInDrawer 
+        isOpen={isStockInOpen}
+        onClose={() => setIsStockInOpen(false)}
+        onSuccess={fetchDashboardData}
+        initialBookId={selectedStockData.bookId}
+        initialBranchId={selectedStockData.branchId}
+      />
     </motion.div>
   );
 }

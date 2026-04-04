@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useBranch } from "@/context/branch-context";
 
 interface Book {
   BOOK_ID: number;
@@ -34,6 +35,7 @@ interface TransferDrawerProps {
 }
 
 export function TransferDrawer({ isOpen, onClose, onSuccess, initialBookId }: TransferDrawerProps) {
+  const { currentUser } = useBranch();
   const [loading, setLoading] = useState(false);
   const [books, setBooks] = useState<Book[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -100,6 +102,11 @@ export function TransferDrawer({ isOpen, onClose, onSuccess, initialBookId }: Tr
       return;
     }
 
+    if (!currentUser?.staffId) {
+      toast.error("Bạn cần có tài khoản nhân viên để thực hiện điều chuyển kho.");
+      return;
+    }
+
     if (formData.from_branch_id === formData.to_branch_id) {
       toast.error("Chi nhánh nguồn và đích phải khác nhau.");
       return;
@@ -115,7 +122,8 @@ export function TransferDrawer({ isOpen, onClose, onSuccess, initialBookId }: Tr
           book_id: parseInt(formData.book_id),
           from_branch_id: parseInt(formData.from_branch_id),
           to_branch_id: parseInt(formData.to_branch_id),
-          quantity: parseInt(formData.quantity.toString())
+          quantity: parseInt(formData.quantity.toString()),
+          staff_id: currentUser?.staffId ? parseInt(currentUser.staffId) : null
         })
       });
 
@@ -278,10 +286,10 @@ export function TransferDrawer({ isOpen, onClose, onSuccess, initialBookId }: Tr
           <div className="border-t border-border p-6 bg-accent/5">
             <button 
               onClick={handleSubmit}
-              disabled={loading || !availableQty || formData.quantity > availableQty}
+              disabled={loading || !availableQty || formData.quantity > availableQty || !currentUser?.staffId}
               className={cn(
                 "flex w-full items-center justify-center gap-2 rounded-xl px-4 py-4 text-sm font-bold text-white shadow-xl shadow-primary/20 transition-all active:scale-95",
-                (loading || !availableQty || formData.quantity > availableQty) ? "bg-slate-300 cursor-not-allowed opacity-50" : "bg-primary hover:bg-primary-hover"
+                (loading || !availableQty || formData.quantity > availableQty || !currentUser?.staffId) ? "bg-slate-300 cursor-not-allowed opacity-50" : "bg-primary hover:bg-primary-hover"
               )}
             >
               {loading ? (

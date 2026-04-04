@@ -5,35 +5,47 @@ import type { DashboardStats } from "@/types/database";
 export const dynamic = "force-dynamic";
 
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const branchId = searchParams.get("branchId");
+
   try {
+    const branchCondition = branchId && branchId !== "ALL" ? `WHERE branch_id = :branchId` : "";
+    const branchJoinCondition = branchId && branchId !== "ALL" ? `AND branch_id = :branchId` : "";
+    const branchWhereCondition = branchId && branchId !== "ALL" ? `WHERE branch_id = :branchId` : "";
+    
+    const binds: any = {};
+    if (branchId && branchId !== "ALL") {
+      binds.branchId = branchId;
+    }
+
     const sql = `
       WITH stats AS (
         SELECT
-          (SELECT COUNT(*) FROM orders) AS TOTAL_ORDERS,
-          (SELECT COUNT(*) FROM orders WHERE order_date >= SYSDATE - 30) AS O_CUR,
-          (SELECT COUNT(*) FROM orders WHERE order_date >= SYSDATE - 60 AND order_date < SYSDATE - 30) AS O_PREV,
+          (SELECT COUNT(*) FROM orders ${branchWhereCondition}) AS TOTAL_ORDERS,
+          (SELECT COUNT(*) FROM orders ${branchWhereCondition} ${branchWhereCondition ? 'AND' : 'WHERE'} order_date >= SYSDATE - 30) AS O_CUR,
+          (SELECT COUNT(*) FROM orders ${branchWhereCondition} ${branchWhereCondition ? 'AND' : 'WHERE'} order_date >= SYSDATE - 60 AND order_date < SYSDATE - 30) AS O_PREV,
           
-          (SELECT NVL(SUM(final_amount), 0) FROM orders WHERE status_code != 'CANCELLED') AS TOTAL_REVENUE,
-          (SELECT NVL(SUM(final_amount), 0) FROM orders WHERE status_code != 'CANCELLED' AND order_date >= SYSDATE - 30) AS R_CUR,
-          (SELECT NVL(SUM(final_amount), 0) FROM orders WHERE status_code != 'CANCELLED' AND order_date >= SYSDATE - 60 AND order_date < SYSDATE - 30) AS R_PREV,
+          (SELECT NVL(SUM(final_amount), 0) FROM orders ${branchWhereCondition} ${branchWhereCondition ? 'AND' : 'WHERE'} status_code != 'CANCELLED') AS TOTAL_REVENUE,
+          (SELECT NVL(SUM(final_amount), 0) FROM orders ${branchWhereCondition} ${branchWhereCondition ? 'AND' : 'WHERE'} status_code != 'CANCELLED' AND order_date >= SYSDATE - 30) AS R_CUR,
+          (SELECT NVL(SUM(final_amount), 0) FROM orders ${branchWhereCondition} ${branchWhereCondition ? 'AND' : 'WHERE'} status_code != 'CANCELLED' AND order_date >= SYSDATE - 60 AND order_date < SYSDATE - 30) AS R_PREV,
           
-          (SELECT NVL(SUM(quantity_available), 0) FROM branch_inventory) AS TOTAL_STOCK,
+          (SELECT NVL(SUM(quantity_available), 0) FROM branch_inventory ${branchWhereCondition}) AS TOTAL_STOCK,
           (SELECT NVL(SUM(CASE WHEN txn_type IN ('IN', 'TRANSFER_IN', 'RETURN') THEN quantity ELSE -quantity END), 0) 
-           FROM inventory_transactions WHERE created_at >= SYSDATE - 30) AS S_NET_CUR,
+           FROM inventory_transactions ${branchWhereCondition} ${branchWhereCondition ? 'AND' : 'WHERE'} created_at >= SYSDATE - 30) AS S_NET_CUR,
           (SELECT NVL(SUM(CASE WHEN txn_type IN ('IN', 'TRANSFER_IN', 'RETURN') THEN quantity ELSE -quantity END), 0) 
-           FROM inventory_transactions WHERE created_at >= SYSDATE - 60 AND created_at < SYSDATE - 30) AS S_NET_PREV,
+           FROM inventory_transactions ${branchWhereCondition} ${branchWhereCondition ? 'AND' : 'WHERE'} created_at >= SYSDATE - 60 AND created_at < SYSDATE - 30) AS S_NET_PREV,
 
           (SELECT COUNT(*) FROM customers) AS TOTAL_CUSTOMERS,
           (SELECT COUNT(*) FROM customers WHERE created_at >= SYSDATE - 30) AS C_CUR,
           (SELECT COUNT(*) FROM customers WHERE created_at >= SYSDATE - 60 AND created_at < SYSDATE - 30) AS C_PREV,
           
-          (SELECT COUNT(*) FROM orders WHERE status_code = 'PENDING') AS PENDING_ORDERS,
+          (SELECT COUNT(*) FROM orders ${branchWhereCondition} ${branchWhereCondition ? 'AND' : 'WHERE'} status_code = 'PENDING') AS PENDING_ORDERS,
           (SELECT COUNT(*) FROM (
             SELECT b.book_id
             FROM books b
             LEFT JOIN branch_inventory bi ON b.book_id = bi.book_id
-            WHERE b.is_active = 1
+            WHERE b.is_active = 1 ${branchJoinCondition ? 'AND bi.branch_id = :branchId' : ''}
             GROUP BY b.book_id
             HAVING MIN(NVL(bi.quantity_available, 0)) <= 10 OR MIN(bi.inventory_id) IS NULL
           )) AS LOW_STOCK_COUNT
@@ -48,8 +60,7 @@ export async function GET() {
       FROM stats
     `;
 
-
-    const rows = await query<DashboardStats>(sql);
+    const rows = await query<DashboardStats>(sql, binds);
     const stats = rows[0];
 
     return NextResponse.json({ success: true, data: stats });

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { BookMarked, Lock, User, ArrowRight, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useBranch, branches } from "@/context/branch-context";
+import { useBranch } from "@/context/branch-context";
 import { toast } from "sonner";
 
 export default function LoginPage() {
@@ -29,9 +29,11 @@ export default function LoginPage() {
       if (data.success) {
         login({
           id: data.user.id,
+          username: data.user.username,
           name: data.user.fullName,
           role: data.user.role,
           branchId: data.user.branchId,
+          staffId: data.user.staffId
         });
         toast.success(data.message);
         router.push("/dashboard");

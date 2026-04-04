@@ -6,6 +6,7 @@ import {
   ArrowLeftRight, 
   AlertTriangle, 
   Package,
+  PackagePlus,
   TrendingDown,
   ChevronRight,
   Search,
@@ -18,8 +19,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { BranchInventory, DashboardStats } from "@/types/database";
 import { HistoryDrawer } from "@/components/inventory/history-drawer";
 import { TransferDrawer } from "@/components/inventory/transfer-drawer";
+import { StockInDrawer } from "@/components/inventory/stock-in-drawer";
+import { useBranch } from "@/context/branch-context";
 
 export default function InventoryPage() {
+  const { currentBranch, currentUser } = useBranch();
   const [inventory, setInventory] = useState<BranchInventory[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,18 +34,28 @@ export default function InventoryPage() {
   // Drawer states
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
+  const [isStockInOpen, setIsStockInOpen] = useState(false);
   const [selectedBookId, setSelectedBookId] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     fetchInventoryData();
-  }, []);
+    // Đồng bộ branchFilter với currentBranch
+    if (currentBranch) {
+      setBranchFilter(currentBranch.name);
+    }
+  }, [currentBranch]);
 
   const fetchInventoryData = async () => {
     setLoading(true);
     try {
+      const branchIdForStats = currentBranch?.id || "ALL";
+      // Inventory API có thể lấy tất cả nếu là ADMIN để xem bảng Pivot
+      // Nhưng nếu là lọc cụ thể thì nên truyền branchId
+      const invUrl = branchIdForStats !== "ALL" ? `/api/inventory?branchId=${branchIdForStats}` : "/api/inventory";
+      
       const [invRes, statsRes] = await Promise.all([
-        fetch("/api/inventory"),
-        fetch("/api/dashboard/stats")
+        fetch(invUrl),
+        fetch(`/api/dashboard/stats?branchId=${branchIdForStats}`)
       ]);
       const invData = await invRes.json();
       const statsData = await statsRes.json();
@@ -119,8 +133,18 @@ export default function InventoryPage() {
             Lịch sử giao dịch
           </button>
           <button 
+            onClick={() => {
+              setSelectedBookId(undefined);
+              setIsStockInOpen(true);
+            }}
+            className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all active:scale-95"
+          >
+            <Package size={16} />
+            Nhập hàng
+          </button>
+          <button 
             onClick={() => handleTransferClick()}
-            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover transition-all"
+            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary/20 hover:bg-primary-hover transition-all active:scale-95"
           >
             <ArrowLeftRight size={16} />
             Điều chuyển kho
@@ -286,13 +310,25 @@ export default function InventoryPage() {
                       <span className="text-base font-black text-foreground">{item.TOTAL.toLocaleString()}</span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button 
-                        onClick={() => handleTransferClick(item.ID)}
-                        className="rounded-md p-2 text-secondary-foreground hover:bg-primary/10 hover:text-primary transition-all opacity-0 group-hover:opacity-100"
-                        title="Điều chuyển sách này"
-                      >
-                        <ArrowLeftRight size={18} />
-                      </button>
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                        <button 
+                          onClick={() => {
+                            setSelectedBookId(item.ID);
+                            setIsStockInOpen(true);
+                          }}
+                          className="rounded-md p-2 text-emerald-600 hover:bg-emerald-50 transition-all"
+                          title="Nhập thêm sách này"
+                        >
+                          <PackagePlus size={18} />
+                        </button>
+                        <button 
+                          onClick={() => handleTransferClick(item.ID)}
+                          className="rounded-md p-2 text-primary hover:bg-primary/10 transition-all"
+                          title="Điều chuyển sách này"
+                        >
+                          <ArrowLeftRight size={18} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -327,6 +363,13 @@ export default function InventoryPage() {
       <TransferDrawer 
         isOpen={isTransferOpen} 
         onClose={() => setIsTransferOpen(false)} 
+        onSuccess={fetchInventoryData}
+        initialBookId={selectedBookId}
+      />
+
+      <StockInDrawer
+        isOpen={isStockInOpen}
+        onClose={() => setIsStockInOpen(false)}
         onSuccess={fetchInventoryData}
         initialBookId={selectedBookId}
       />

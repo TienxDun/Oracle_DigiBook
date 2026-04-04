@@ -11,12 +11,13 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get("limit") ?? "20");
   const status = searchParams.get("status");
   const search = searchParams.get("search") ?? "";
+  const branchId = searchParams.get("branchId");
   const offset = (page - 1) * limit;
 
   try {
     const conditions: string[] = [];
-    const binds: Record<string, string | number> = { limit, offset };
-    const countBinds: Record<string, string | number> = {};
+    const binds: any = { limit, offset };
+    const countBinds: any = {};
 
     if (status && status !== "ALL") {
       conditions.push("o.status_code = :status");
@@ -28,35 +29,40 @@ export async function GET(request: NextRequest) {
       binds.search = `%${search}%`;
       countBinds.search = `%${search}%`;
     }
+    if (branchId && branchId !== "ALL") {
+      conditions.push("o.branch_id = :branchId");
+      binds.branchId = branchId;
+      countBinds.branchId = branchId;
+    }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
     const sql = `
       SELECT
-        o.order_id,
-        o.order_code,
-        o.customer_id,
-        c.full_name AS customer_name,
-        c.phone AS customer_phone,
-        o.branch_id,
-        b.branch_name,
-        o.status_code,
-        os.status_name_vi,
-        os.color_code AS status_color,
-        o.total_amount,
-        o.discount_amount,
-        o.shipping_fee,
-        o.final_amount,
-        o.ship_address,
-        o.ship_district,
-        o.ship_province,
-        o.ship_phone,
-        pt.payment_method,
-        pt.status AS payment_status,
-        o.customer_note AS note,
-        o.order_date,
-        o.order_date AS created_at,
-        o.updated_at
+        o.order_id AS ORDER_ID,
+        o.order_code AS ORDER_CODE,
+        o.customer_id AS CUSTOMER_ID,
+        c.full_name AS CUSTOMER_NAME,
+        c.phone AS CUSTOMER_PHONE,
+        o.branch_id AS BRANCH_ID,
+        b.branch_name AS BRANCH_NAME,
+        o.status_code AS STATUS_CODE,
+        os.status_name_vi AS STATUS_NAME_VI,
+        os.color_code AS STATUS_COLOR,
+        o.total_amount AS TOTAL_AMOUNT,
+        o.discount_amount AS DISCOUNT_AMOUNT,
+        o.shipping_fee AS SHIPPING_FEE,
+        o.final_amount AS FINAL_AMOUNT,
+        o.ship_address AS SHIP_ADDRESS,
+        o.ship_district AS SHIP_DISTRICT,
+        o.ship_province AS SHIP_PROVINCE,
+        o.ship_phone AS SHIP_PHONE,
+        pt.payment_method AS PAYMENT_METHOD,
+        pt.status AS PAYMENT_STATUS,
+        o.customer_note AS NOTE,
+        o.order_date AS ORDER_DATE,
+        o.order_date AS CREATED_AT,
+        o.updated_at AS UPDATED_AT
       FROM orders o
       JOIN customers c ON o.customer_id = c.customer_id
       JOIN branches b ON o.branch_id = b.branch_id
@@ -72,7 +78,7 @@ export async function GET(request: NextRequest) {
     `;
 
     const countSql = `
-      SELECT COUNT(*) AS total
+      SELECT COUNT(*) AS TOTAL
       FROM orders o
       JOIN customers c ON o.customer_id = c.customer_id
       ${whereClause}

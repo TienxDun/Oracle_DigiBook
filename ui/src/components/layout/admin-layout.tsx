@@ -21,12 +21,21 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   useEffect(() => {
     const storedUser = localStorage.getItem("digibook_user");
-    if (!storedUser && !isLoginPage) {
-      router.push("/login");
+    
+    if (!storedUser) {
+      if (!isLoginPage) {
+        router.push("/login");
+      } else {
+        setIsReady(true);
+      }
     } else {
-      setIsReady(true);
+      if (isLoginPage) {
+        router.push("/dashboard");
+      } else {
+        setIsReady(true);
+      }
     }
-  }, [isLoginPage, router]);
+  }, [isLoginPage, router, pathname]);
 
   if (isLoginPage) {
     return <div className="min-h-screen bg-background">{children}</div>;

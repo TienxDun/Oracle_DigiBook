@@ -12,19 +12,25 @@ import {
   Settings,
   BookMarked
 } from "lucide-react";
+import { useBranch } from "@/context/branch-context";
 import { cn } from "@/lib/utils";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-  { icon: BookOpen, label: "Catalog", href: "/catalog" },
-  { icon: Warehouse, label: "Inventory", href: "/inventory" },
-  { icon: ArrowLeftRight, label: "Transfers", href: "/transfers" },
-  { icon: ShoppingCart, label: "Orders", href: "/orders" },
-  { icon: Settings, label: "Settings", href: "/settings" },
+  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", roles: ["ADMIN", "MANAGER", "STAFF", "SUPPORT"] },
+  { icon: BookOpen, label: "Catalog", href: "/catalog", roles: ["ADMIN", "MANAGER", "STAFF", "SUPPORT"] },
+  { icon: Warehouse, label: "Inventory", href: "/inventory", roles: ["ADMIN", "MANAGER", "STAFF"] },
+  { icon: ArrowLeftRight, label: "Transfers", href: "/transfers", roles: ["ADMIN", "MANAGER"] },
+  { icon: ShoppingCart, label: "Orders", href: "/orders", roles: ["ADMIN", "MANAGER", "STAFF", "SUPPORT"] },
+  { icon: Settings, label: "Settings", href: "/settings", roles: ["ADMIN"] },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { currentUser } = useBranch();
+
+  const filteredItems = menuItems.filter(item => 
+    !item.roles || (currentUser && item.roles.includes(currentUser.role))
+  );
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-border bg-white transition-transform">
@@ -41,7 +47,7 @@ export function Sidebar() {
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1">
-          {menuItems.map((item) => {
+          {filteredItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
             return (
               <Link

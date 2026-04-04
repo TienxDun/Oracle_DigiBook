@@ -7,40 +7,39 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const branchId = searchParams.get("branch_id");
+  const branchId = searchParams.get("branchId") || searchParams.get("branch_id");
   const lowStockOnly = searchParams.get("low_stock") === "true";
+  const bookId = searchParams.get("book_id");
 
   try {
     const conditions: string[] = ["b.is_active = 1"];
-    const binds: Record<string, string | number> = {};
+    const binds: any = {};
     
-    const bookId = searchParams.get("book_id");
-
     if (branchId && branchId !== "ALL") {
-      conditions.push("bi.branch_id = :branch_id");
-      binds.branch_id = Number(branchId);
+      conditions.push("bi.branch_id = :branchId");
+      binds.branchId = Number(branchId);
     }
     if (bookId) {
-      conditions.push("bi.book_id = :book_id");
-      binds.book_id = Number(bookId);
+      conditions.push("bi.book_id = :bookId");
+      binds.bookId = Number(bookId);
     }
     if (lowStockOnly) {
-      conditions.push("bi.quantity_available <= bi.low_stock_threshold");
+      conditions.push("NVL(bi.quantity_available, 0) <= NVL(bi.low_stock_threshold, 10)");
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
     const sql = `
       SELECT
-        bi.inventory_id,
-        bi.branch_id,
-        br.branch_name,
-        b.book_id,
-        b.title AS book_title,
-        b.isbn,
-        NVL(bi.quantity_available, 0) as quantity_available,
-        NVL(bi.low_stock_threshold, 10) as low_stock_threshold,
-        bi.last_stock_in_at
+        bi.inventory_id AS INVENTORY_ID,
+        bi.branch_id AS BRANCH_ID,
+        br.branch_name AS BRANCH_NAME,
+        b.book_id AS BOOK_ID,
+        b.title AS BOOK_TITLE,
+        b.isbn AS ISBN,
+        NVL(bi.quantity_available, 0) AS QUANTITY_AVAILABLE,
+        NVL(bi.low_stock_threshold, 10) AS LOW_STOCK_THRESHOLD,
+        bi.last_stock_in_at AS LAST_STOCK_IN_AT
       FROM books b
       LEFT JOIN branch_inventory bi ON b.book_id = bi.book_id
       LEFT JOIN branches br ON bi.branch_id = br.branch_id

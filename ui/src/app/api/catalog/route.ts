@@ -41,31 +41,31 @@ export async function GET(request: NextRequest) {
 
     const sql = `
       SELECT
-        b.book_id,
-        b.isbn,
-        b.title,
-        b.price,
+        b.book_id AS BOOK_ID,
+        b.isbn AS ISBN,
+        b.title AS TITLE,
+        b.price AS PRICE,
         (SELECT NVL(SUM(quantity_available), 0) FROM branch_inventory WHERE book_id = b.book_id) AS STOCK_QUANTITY,
-        b.page_count,
-        b.publication_year,
-        b.is_featured,
-        b.is_active,
-        b.view_count,
-        b.sold_count,
-        b.created_at,
-        c.category_name,
-        p.publisher_name,
+        b.page_count AS PAGE_COUNT,
+        b.publication_year AS PUBLICATION_YEAR,
+        b.is_featured AS IS_FEATURED,
+        b.is_active AS IS_ACTIVE,
+        b.view_count AS VIEW_COUNT,
+        b.sold_count AS SOLD_COUNT,
+        b.created_at AS CREATED_AT,
+        c.category_name AS CATEGORY_NAME,
+        p.publisher_name AS PUBLISHER_NAME,
         (
           SELECT LISTAGG(a.author_name, ', ') WITHIN GROUP (ORDER BY ba.author_order)
           FROM book_authors ba
           JOIN authors a ON ba.author_id = a.author_id
           WHERE ba.book_id = b.book_id AND ba.role = 'AUTHOR'
-        ) AS author_names,
+        ) AS AUTHOR_NAMES,
         (
           SELECT bi.image_url FROM book_images bi
           WHERE bi.book_id = b.book_id AND bi.is_main = 1
           AND ROWNUM = 1
-        ) AS cover_url
+        ) AS COVER_URL
       FROM books b
       LEFT JOIN categories c ON b.category_id = c.category_id
       LEFT JOIN publishers p ON b.publisher_id = p.publisher_id

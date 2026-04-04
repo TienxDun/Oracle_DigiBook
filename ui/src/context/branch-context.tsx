@@ -10,9 +10,11 @@ interface Branch {
 
 interface User {
   id: string;
+  username: string;
   name: string;
-  role: "ADMIN" | "STAFF";
+  role: "ADMIN" | "MANAGER" | "STAFF" | "SUPPORT";
   branchId?: string;
+  staffId?: string;
 }
 
 interface BranchContextType {
@@ -25,6 +27,12 @@ interface BranchContextType {
 }
 
 const BranchContext = createContext<BranchContextType | undefined>(undefined);
+
+export const SYSTEM_BRANCH: Branch = {
+  id: "ALL",
+  name: "Toàn hệ thống",
+  address: "Quản lý toàn bộ chi nhánh"
+};
 
 export function BranchProvider({ children }: { children: React.ReactNode }) {
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -47,7 +55,9 @@ export function BranchProvider({ children }: { children: React.ReactNode }) {
           
           // Set default branch if none saved
           const savedBranchId = localStorage.getItem("digibook_branch");
-          if (savedBranchId) {
+          if (savedBranchId === "ALL") {
+            setCurrentBranch(SYSTEM_BRANCH);
+          } else if (savedBranchId) {
             const saved = mappedBranches.find((b: any) => b.id === savedBranchId);
             if (saved) setCurrentBranch(saved);
             else setCurrentBranch(mappedBranches[0]);
@@ -94,8 +104,11 @@ export function BranchProvider({ children }: { children: React.ReactNode }) {
   };
 
   const handleSetBranch = (branch: Branch) => {
-    setCurrentBranch(branch);
-    localStorage.setItem("digibook_branch", branch.id);
+    // Chỉ cho phép đổi chi nhánh nếu là ADMIN hoặc SUPPORT
+    if (currentUser?.role === "ADMIN" || currentUser?.role === "SUPPORT") {
+      setCurrentBranch(branch);
+      localStorage.setItem("digibook_branch", branch.id);
+    }
   };
 
   return (

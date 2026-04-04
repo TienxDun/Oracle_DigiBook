@@ -3,8 +3,17 @@ import { query } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const branchId = searchParams.get("branchId");
+
   try {
+    const branchCondition = branchId && branchId !== "ALL" ? `WHERE it.branch_id = :branchId` : "";
+    const binds: any = {};
+    if (branchId && branchId !== "ALL") {
+      binds.branchId = branchId;
+    }
+
     const sql = `
       SELECT 
         it.txn_id as "id",
@@ -15,11 +24,12 @@ export async function GET() {
         b.title as "book_title"
       FROM inventory_transactions it
       JOIN books b ON it.book_id = b.book_id
+      ${branchCondition}
       ORDER BY it.created_at DESC
       FETCH FIRST 10 ROWS ONLY
     `;
 
-    const result = await query<any>(sql);
+    const result = await query<any>(sql, binds);
 
     // Chuẩn hóa dữ liệu hiển thị dựa trên txn_type
     const data = result.map((r: any) => ({
@@ -32,6 +42,7 @@ export async function GET() {
 
     return NextResponse.json({ success: true, data });
   } catch (error: any) {
+    console.error("[API/dashboard/activity] Error:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }

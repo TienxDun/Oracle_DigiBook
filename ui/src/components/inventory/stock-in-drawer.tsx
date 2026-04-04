@@ -93,7 +93,10 @@ export function StockInDrawer({
       return;
     }
 
-    if (!currentUser?.staffId) {
+    const userId = currentUser?.id ? parseInt(currentUser.id) : null;
+    const staffId = currentUser?.staffId ? parseInt(currentUser.staffId) : null;
+
+    if (!userId && !staffId) {
       toast.error("Bạn cần có tài khoản nhân viên để thực hiện thao tác này.");
       return;
     }
@@ -108,7 +111,8 @@ export function StockInDrawer({
           branch_id: parseInt(formData.branch_id),
           quantity: parseInt(formData.quantity.toString()),
           notes: formData.notes,
-          staff_id: currentUser?.staffId ? parseInt(currentUser.staffId) : null
+          staff_id: staffId,
+          user_id: userId
         })
       });
 
@@ -270,10 +274,11 @@ export function StockInDrawer({
           <div className="border-t border-border p-6 bg-accent/20">
             <button 
               onClick={handleSubmit}
-              disabled={loading || fetching || !formData.book_id || !formData.branch_id || !currentUser?.staffId}
+              type="button"
+              disabled={loading || fetching || !formData.book_id || !formData.branch_id || (!currentUser?.staffId && !currentUser?.id)}
               className={cn(
                 "flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-all",
-                (loading || fetching || !formData.book_id || !formData.branch_id || !currentUser?.staffId) 
+                (loading || fetching || !formData.book_id || !formData.branch_id || (!currentUser?.staffId && !currentUser?.id)) 
                   ? "bg-slate-300 cursor-not-allowed" 
                   : "bg-emerald-600 hover:bg-emerald-700"
               )}

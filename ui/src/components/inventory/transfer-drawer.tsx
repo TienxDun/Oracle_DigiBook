@@ -101,7 +101,10 @@ export function TransferDrawer({ isOpen, onClose, onSuccess, initialBookId }: Tr
       return;
     }
 
-    if (!currentUser?.staffId) {
+    const userId = currentUser?.id ? parseInt(currentUser.id) : null;
+    const staffId = currentUser?.staffId ? parseInt(currentUser.staffId) : null;
+
+    if (!userId && !staffId) {
       toast.error("Bạn cần có tài khoản nhân viên để thực hiện điều chuyển kho.");
       return;
     }
@@ -122,7 +125,8 @@ export function TransferDrawer({ isOpen, onClose, onSuccess, initialBookId }: Tr
           from_branch_id: parseInt(formData.from_branch_id),
           to_branch_id: parseInt(formData.to_branch_id),
           quantity: parseInt(formData.quantity.toString()),
-          staff_id: currentUser?.staffId ? parseInt(currentUser.staffId) : null
+          staff_id: staffId,
+          user_id: userId
         })
       });
 
@@ -292,10 +296,11 @@ export function TransferDrawer({ isOpen, onClose, onSuccess, initialBookId }: Tr
           <div className="border-t border-border p-6 bg-accent/20">
             <button 
               onClick={handleSubmit}
-              disabled={loading || !availableQty || formData.quantity > availableQty || !currentUser?.staffId}
+              type="button"
+              disabled={loading || !availableQty || formData.quantity > availableQty || (!currentUser?.staffId && !currentUser?.id)}
               className={cn(
                 "flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-all",
-                (loading || !availableQty || formData.quantity > availableQty || !currentUser?.staffId) ? "bg-slate-300 cursor-not-allowed" : "bg-primary hover:bg-primary-hover"
+                (loading || !availableQty || formData.quantity > availableQty || (!currentUser?.staffId && !currentUser?.id)) ? "bg-slate-300 cursor-not-allowed" : "bg-primary hover:bg-primary-hover"
               )}
             >
               {loading ? (

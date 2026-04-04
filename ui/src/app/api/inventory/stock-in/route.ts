@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withTransaction } from "@/lib/db";
+import { resolveStaffId } from "@/lib/staff";
 import oracledb from "oracledb";
 
 /**
@@ -10,7 +11,7 @@ import oracledb from "oracledb";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { book_id, branch_id, quantity, notes, staff_id } = body;
+    const { book_id, branch_id, quantity, notes, staff_id, user_id } = body;
 
     // 1. Validation
     if (!book_id || !branch_id || !quantity || quantity <= 0) {
@@ -20,7 +21,9 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    if (!staff_id) {
+    const resolvedStaffId = await resolveStaffId({ staffId: staff_id, userId: user_id });
+
+    if (!resolvedStaffId) {
       return NextResponse.json({ 
         success: false, 
         message: "Bạn cần có tài khoản nhân viên để thực hiện thao tác này." 
@@ -78,7 +81,7 @@ export async function POST(request: NextRequest) {
         book: Number(book_id), 
         qty: Number(quantity), 
         notes: notes || "Nhập hàng định kỳ",
-        staff_id: Number(staff_id)
+        staff_id: resolvedStaffId
       });
 
       return { success: true };

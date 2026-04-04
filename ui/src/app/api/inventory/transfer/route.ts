@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query, withTransaction } from "@/lib/db";
+import { resolveStaffId } from "@/lib/staff";
 import oracledb from "oracledb";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { book_id, from_branch_id, to_branch_id, quantity, notes, staff_id } = body;
+    const { book_id, from_branch_id, to_branch_id, quantity, notes, staff_id, user_id } = body;
 
     if (!book_id || !from_branch_id || !to_branch_id || !quantity) {
       return NextResponse.json({ success: false, message: "Thiếu thông tin điều chuyển." }, { status: 400 });
@@ -15,7 +16,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: "Chi nhánh nguồn và đích phải khác nhau." }, { status: 400 });
     }
 
-    if (!staff_id) {
+    const resolvedStaffId = await resolveStaffId({ staffId: staff_id, userId: user_id });
+
+    if (!resolvedStaffId) {
       return NextResponse.json({ 
         success: false, 
         message: "Bạn cần có tài khoản nhân viên để thực hiện điều chuyển kho." 
@@ -61,7 +64,7 @@ export async function POST(request: NextRequest) {
       to_bid: Number(to_branch_id), 
       qty: Number(quantity), 
       notes: notes || "Điều chuyển trực tiếp",
-      staff_id: Number(staff_id)
+        staff_id: resolvedStaffId
     });
 
       // B. Update source inventory
@@ -107,7 +110,7 @@ export async function POST(request: NextRequest) {
         book_id: Number(book_id), 
         qty: -Number(quantity), 
         notes: `📤 Chuyển đến chi nhánh ${to_branch_id}`,
-        staff_id: Number(staff_id)
+        staff_id: resolvedStaffId
       });
 
       // E. Log transactions (Target Side - IN)
@@ -124,7 +127,7 @@ export async function POST(request: NextRequest) {
         book_id: Number(book_id), 
         qty: Number(quantity), 
         notes: `📥 Nhận từ chi nhánh ${from_branch_id}`,
-        staff_id: Number(staff_id)
+        staff_id: resolvedStaffId
       });
     });
 

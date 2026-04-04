@@ -120,7 +120,7 @@ export function StockInDrawer({
       } else {
         toast.error(data.message || "Lỗi khi nhập hàng.");
       }
-    } catch (error) {
+    } catch {
       toast.error("Lỗi kết nối máy chủ.");
     } finally {
       setLoading(false);
@@ -139,41 +139,43 @@ export function StockInDrawer({
       {/* Overlay */}
       <div 
         className={cn(
-          "fixed inset-0 z-[60] bg-black/40 backdrop-blur-[2px] transition-opacity duration-300",
+          "fixed inset-0 z-40 bg-black/30 backdrop-blur-sm transition-opacity duration-300",
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
         onClick={onClose}
       />
 
-      {/* Drawer Panel */}
+      {/* Modal */}
       <div 
         className={cn(
-          "fixed inset-y-0 right-0 z-[70] w-full max-w-md bg-white shadow-2xl transition-transform duration-500 ease-in-out sm:border-l border-border",
-          isOpen ? "translate-x-0" : "translate-x-full"
+          "fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300",
+          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
       >
-        <div className="flex h-full flex-col">
+        <div className="w-full max-w-2xl bg-white rounded-xl shadow-xl animate-in zoom-in-95 duration-300 my-auto flex flex-col max-h-[85vh]">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-border p-6 bg-emerald-50/30">
+          <div className="flex items-center justify-between border-b border-border p-6">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-emerald-500/10 p-2 text-emerald-600 ring-1 ring-emerald-500/20">
                 <PackagePlus size={24} />
               </div>
               <div>
-                <h2 className="text-xl font-black text-foreground">Nhập kho DigiBook</h2>
-                <p className="text-[10px] uppercase font-bold text-emerald-600 tracking-widest">Procurement & Distribution</p>
+                <h2 className="text-xl font-bold text-foreground">Nhập kho DigiBook</h2>
+                <p className="text-xs text-secondary-foreground">Procurement & Distribution</p>
               </div>
             </div>
             <button 
               onClick={onClose}
-              className="rounded-full p-2 text-secondary-foreground hover:bg-white hover:text-rose-500 hover:shadow-md transition-all"
+              title="Đóng"
+              aria-label="Đóng"
+              className="rounded-full p-2 text-secondary-foreground hover:bg-accent hover:text-foreground"
             >
               <X size={20} />
             </button>
           </div>
 
           {/* Form Content */}
-          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-hide">
+          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
             
             {/* Book Selection */}
             <div className="space-y-3">
@@ -259,26 +261,26 @@ export function StockInDrawer({
           </form>
 
           {/* Footer Action */}
-          <div className="border-t border-border p-8 bg-accent/5">
+          <div className="border-t border-border p-6 bg-accent/20">
             <button 
               onClick={handleSubmit}
               disabled={loading || fetching || !formData.book_id || !formData.branch_id || !currentUser?.staffId}
               className={cn(
-                "group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl px-4 py-5 text-base font-black text-white shadow-2xl transition-all active:scale-95",
+                "flex w-full items-center justify-center gap-2 items-center rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-all",
                 (loading || fetching || !formData.book_id || !formData.branch_id || !currentUser?.staffId) 
-                  ? "bg-slate-300 cursor-not-allowed grayscale" 
-                  : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/30"
+                  ? "bg-slate-300 cursor-not-allowed" 
+                  : "bg-emerald-600 hover:bg-emerald-700"
               )}
             >
               {loading ? (
                 <>
-                  <RefreshCw className="animate-spin" size={20} />
-                  <span>ĐANG XỬ LÝ...</span>
+                  <RefreshCw className="animate-spin" size={16} />
+                  <span>Đang xử lý...</span>
                 </>
               ) : (
                 <>
-                  <CheckCircle2 size={20} className="group-hover:scale-125 transition-transform" />
-                  <span>XÁC NHẬN NHẬP KHO</span>
+                  <CheckCircle2 size={16} />
+                  <span>Xác nhận nhập kho</span>
                 </>
               )}
             </button>

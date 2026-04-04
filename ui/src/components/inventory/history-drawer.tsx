@@ -7,12 +7,13 @@ import {
   ArrowUpRight, 
   ArrowDownLeft, 
   RefreshCw,
-  Search,
   BookOpen,
   MapPin
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const HISTORY_PAGE_SIZE = 100;
 
 interface Transaction {
   TXN_ID: number;
@@ -34,24 +35,56 @@ interface HistoryDrawerProps {
 export function HistoryDrawer({ isOpen, onClose, branchId }: HistoryDrawerProps) {
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => {
     if (isOpen) {
-      fetchHistory();
+      setPage(1);
+      // Call fetch directly with page number instead of relying on state
+      const fetchInitial = async () => {
+        setLoading(true);
+        try {
+          const url = branchId 
+            ? `/api/inventory/transactions?branch_id=${branchId}&limit=${HISTORY_PAGE_SIZE}&offset=0` 
+            : `/api/inventory/transactions?limit=${HISTORY_PAGE_SIZE}&offset=0`;
+          const res = await fetch(url);
+          const data = await res.json();
+          if (data.success) {
+            setTransactions(data.data);
+            setHasMore(data.data.length === HISTORY_PAGE_SIZE);
+          }
+        } catch {
+          console.error("Failed to fetch history");
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchInitial();
     }
   }, [isOpen, branchId]);
 
-  const fetchHistory = async () => {
+  const loadMore = async () => {
+    if (loading || !hasMore) return;
+    
+    const nextPageNum = page + 1;
+    setPage(nextPageNum);
+    
+    // Calculate offset directly without relying on state update
+    const offset = (nextPageNum - 1) * HISTORY_PAGE_SIZE;
     setLoading(true);
     try {
-      const url = branchId ? `/api/inventory/transactions?branch_id=${branchId}&limit=50` : `/api/inventory/transactions?limit=50`;
+      const url = branchId 
+        ? `/api/inventory/transactions?branch_id=${branchId}&limit=${HISTORY_PAGE_SIZE}&offset=${offset}` 
+        : `/api/inventory/transactions?limit=${HISTORY_PAGE_SIZE}&offset=${offset}`;
       const res = await fetch(url);
       const data = await res.json();
       if (data.success) {
-        setTransactions(data.data);
+        setTransactions(prev => [...prev, ...data.data]);
+        setHasMore(data.data.length === HISTORY_PAGE_SIZE);
       }
-    } catch (e) {
-      console.error("Failed to fetch history");
+    } catch {
+      console.error("Failed to load more history");
     } finally {
       setLoading(false);
     }
@@ -77,34 +110,38 @@ export function HistoryDrawer({ isOpen, onClose, branchId }: HistoryDrawerProps)
       {/* Backdrop */}
       <div 
         className={cn(
-          "fixed inset-0 z-[60] bg-black/30 backdrop-blur-sm transition-opacity duration-300",
+          "fixed inset-0 z-40 bg-black/30 backdrop-blur-sm transition-opacity duration-300",
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
         onClick={onClose}
       />
 
-      {/* Drawer */}
+      {/* Modal */}
       <div 
         className={cn(
-          "fixed inset-y-0 right-0 z-[70] w-full max-w-xl bg-white shadow-2xl transition-transform duration-300 ease-out sm:border-l border-border",
-          isOpen ? "translate-x-0" : "translate-x-full"
+          "fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300",
+          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
       >
-        <div className="flex h-full flex-col">
+        <div className="w-full max-w-3xl bg-white rounded-xl shadow-xl animate-in zoom-in-95 duration-300 my-auto flex flex-col max-h-[90vh]">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-border p-6 bg-accent/5">
+          <div className="flex items-center justify-between border-b border-border p-6">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-primary/10 p-2 text-primary">
                 <Clock size={24} />
               </div>
               <div>
                 <h2 className="text-xl font-bold text-foreground">Lịch sử giao dịch</h2>
-                <p className="text-sm text-secondary-foreground">50 hoạt động kho gần nhất.</p>
+                <p className="text-sm text-secondary-foreground">
+                  {transactions.length > 0 ? `${transactions.length} giao dịch được tải` : "Đang tải..."}
+                </p>
               </div>
             </div>
             <button 
               onClick={onClose}
-              className="rounded-full p-2 text-secondary-foreground hover:bg-accent transition-colors"
+              title="Đóng"
+              aria-label="Đóng"
+              className="rounded-full p-2 text-secondary-foreground hover:bg-accent hover:text-foreground"
             >
               <X size={20} />
             </button>
@@ -164,7 +201,7 @@ export function HistoryDrawer({ isOpen, onClose, branchId }: HistoryDrawerProps)
 
                       {txn.NOTES && (
                         <p className="mt-2 text-xs italic text-secondary-foreground bg-accent/30 p-2 rounded-md border border-border/50">
-                          "{txn.NOTES}"
+                          &quot;{txn.NOTES}&quot;
                         </p>
                       )}
                     </div>
@@ -183,14 +220,53 @@ export function HistoryDrawer({ isOpen, onClose, branchId }: HistoryDrawerProps)
           </div>
 
           {/* Footer */}
-          <div className="border-t border-border p-6 bg-accent/5">
+          <div className="border-t border-border p-6 bg-accent/20 flex gap-3">
             <button 
-              onClick={fetchHistory}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-3 text-sm font-bold text-foreground shadow-sm hover:bg-accent transition-all active:scale-95"
+              onClick={async () => {
+                setPage(1);
+                setLoading(true);
+                try {
+                  const url = branchId 
+                    ? `/api/inventory/transactions?branch_id=${branchId}&limit=${HISTORY_PAGE_SIZE}&offset=0` 
+                    : `/api/inventory/transactions?limit=${HISTORY_PAGE_SIZE}&offset=0`;
+                  const res = await fetch(url);
+                  const data = await res.json();
+                  if (data.success) {
+                    setTransactions(data.data);
+                    setHasMore(data.data.length === HISTORY_PAGE_SIZE);
+                  }
+                } catch {
+                  console.error("Failed to refresh history");
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              disabled={loading}
+              className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-accent transition-all disabled:opacity-50"
             >
-              <RefreshCw size={16} />
-              Làm mới lịch sử
+              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+              Làm mới
             </button>
+            {transactions.length > 0 && (
+              <button 
+                onClick={loadMore}
+                disabled={loading || !hasMore}
+                className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover transition-all disabled:opacity-50"
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw size={16} className="animate-spin" />
+                    Đang tải...
+                  </>
+                ) : hasMore ? (
+                  <>
+                    Xem thêm ({HISTORY_PAGE_SIZE} mục)
+                  </>
+                ) : (
+                  "Đã hết dữ liệu"
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>

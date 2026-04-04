@@ -7,7 +7,6 @@ import {
   AlertCircle,
   CheckCircle2,
   Package,
-  MapPin,
   ArrowRight,
   RefreshCw
 } from "lucide-react";
@@ -76,7 +75,7 @@ export function TransferDrawer({ isOpen, onClose, onSuccess, initialBookId }: Tr
       
       if (bookData.success) setBooks(bookData.data);
       if (branchData.success) setBranches(branchData.data);
-    } catch (e) {
+    } catch {
       toast.error("Không thể tải dữ liệu điều chuyển");
     }
   };
@@ -90,7 +89,7 @@ export function TransferDrawer({ isOpen, onClose, onSuccess, initialBookId }: Tr
       } else {
         setAvailableQty(0);
       }
-    } catch (e) {
+    } catch {
       setAvailableQty(0);
     }
   };
@@ -137,7 +136,7 @@ export function TransferDrawer({ isOpen, onClose, onSuccess, initialBookId }: Tr
       } else {
         toast.error(data.message || "Lỗi điều chuyển kho.");
       }
-    } catch (error) {
+    } catch {
       toast.error("Lỗi kết nối máy chủ.");
     } finally {
       setLoading(false);
@@ -148,7 +147,7 @@ export function TransferDrawer({ isOpen, onClose, onSuccess, initialBookId }: Tr
     <>
       <div 
         className={cn(
-          "fixed inset-0 z-[60] bg-black/30 backdrop-blur-sm transition-opacity duration-300",
+          "fixed inset-0 z-40 bg-black/30 backdrop-blur-sm transition-opacity duration-300",
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
         onClick={onClose}
@@ -156,12 +155,12 @@ export function TransferDrawer({ isOpen, onClose, onSuccess, initialBookId }: Tr
 
       <div 
         className={cn(
-          "fixed inset-y-0 right-0 z-[70] w-full max-w-md bg-white shadow-2xl transition-transform duration-300 ease-out sm:border-l border-border",
-          isOpen ? "translate-x-0" : "translate-x-full"
+          "fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300",
+          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
       >
-        <div className="flex h-full flex-col">
-          <div className="flex items-center justify-between border-b border-border p-6 bg-accent/5">
+        <div className="w-full max-w-2xl bg-white rounded-xl shadow-xl animate-in zoom-in-95 duration-300 my-auto flex flex-col max-h-[85vh]">
+          <div className="flex items-center justify-between border-b border-border p-6">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-primary/10 p-2 text-primary">
                 <ArrowLeftRight size={24} />
@@ -170,7 +169,9 @@ export function TransferDrawer({ isOpen, onClose, onSuccess, initialBookId }: Tr
             </div>
             <button 
               onClick={onClose}
-              className="rounded-full p-2 text-secondary-foreground hover:bg-accent transition-colors"
+              title="Đóng"
+              aria-label="Đóng"
+              className="rounded-full p-2 text-secondary-foreground hover:bg-accent hover:text-foreground"
             >
               <X size={20} />
             </button>
@@ -283,23 +284,23 @@ export function TransferDrawer({ isOpen, onClose, onSuccess, initialBookId }: Tr
             </div>
           </form>
 
-          <div className="border-t border-border p-6 bg-accent/5">
+          <div className="border-t border-border p-6 bg-accent/20">
             <button 
               onClick={handleSubmit}
               disabled={loading || !availableQty || formData.quantity > availableQty || !currentUser?.staffId}
               className={cn(
-                "flex w-full items-center justify-center gap-2 rounded-xl px-4 py-4 text-sm font-bold text-white shadow-xl shadow-primary/20 transition-all active:scale-95",
-                (loading || !availableQty || formData.quantity > availableQty || !currentUser?.staffId) ? "bg-slate-300 cursor-not-allowed opacity-50" : "bg-primary hover:bg-primary-hover"
+                "flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-all",
+                (loading || !availableQty || formData.quantity > availableQty || !currentUser?.staffId) ? "bg-slate-300 cursor-not-allowed" : "bg-primary hover:bg-primary-hover"
               )}
             >
               {loading ? (
                 <>
-                  <RefreshCw className="animate-spin" size={18} />
+                  <RefreshCw className="animate-spin" size={16} />
                   Đang xử lý...
                 </>
               ) : (
                 <>
-                  <CheckCircle2 size={18} />
+                  <CheckCircle2 size={16} />
                   Xác nhận điều chuyển
                 </>
               )}

@@ -7,10 +7,11 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const branchId = searchParams.get("branch_id");
   const limit = parseInt(searchParams.get("limit") ?? "50");
+  const offset = parseInt(searchParams.get("offset") ?? "0");
 
   try {
     let whereClause = "";
-    const binds: any = { limit };
+    const binds: Record<string, number | string> = { limit, offset };
 
     if (branchId && branchId !== "ALL") {
       whereClause = "WHERE t.branch_id = :branchId";
@@ -32,6 +33,7 @@ export async function GET(request: NextRequest) {
       JOIN branches br ON t.branch_id = br.branch_id
       ${whereClause}
       ORDER BY t.created_at DESC
+      OFFSET :offset ROWS
       FETCH NEXT :limit ROWS ONLY
     `;
 

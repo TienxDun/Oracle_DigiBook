@@ -1,9 +1,25 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Send, Plus, Trash2, Search, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { X, Send, Trash2, Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+
+interface Branch {
+  BRANCH_ID: number;
+  BRANCH_NAME: string;
+}
+
+interface Book {
+  BOOK_ID: number;
+  TITLE: string;
+  ISBN: string;
+}
+
+interface SelectedItem {
+  book_id: number;
+  title: string;
+  quantity: number;
+}
 
 interface TransferModalProps {
   isOpen: boolean;
@@ -13,15 +29,15 @@ interface TransferModalProps {
 
 export function TransferModal({ isOpen, onClose, onRefresh }: TransferModalProps) {
   const [loading, setLoading] = useState(false);
-  const [branches, setBranches] = useState<any[]>([]);
-  const [books, setBooks] = useState<any[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [books, setBooks] = useState<Book[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   
   // Form State
   const [fromBranchId, setFromBranchId] = useState<number>(0);
   const [toBranchId, setToBranchId] = useState<number>(0);
   const [notes, setNotes] = useState("");
-  const [selectedItems, setSelectedItems] = useState<any[]>([]);
+  const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
 
   useEffect(() => {
     if (isOpen) {
@@ -39,12 +55,12 @@ export function TransferModal({ isOpen, onClose, onRefresh }: TransferModalProps
       const cData = await cRes.json();
       if (bData.success) setBranches(bData.data);
       if (cData.success) setBooks(cData.data);
-    } catch (e) {
+    } catch {
       toast.error("Không thể tải dữ liệu ban đầu");
     }
   };
 
-  const addItem = (book: any) => {
+  const addItem = (book: Book) => {
     if (selectedItems.find(i => i.book_id === book.BOOK_ID)) return;
     setSelectedItems([...selectedItems, { book_id: book.BOOK_ID, title: book.TITLE, quantity: 1 }]);
   };

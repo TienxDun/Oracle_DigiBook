@@ -38,23 +38,33 @@ export default function InventoryPage() {
   const [selectedBookId, setSelectedBookId] = useState<number | undefined>(undefined);
 
   useEffect(() => {
-    fetchInventoryData();
-    // Đồng bộ branchFilter với currentBranch
     if (currentBranch) {
       setBranchFilter(currentBranch.name);
+    } else {
+      setBranchFilter("ALL");
     }
+    fetchInventoryData();
   }, [currentBranch]);
+
+  // Validate branchFilter whenever inventory data changes
+  useEffect(() => {
+    const branchNames = Array.from(new Set(inventory.map(i => i.BRANCH_NAME).filter(Boolean))).sort() as string[];
+    
+    // If current branchFilter is not valid (not "ALL" and not in available branches), reset to "ALL"
+    if (branchFilter !== "ALL" && !branchNames.includes(branchFilter)) {
+      setBranchFilter("ALL");
+    }
+  }, [inventory]);
 
   const fetchInventoryData = async () => {
     setLoading(true);
     try {
       const branchIdForStats = currentBranch?.id || "ALL";
-      // Inventory API có thể lấy tất cả nếu là ADMIN để xem bảng Pivot
-      // Nhưng nếu là lọc cụ thể thì nên truyền branchId
-      const invUrl = branchIdForStats !== "ALL" ? `/api/inventory?branchId=${branchIdForStats}` : "/api/inventory";
+      // Always fetch all inventory data for pivot table display
+      // Branch filtering is done on frontend via branchFilter
       
       const [invRes, statsRes] = await Promise.all([
-        fetch(invUrl),
+        fetch("/api/inventory"),
         fetch(`/api/dashboard/stats?branchId=${branchIdForStats}`)
       ]);
       const invData = await invRes.json();
@@ -97,6 +107,9 @@ export default function InventoryPage() {
     return acc;
   }, {});
 
+  // Get unique branch names for columns (filter out nulls)
+  const branchNames = Array.from(new Set(inventory.map(i => i.BRANCH_NAME).filter(Boolean))).sort() as string[];
+
   const displayData = Object.values(groupedData).filter((item: any) => {
     const matchesSearch = item.TITLE.toLowerCase().includes(search.toLowerCase()) || 
                          item.ISBN.includes(search);
@@ -107,9 +120,6 @@ export default function InventoryPage() {
 
     return matchesSearch && matchesBranch && matchesLowStock;
   });
-
-  // Get unique branch names for columns (filter out nulls)
-  const branchNames = Array.from(new Set(inventory.map(i => i.BRANCH_NAME).filter(Boolean))).sort() as string[];
 
   const handleTransferClick = (bookId?: number) => {
     setSelectedBookId(bookId);

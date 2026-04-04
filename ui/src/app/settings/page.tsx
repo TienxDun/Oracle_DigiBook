@@ -78,8 +78,10 @@ export default function SettingsPage() {
                        <input 
                          type="text" 
                          defaultValue={currentUser?.name || "Admin User"}
-                         className="w-full rounded-xl border border-border bg-accent/10 py-3 px-4 text-sm outline-none focus:ring-1 focus:ring-primary transition-all"                         title=\"Tên người dùng\"
-                         placeholder=\"Tên đầy đủ\"                       />
+                         className="w-full rounded-xl border border-border bg-accent/10 py-3 px-4 text-sm outline-none focus:ring-1 focus:ring-primary transition-all"
+                         title="Tên người dùng"
+                         placeholder="Tên đầy đủ"
+                       />
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -87,16 +89,20 @@ export default function SettingsPage() {
                     <input 
                       type="email" 
                       defaultValue={currentUser?.name ? `${currentUser.name.toLowerCase().replace(/\s/g, '.')}@digibook.com.vn` : "admin@digibook.com.vn"}
-                      className="w-full rounded-xl border border-border bg-accent/10 py-3 px-4 text-sm outline-none focus:ring-1 focus:ring-primary transition-all"                      title=\"Địa chỉ email\"
-                      placeholder=\"Email\"                    />
+                      className="w-full rounded-xl border border-border bg-accent/10 py-3 px-4 text-sm outline-none focus:ring-1 focus:ring-primary transition-all"
+                      title="Địa chỉ email"
+                      placeholder="Email"
+                    />
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-bold uppercase text-secondary-foreground ml-1">Số điện thoại</label>
                     <input 
                       type="text" 
                       defaultValue="0988 777 999"
-                      className="w-full rounded-xl border border-border bg-accent/10 py-3 px-4 text-sm outline-none focus:ring-1 focus:ring-primary transition-all"                      title=\"Số điện thoại\"
-                      placeholder=\"Số điện thoại\"                    />
+                      className="w-full rounded-xl border border-border bg-accent/10 py-3 px-4 text-sm outline-none focus:ring-1 focus:ring-primary transition-all"
+                      title="Số điện thoại"
+                      placeholder="Số điện thoại"
+                    />
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-bold uppercase text-secondary-foreground ml-1">Phân quyền</label>
@@ -132,6 +138,8 @@ export default function SettingsPage() {
                       type="text" 
                       readOnly
                       value={currentBranch?.name || ""}
+                      title="Tên chi nhánh"
+                      aria-label="Tên chi nhánh"
                       className="w-full rounded-xl border border-border bg-accent/20 py-3 px-4 text-sm outline-none font-bold text-foreground"
                     />
                   </div>

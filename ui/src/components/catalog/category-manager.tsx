@@ -124,7 +124,7 @@ export function CategoryManager({ categories, onRefresh, isOpen, onOpen, onClose
       }
 
       toast.success(editingCategory ? "Đã cập nhật danh mục" : "Đã tạo danh mục");
-      setIsOpen(false);
+      onClose();
       await onRefresh();
     } catch {
       toast.error("Lỗi khi lưu danh mục");

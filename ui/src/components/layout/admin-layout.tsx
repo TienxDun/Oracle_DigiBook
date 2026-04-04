@@ -17,6 +17,8 @@ const routeRoleRules: Array<{ prefix: string; allowedRoles: Array<"ADMIN" | "MAN
   { prefix: "/dashboard", allowedRoles: ["ADMIN", "MANAGER", "STAFF", "SUPPORT"] },
   { prefix: "/catalog", allowedRoles: ["ADMIN", "MANAGER", "STAFF", "SUPPORT"] },
   { prefix: "/orders", allowedRoles: ["ADMIN", "MANAGER", "STAFF", "SUPPORT"] },
+  { prefix: "/customers", allowedRoles: ["ADMIN", "MANAGER", "SUPPORT"] },
+  { prefix: "/reports", allowedRoles: ["ADMIN", "MANAGER", "SUPPORT"] },
 ];
 
 function isRouteAllowed(pathname: string, role: "ADMIN" | "MANAGER" | "STAFF" | "SUPPORT") {

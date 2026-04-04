@@ -39,6 +39,7 @@ export interface Book {
   PAGE_COUNT: number;
   PUBLICATION_YEAR: number;
   LANGUAGE: string;
+  COVER_TYPE: string;
   IS_FEATURED: 0 | 1;
   IS_ACTIVE: 0 | 1;
   VIEW_COUNT: number;

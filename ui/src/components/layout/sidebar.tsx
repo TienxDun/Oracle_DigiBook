@@ -10,7 +10,9 @@ import {
   ArrowLeftRight, 
   ShoppingCart, 
   Settings,
-  BookMarked
+  BookMarked,
+  Users,
+  ChartColumn
 } from "lucide-react";
 import { useBranch } from "@/context/branch-context";
 import { cn } from "@/lib/utils";
@@ -21,6 +23,8 @@ const menuItems = [
   { icon: Warehouse, label: "Inventory", href: "/inventory", roles: ["ADMIN", "MANAGER", "STAFF"] },
   { icon: ArrowLeftRight, label: "Transfers", href: "/transfers", roles: ["ADMIN", "MANAGER"] },
   { icon: ShoppingCart, label: "Orders", href: "/orders", roles: ["ADMIN", "MANAGER", "STAFF", "SUPPORT"] },
+  { icon: Users, label: "Customers", href: "/customers", roles: ["ADMIN", "MANAGER", "SUPPORT"] },
+  { icon: ChartColumn, label: "Reports", href: "/reports", roles: ["ADMIN", "MANAGER", "SUPPORT"] },
   { icon: Settings, label: "Settings", href: "/settings", roles: ["ADMIN"] },
 ];
 

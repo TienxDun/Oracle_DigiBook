@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { query } from "@/lib/db";
+import { query, withTransaction } from "@/lib/db";
+import oracledb from "oracledb";
 import type { Book } from "@/types/database";
+
+type InsertBookOutBinds = {
+  book_id: number[];
+};
 
 export const dynamic = "force-dynamic";
 
@@ -44,10 +49,15 @@ export async function GET(request: NextRequest) {
         b.book_id AS BOOK_ID,
         b.isbn AS ISBN,
         b.title AS TITLE,
+        DBMS_LOB.SUBSTR(b.description, 4000, 1) AS DESCRIPTION,
+        b.category_id AS CATEGORY_ID,
+        b.publisher_id AS PUBLISHER_ID,
         b.price AS PRICE,
         (SELECT NVL(SUM(quantity_available), 0) FROM branch_inventory WHERE book_id = b.book_id) AS STOCK_QUANTITY,
         b.page_count AS PAGE_COUNT,
         b.publication_year AS PUBLICATION_YEAR,
+        b.language AS LANGUAGE,
+        b.cover_type AS COVER_TYPE,
         b.is_featured AS IS_FEATURED,
         b.is_active AS IS_ACTIVE,
         b.view_count AS VIEW_COUNT,
@@ -110,49 +120,70 @@ export async function POST(request: NextRequest) {
     const { 
       title, isbn, price, category_id, publisher_id,
       description, page_count, publication_year, 
-      language, cover_type, is_active 
+      language, cover_type, is_active, cover_url
     } = body;
 
     if (!title || !isbn || !price || !category_id) {
       return NextResponse.json({ success: false, message: "Thiếu thông tin bắt buộc (Tiêu đề, ISBN, Giá, Danh mục)" }, { status: 400 });
     }
 
-    const sql = `
-      INSERT INTO books (
-        isbn, title, description, category_id, publisher_id, 
-        price, page_count, publication_year, language, 
-        cover_type, is_active
-      )
-      VALUES (
-        :isbn, :title, :description, :category_id, :publisher_id, 
-        :price, :page_count, :publication_year, :language, 
-        :cover_type, :is_active
-      )
-    `;
+    const result = await withTransaction(async (connection: oracledb.Connection) => {
+      const insertBookSql = `
+        INSERT INTO books (
+          book_id, isbn, title, description, category_id, publisher_id,
+          price, page_count, publication_year, language,
+          cover_type, is_active, created_at
+        )
+        VALUES (
+          seq_books.NEXTVAL, :isbn, :title, :description, :category_id, :publisher_id,
+          :price, :page_count, :publication_year, :language,
+          :cover_type, :is_active, SYSDATE
+        )
+        RETURNING book_id INTO :book_id
+      `;
 
-    const binds = {
-      isbn,
-      title,
-      description: description || null,
-      category_id: Number(category_id),
-      publisher_id: Number(publisher_id || 1), // Default to 1 if not provided
-      price: Number(price),
-      page_count: page_count ? Number(page_count) : null,
-      publication_year: publication_year ? Number(publication_year) : null,
-      language: language || "vi",
-      cover_type: cover_type || "Bìa mềm",
-      is_active: is_active ?? 1
-    };
+      const insertBookResult = await connection.execute(insertBookSql, {
+        isbn,
+        title,
+        description: description || null,
+        category_id: Number(category_id),
+        publisher_id: Number(publisher_id || 1),
+        price: Number(price),
+        page_count: page_count ? Number(page_count) : null,
+        publication_year: publication_year ? Number(publication_year) : null,
+        language: language || "vi",
+        cover_type: cover_type || "Bìa mềm",
+        is_active: is_active ?? 1,
+        book_id: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT },
+      });
 
-    const result: any = await query(sql, binds, { autoCommit: true });
+      const outBinds = insertBookResult.outBinds as InsertBookOutBinds | undefined;
+      const book_id = Number(outBinds?.book_id?.[0]);
+
+      if (cover_url && String(cover_url).trim().length > 0) {
+        await connection.execute(
+          `
+            INSERT INTO book_images (image_id, book_id, image_url, is_main, sort_order, created_at)
+            VALUES (seq_book_images.NEXTVAL, :book_id, :image_url, 1, 0, SYSDATE)
+          `,
+          {
+            book_id,
+            image_url: String(cover_url).trim(),
+          }
+        );
+      }
+
+      return { book_id };
+    });
 
     return NextResponse.json({ 
       success: true, 
       message: "Thêm sách thành công",
-      affected: result.rowsAffected 
+      data: result,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Create Book Error:", error);
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ success: false, message }, { status: 500 });
   }
 }

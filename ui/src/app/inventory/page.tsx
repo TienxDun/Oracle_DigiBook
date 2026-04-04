@@ -28,7 +28,7 @@ export default function InventoryPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [branchFilter, setBranchFilter] = useState("ALL");
+  const [branchFilterId, setBranchFilterId] = useState("ALL");
   const [showLowStockOnly, setShowLowStockOnly] = useState(false);
   
   // Drawer states
@@ -39,22 +39,27 @@ export default function InventoryPage() {
 
   useEffect(() => {
     if (currentBranch) {
-      setBranchFilter(currentBranch.name);
+      setBranchFilterId(currentBranch.id);
     } else {
-      setBranchFilter("ALL");
+      setBranchFilterId("ALL");
     }
     fetchInventoryData();
   }, [currentBranch]);
 
   // Validate branchFilter whenever inventory data changes
   useEffect(() => {
-    const branchNames = Array.from(new Set(inventory.map(i => i.BRANCH_NAME).filter(Boolean))).sort() as string[];
+    const branchIds = new Set(
+      inventory
+        .map((i) => i.BRANCH_ID)
+        .filter((id): id is number => typeof id === "number")
+        .map((id) => id.toString())
+    );
     
     // If current branchFilter is not valid (not "ALL" and not in available branches), reset to "ALL"
-    if (branchFilter !== "ALL" && !branchNames.includes(branchFilter)) {
-      setBranchFilter("ALL");
+    if (branchFilterId !== "ALL" && !branchIds.has(branchFilterId)) {
+      setBranchFilterId("ALL");
     }
-  }, [inventory]);
+  }, [inventory, branchFilterId]);
 
   const fetchInventoryData = async () => {
     setLoading(true);
@@ -95,8 +100,12 @@ export default function InventoryPage() {
     const qty = Number(item.QUANTITY_AVAILABLE || 0);
     const threshold = Number(item.LOW_STOCK_THRESHOLD || 10);
     
-    if (item.BRANCH_NAME) {
-      acc[item.BOOK_ID].BRANCHES[item.BRANCH_NAME] = qty;
+    if (item.BRANCH_NAME && typeof item.BRANCH_ID === "number") {
+      acc[item.BOOK_ID].BRANCHES[item.BRANCH_ID.toString()] = {
+        name: item.BRANCH_NAME,
+        quantity: qty,
+        isLow: qty <= threshold,
+      };
     }
     acc[item.BOOK_ID].TOTAL += qty;
     
@@ -115,16 +124,30 @@ export default function InventoryPage() {
   }, {});
 
   // Get unique branch names for columns (filter out nulls)
-  const branchNames = Array.from(new Set(inventory.map(i => i.BRANCH_NAME).filter(Boolean))).sort() as string[];
+  const branchOptions = Array.from(
+    new Map(
+      inventory
+        .filter((i) => i.BRANCH_NAME && typeof i.BRANCH_ID === "number")
+        .map((i) => [i.BRANCH_ID.toString(), i.BRANCH_NAME])
+    ).entries()
+  )
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => a.name.localeCompare(b.name, "vi"));
 
   const displayData = Object.values(groupedData).filter((item: any) => {
     const matchesSearch = item.TITLE.toLowerCase().includes(search.toLowerCase()) || 
                          item.ISBN.includes(search);
     
-    // When low stock filter is active, ignore branch filter to show all low stock items
-    const matchesBranch = showLowStockOnly ? true : (branchFilter === "ALL" || (item.BRANCHES[branchFilter] !== undefined));
-    
-    const matchesLowStock = !showLowStockOnly || item.IS_LOW_STOCK;
+    const matchesBranch = branchFilterId === "ALL" || item.BRANCHES[branchFilterId] !== undefined;
+
+    let matchesLowStock = true;
+    if (showLowStockOnly) {
+      if (branchFilterId === "ALL") {
+        matchesLowStock = item.IS_LOW_STOCK;
+      } else {
+        matchesLowStock = Boolean(item.BRANCHES[branchFilterId]?.isLow);
+      }
+    }
 
     return matchesSearch && matchesBranch && matchesLowStock;
   });
@@ -246,12 +269,15 @@ export default function InventoryPage() {
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-foreground" size={16} />
                   <select 
-                    value={branchFilter}
-                    onChange={(e) => setBranchFilter(e.target.value)}
+                    value={branchFilterId}
+                    onChange={(e) => setBranchFilterId(e.target.value)}
+                    title="Lọc theo chi nhánh"
                     className="appearance-none rounded-lg border border-border bg-white py-2 pl-9 pr-8 text-sm font-medium outline-none hover:bg-accent transition-all cursor-pointer"
                   >
                     <option value="ALL">Tất cả chi nhánh</option>
-                    {branchNames.map(name => <option key={name} value={name}>{name}</option>)}
+                    {branchOptions.map((branch) => (
+                      <option key={branch.id} value={branch.id}>{branch.name}</option>
+                    ))}
                   </select>
                 </div>
                 <button 
@@ -270,12 +296,12 @@ export default function InventoryPage() {
             <thead className="bg-accent/50 text-xs font-semibold uppercase tracking-wider text-secondary-foreground border-b border-border">
               <tr>
                 <th className="px-6 py-4">Sách / ISBN</th>
-                {branchNames.map(name => (
-                  <th key={name} className={cn(
+                {branchOptions.map((branch) => (
+                  <th key={branch.id} className={cn(
                     "px-6 py-4 text-center transition-all",
-                    branchFilter !== "ALL" && branchFilter !== name && "opacity-20 blur-[1px]"
+                    branchFilterId !== "ALL" && branchFilterId !== branch.id && "opacity-20 blur-[1px]"
                   )}>
-                    {name}
+                    {branch.name}
                   </th>
                 ))}
                 <th className="px-6 py-4 text-right">Tổng cộng</th>
@@ -290,8 +316,8 @@ export default function InventoryPage() {
                       <Skeleton className="h-4 w-48" />
                       <Skeleton className="h-3 w-32" />
                     </td>
-                    {branchNames.length > 0 ? branchNames.map(n => (
-                      <td key={n} className="px-6 py-4"><Skeleton className="h-6 w-12 mx-auto rounded" /></td>
+                    {branchOptions.length > 0 ? branchOptions.map((branch) => (
+                      <td key={branch.id} className="px-6 py-4"><Skeleton className="h-6 w-12 mx-auto rounded" /></td>
                     )) : Array(3).fill(0).map((_, j) => (
                       <td key={j} className="px-6 py-4"><Skeleton className="h-6 w-12 mx-auto rounded" /></td>
                     ))}
@@ -308,12 +334,13 @@ export default function InventoryPage() {
                         <span className="text-[11px] text-secondary-foreground uppercase font-mono tracking-tighter">ISBN: {item.ISBN}</span>
                       </div>
                     </td>
-                    {branchNames.map(name => {
-                      const qty = item.BRANCHES[name] || 0;
+                    {branchOptions.map((branch) => {
+                      const branchData = item.BRANCHES[branch.id];
+                      const qty = branchData?.quantity || 0;
                       return (
-                        <td key={name} className={cn(
+                        <td key={branch.id} className={cn(
                           "px-6 py-4 text-center transition-all",
-                          branchFilter !== "ALL" && branchFilter !== name && "opacity-20"
+                          branchFilterId !== "ALL" && branchFilterId !== branch.id && "opacity-20"
                         )}>
                           <span className={cn(
                             "inline-block min-w-[2.5rem] rounded-md px-2 py-1 font-bold transition-all", 
@@ -352,12 +379,12 @@ export default function InventoryPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={branchNames.length + 3} className="px-6 py-24 text-center">
+                  <td colSpan={branchOptions.length + 3} className="px-6 py-24 text-center">
                     <div className="flex flex-col items-center gap-3 text-secondary-foreground">
                       <Search size={48} className="opacity-10" />
                       <p className="font-medium">Không tìm thấy dữ liệu tồn kho nào.</p>
                       <button 
-                        onClick={() => {setSearch(""); setBranchFilter("ALL"); setShowLowStockOnly(false);}}
+                        onClick={() => {setSearch(""); setBranchFilterId("ALL"); setShowLowStockOnly(false);}}
                         className="text-xs font-bold text-primary underline underline-offset-4"
                       >
                         Xóa tất cả bộ lọc
@@ -375,7 +402,7 @@ export default function InventoryPage() {
       <HistoryDrawer 
         isOpen={isHistoryOpen} 
         onClose={() => setIsHistoryOpen(false)} 
-        branchId={inventory.find(i => i.BRANCH_NAME === branchFilter)?.BRANCH_ID.toString()}
+        branchId={branchFilterId !== "ALL" ? branchFilterId : undefined}
       />
 
       <TransferDrawer 

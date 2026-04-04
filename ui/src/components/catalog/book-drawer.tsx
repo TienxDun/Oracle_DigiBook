@@ -2,20 +2,27 @@
 
 import React, { useState, useEffect } from "react";
 import { X, Save, Image as ImageIcon, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import type { Book } from "@/types/database";
+
+type OptionItem = {
+  CATEGORY_ID?: number;
+  CATEGORY_NAME?: string;
+  PUBLISHER_ID?: number;
+  PUBLISHER_NAME?: string;
+};
 
 interface BookDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onRefresh?: () => void;
-  book?: any;
+  book?: Book | null;
 }
 
 export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps) {
   const [loading, setLoading] = useState(false);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [publishers, setPublishers] = useState<any[]>([]);
+  const [categories, setCategories] = useState<OptionItem[]>([]);
+  const [publishers, setPublishers] = useState<OptionItem[]>([]);
   
   // Form State
   const [formData, setFormData] = useState({
@@ -28,6 +35,7 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
     page_count: 0,
     language: "vi",
     cover_type: "Bìa mềm",
+    cover_url: "",
     description: "",
     is_active: 1
   });
@@ -47,6 +55,7 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
           page_count: Number(book.PAGE_COUNT || 0),
           language: book.LANGUAGE || "vi",
           cover_type: book.COVER_TYPE || "Bìa mềm",
+          cover_url: book.COVER_URL || "",
           description: book.DESCRIPTION || "",
           is_active: Number(book.IS_ACTIVE ?? 1)
         });
@@ -61,6 +70,7 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
           page_count: 0,
           language: "vi",
           cover_type: "Bìa mềm",
+          cover_url: "",
           description: "",
           is_active: 1 
         });
@@ -73,7 +83,7 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
       const res = await fetch("/api/categories");
       const data = await res.json();
       if (data.success) setCategories(data.data);
-    } catch (e) {
+    } catch {
       console.error("Failed to fetch categories");
     }
   };
@@ -83,7 +93,7 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
       const res = await fetch("/api/publishers");
       const data = await res.json();
       if (data.success) setPublishers(data.data);
-    } catch (e) {
+    } catch {
       console.error("Failed to fetch publishers");
     }
   };
@@ -108,7 +118,7 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
       } else {
         toast.error(result.message || "Có lỗi xảy ra");
       }
-    } catch (error) {
+    } catch {
       toast.error("Lỗi kết nối máy chủ");
     } finally {
       setLoading(false);
@@ -119,24 +129,41 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm transition-opacity" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm transition-opacity" onClick={onClose} />
       
-      <div className="fixed inset-y-0 right-0 z-50 w-full max-w-xl bg-white shadow-2xl animate-in slide-in-from-right duration-300">
-        <div className="flex h-full flex-col">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="w-full max-w-2xl bg-white rounded-xl shadow-2xl animate-in zoom-in-95 duration-300 my-auto">
           <div className="flex items-center justify-between border-b border-border px-6 py-4">
             <h2 className="text-xl font-bold text-foreground">
               {book ? "Chỉnh sửa sách" : "Thêm sách mới"}
             </h2>
-            <button onClick={onClose} className="rounded-full p-2 text-secondary-foreground hover:bg-accent hover:text-foreground">
+            <button
+              onClick={onClose}
+              title="Đóng"
+              aria-label="Đóng"
+              className="rounded-full p-2 text-secondary-foreground hover:bg-accent hover:text-foreground"
+            >
               <X size={20} />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="max-h-[60vh] overflow-y-auto px-6 py-6">
             <div className="space-y-6">
               <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-accent/30 p-8 text-center transition-all hover:bg-accent/50">
                 <div className="mb-4 rounded-full bg-white p-4 text-primary shadow-sm"><ImageIcon size={32} /></div>
-                <span className="text-sm font-medium text-foreground">Tải lên ảnh bìa</span>
+                <span className="text-sm font-medium text-foreground">Nhập URL ảnh bìa</span>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-foreground">URL ảnh bìa</label>
+                <input
+                  type="url"
+                  value={formData.cover_url}
+                  onChange={(e) => setFormData({ ...formData, cover_url: e.target.value })}
+                  className="w-full rounded-lg border border-border px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="https://example.com/cover.jpg"
+                />
+                <p className="text-xs text-secondary-foreground">Có thể để trống nếu chưa có ảnh.</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -165,6 +192,7 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
                   <input 
                     type="number" 
                     value={formData.price}
+                    aria-label="Giá bán"
                     onChange={(e) => setFormData({...formData, price: Number(e.target.value)})}
                     className="w-full rounded-lg border border-border px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-primary"
                   />
@@ -176,11 +204,12 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
                   <label className="text-sm font-semibold text-foreground">Danh mục</label>
                   <select 
                     value={formData.category_id}
+                    aria-label="Danh mục"
                     onChange={(e) => setFormData({...formData, category_id: Number(e.target.value)})}
                     className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-primary"
                   >
                     <option value={0}>Chọn danh mục</option>
-                    {categories.map((c: any) => (
+                    {categories.map((c) => (
                       <option key={c.CATEGORY_ID} value={c.CATEGORY_ID}>{c.CATEGORY_NAME}</option>
                     ))}
                   </select>
@@ -189,11 +218,12 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
                   <label className="text-sm font-semibold text-foreground">Nhà xuất bản</label>
                   <select 
                     value={formData.publisher_id}
+                    aria-label="Nhà xuất bản"
                     onChange={(e) => setFormData({...formData, publisher_id: Number(e.target.value)})}
                     className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-primary"
                   >
                     <option value={0}>Chọn nhà xuất bản</option>
-                    {publishers.map((p: any) => (
+                    {publishers.map((p) => (
                       <option key={p.PUBLISHER_ID} value={p.PUBLISHER_ID}>{p.PUBLISHER_NAME}</option>
                     ))}
                   </select>
@@ -205,6 +235,7 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
                   <label className="text-sm font-semibold text-foreground">Trạng thái</label>
                   <select 
                     value={formData.is_active}
+                    aria-label="Trạng thái"
                     onChange={(e) => setFormData({...formData, is_active: Number(e.target.value)})}
                     className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-primary"
                   >
@@ -217,6 +248,7 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
                   <input 
                     type="number" 
                     value={formData.publication_year}
+                    aria-label="Năm xuất bản"
                     onChange={(e) => setFormData({...formData, publication_year: Number(e.target.value)})}
                     className="w-full rounded-lg border border-border px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-primary"
                   />
@@ -226,6 +258,7 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
                   <input 
                     type="number" 
                     value={formData.page_count}
+                    aria-label="Số trang"
                     onChange={(e) => setFormData({...formData, page_count: Number(e.target.value)})}
                     className="w-full rounded-lg border border-border px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-primary"
                   />
@@ -238,6 +271,7 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
                   <input 
                     type="text" 
                     value={formData.language}
+                    aria-label="Ngôn ngữ"
                     onChange={(e) => setFormData({...formData, language: e.target.value})}
                     className="w-full rounded-lg border border-border px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-primary"
                   />
@@ -247,6 +281,7 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
                   <input 
                     type="text" 
                     value={formData.cover_type}
+                    aria-label="Loại bìa"
                     onChange={(e) => setFormData({...formData, cover_type: e.target.value})}
                     className="w-full rounded-lg border border-border px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-primary"
                   />
@@ -286,6 +321,5 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
         </div>
       </div>
     </>
-
   );
 }

@@ -10,12 +10,15 @@ import {
   CheckCircle2, 
   Clock,
   Calendar,
-  User as UserIcon
+  User as UserIcon,
+  Copy,
+  Ban
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OrderDetailDrawer } from "@/components/orders/order-detail-drawer";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Order } from "@/types/database";
+import { toast } from "sonner";
 
 const statusConfig: any = {
   PENDING: { label: "Chờ xác nhận", color: "bg-warning/10 text-warning", icon: Clock },
@@ -34,11 +37,24 @@ export default function OrdersPage() {
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [openMenuOrderId, setOpenMenuOrderId] = useState<number | null>(null);
   const limit = 10;
 
   useEffect(() => {
     fetchOrders();
   }, [page, activeTab, search]);
+
+  useEffect(() => {
+    const handleDocumentClick = () => setOpenMenuOrderId(null);
+
+    if (openMenuOrderId !== null) {
+      document.addEventListener("click", handleDocumentClick);
+    }
+
+    return () => {
+      document.removeEventListener("click", handleDocumentClick);
+    };
+  }, [openMenuOrderId]);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -65,6 +81,54 @@ export default function OrdersPage() {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
     setPage(1);
+  };
+
+  const handleCopyOrderCode = async (orderCode: string) => {
+    try {
+      await navigator.clipboard.writeText(orderCode);
+      toast.success("Đã sao chép mã đơn hàng");
+    } catch {
+      toast.error("Không thể sao chép mã đơn hàng");
+    }
+  };
+
+  const handleCopyPhone = async (phone?: string | null) => {
+    if (!phone) {
+      toast.error("Đơn hàng không có số điện thoại");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(phone);
+      toast.success("Đã sao chép số điện thoại");
+    } catch {
+      toast.error("Không thể sao chép số điện thoại");
+    }
+  };
+
+  const handleQuickCancel = async (order: any) => {
+    if (["CANCELLED", "DELIVERED"].includes(order.STATUS_CODE)) {
+      toast.error("Không thể hủy đơn ở trạng thái hiện tại");
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/orders/${order.ORDER_ID}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status_code: "CANCELLED" }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        toast.success("Đã hủy đơn hàng");
+        fetchOrders();
+      } else {
+        toast.error(data.message || "Không thể hủy đơn hàng");
+      }
+    } catch {
+      toast.error("Lỗi kết nối máy chủ");
+    }
   };
 
   return (
@@ -182,18 +246,73 @@ export default function OrdersPage() {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                           <button 
-                              onClick={() => handleRowClick(order)}
-                              title="Xem chi tiết đơn hàng"
-                              className="rounded-md p-1.5 text-primary hover:bg-primary/10 transition-all"
+                            onClick={() => handleRowClick(order)}
+                            title="Xem chi tiết đơn hàng"
+                            className="rounded-md p-1.5 text-primary hover:bg-primary/10 transition-all"
                           >
-                              <Eye size={18} />
+                            <Eye size={18} />
                           </button>
+                          <div className="relative">
                             <button
                               title="Tác vụ khác"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenMenuOrderId((current) => (current === order.ORDER_ID ? null : order.ORDER_ID));
+                              }}
                               className="rounded-md p-1.5 text-secondary-foreground hover:bg-accent hover:text-foreground transition-all"
                             >
                               <MoreHorizontal size={18} />
-                          </button>
+                            </button>
+
+                            {openMenuOrderId === order.ORDER_ID && (
+                              <div
+                                onClick={(e) => e.stopPropagation()}
+                                className="absolute right-0 z-20 mt-2 w-48 rounded-lg border border-border bg-white p-1.5 shadow-xl"
+                              >
+                                <button
+                                  onClick={() => {
+                                    handleRowClick(order);
+                                    setOpenMenuOrderId(null);
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-semibold text-foreground hover:bg-accent"
+                                >
+                                  <Eye size={14} />
+                                  Xem chi tiết
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    handleCopyOrderCode(order.ORDER_CODE);
+                                    setOpenMenuOrderId(null);
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-semibold text-foreground hover:bg-accent"
+                                >
+                                  <Copy size={14} />
+                                  Sao chép mã đơn
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    handleCopyPhone(order.SHIP_PHONE || order.CUSTOMER_PHONE);
+                                    setOpenMenuOrderId(null);
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-semibold text-foreground hover:bg-accent"
+                                >
+                                  <Copy size={14} />
+                                  Sao chép SĐT
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    handleQuickCancel(order);
+                                    setOpenMenuOrderId(null);
+                                  }}
+                                  disabled={["CANCELLED", "DELIVERED"].includes(order.STATUS_CODE)}
+                                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-semibold text-error hover:bg-error/10 disabled:opacity-50"
+                                >
+                                  <Ban size={14} />
+                                  Hủy đơn nhanh
+                                </button>
+                              </div>
+                            )}
+                          </div>
                       </div>
                     </td>
                   </tr>

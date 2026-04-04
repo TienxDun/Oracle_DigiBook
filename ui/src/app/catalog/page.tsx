@@ -4,27 +4,39 @@ import React, { useState, useEffect } from "react";
 import { 
   Plus, 
   Filter, 
-  MoreHorizontal, 
   Search,
-  BookOpen,
   ArrowUpDown,
   Download,
   Edit2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BookDrawer } from "@/components/catalog/book-drawer";
+import { CategoryManager } from "@/components/catalog/category-manager";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import type { Book } from "@/types/database";
+
+type Category = {
+  CATEGORY_ID: number;
+  CATEGORY_NAME: string;
+  PARENT_ID: number | null;
+  DESCRIPTION: string | null;
+  IMAGE_URL: string | null;
+  DISPLAY_ORDER: number;
+  IS_ACTIVE: 0 | 1;
+  CHILDREN?: Category[];
+};
 
 export default function CatalogPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBooks, setSelectedBooks] = useState<number[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [editingBook, setEditingBook] = useState<any>(null);
+  const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryTree, setCategoryTree] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedSort, setSelectedSort] = useState<string>("newest");
   const [page, setPage] = useState(1);
@@ -43,8 +55,11 @@ export default function CatalogPage() {
     try {
       const res = await fetch("/api/categories");
       const data = await res.json();
-      if (data.success) setCategories(data.data);
-    } catch (e) {
+      if (data.success) {
+        setCategories(data.data || []);
+        setCategoryTree(data.tree || []);
+      }
+    } catch {
       console.error("Failed to fetch categories");
     }
   };
@@ -88,7 +103,7 @@ export default function CatalogPage() {
     setIsDrawerOpen(true);
   };
 
-  const handleEdit = (book: any) => {
+  const handleEdit = (book: Book) => {
     setEditingBook(book);
     setIsDrawerOpen(true);
   };
@@ -108,7 +123,7 @@ export default function CatalogPage() {
         toast.success("Đã cập nhật trạng thái sách");
         fetchBooks();
       }
-    } catch (e) {
+    } catch {
       toast.error("Lỗi khi xóa sách");
     }
   };
@@ -122,6 +137,13 @@ export default function CatalogPage() {
           <p className="text-sm text-secondary-foreground">Danh sách toàn bộ đầu sách trong hệ thống DigiBook (Oracle 19c).</p>
         </div>
         <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setIsCategoryModalOpen(true)}
+            className="flex items-center gap-2 rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
+          >
+            <Filter size={16} />
+            Quản lý danh mục
+          </button>
           <button className="flex items-center gap-2 rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium hover:bg-accent transition-colors">
             <Download size={16} />
             Xuất file
@@ -149,6 +171,8 @@ export default function CatalogPage() {
           </div>
           <button 
             onClick={() => setSelectedBooks([])}
+            title="Bỏ chọn"
+            aria-label="Bỏ chọn tất cả"
             className="ml-2 rounded-full p-1 hover:bg-white/10 transition-colors"
           >
             <Plus size={16} className="rotate-45" />
@@ -164,6 +188,7 @@ export default function CatalogPage() {
             <input 
               type="text" 
               value={search}
+              aria-label="Tìm kiếm sách"
               onChange={handleSearch}
               placeholder="Tìm theo tên sách, ISBN..." 
               className="w-full rounded-lg border border-border bg-accent/30 py-2 pl-10 pr-4 text-sm outline-none focus:ring-1 focus:ring-primary transition-all"
@@ -174,6 +199,7 @@ export default function CatalogPage() {
               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-foreground pointer-events-none" size={16} />
               <select 
                 value={selectedCategory}
+                aria-label="Lọc theo danh mục"
                 onChange={(e) => {
                   setSelectedCategory(e.target.value);
                   setPage(1);
@@ -181,7 +207,9 @@ export default function CatalogPage() {
                 className="appearance-none rounded-lg border border-border bg-white py-2 pl-9 pr-8 text-sm font-medium outline-none hover:bg-accent transition-all cursor-pointer"
               >
                 <option value="all">Tất cả danh mục</option>
-                {categories.map((c: any) => (
+                {categories
+                  .filter((c) => c.IS_ACTIVE === 1)
+                  .map((c) => (
                   <option key={c.CATEGORY_ID} value={c.CATEGORY_ID}>{c.CATEGORY_NAME}</option>
                 ))}
               </select>
@@ -190,6 +218,7 @@ export default function CatalogPage() {
               <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-foreground pointer-events-none" size={14} />
               <select 
                 value={selectedSort}
+                aria-label="Sắp xếp sách"
                 onChange={(e) => setSelectedSort(e.target.value)}
                 className="appearance-none rounded-lg border border-border bg-white py-2 pl-9 pr-8 text-sm font-medium outline-none hover:bg-accent transition-all cursor-pointer"
               >
@@ -213,6 +242,7 @@ export default function CatalogPage() {
                 <th className="px-6 py-4">
                   <input 
                     type="checkbox" 
+                    aria-label="Chọn tất cả sách"
                     className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
                     checked={books.length > 0 && selectedBooks.length === books.length}
                     onChange={toggleSelectAll}
@@ -246,17 +276,29 @@ export default function CatalogPage() {
                     <td className="px-6 py-4">
                       <input 
                         type="checkbox" 
+                        aria-label={`Chọn sách ${book.TITLE}`}
                         className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
                         checked={selectedBooks.includes(book.BOOK_ID)}
                         onChange={() => toggleSelect(book.BOOK_ID)}
                       />
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-foreground group-hover:text-primary transition-colors cursor-pointer" onClick={() => handleEdit(book)}>
-                          {book.TITLE}
-                        </span>
-                        <span className="text-xs text-secondary-foreground">{book.AUTHOR_NAMES || "Không rõ tác giả"}</span>
+                      <div className="flex items-center gap-3">
+                        {book.COVER_URL ? (
+                          <img
+                            src={book.COVER_URL}
+                            alt={book.TITLE}
+                            className="h-12 w-9 rounded object-cover"
+                          />
+                        ) : (
+                          <div className="h-12 w-9 rounded bg-accent/50" />
+                        )}
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-foreground group-hover:text-primary transition-colors cursor-pointer" onClick={() => handleEdit(book)}>
+                            {book.TITLE}
+                          </span>
+                          <span className="text-xs text-secondary-foreground">{book.AUTHOR_NAMES || "Không rõ tác giả"}</span>
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 font-mono text-xs">{book.ISBN}</td>
@@ -286,6 +328,7 @@ export default function CatalogPage() {
                           onClick={() => handleEdit(book)}
                           className="rounded-md p-1.5 text-secondary-foreground hover:bg-primary/10 hover:text-primary transition-all"
                           title="Chỉnh sửa"
+                          aria-label={`Chỉnh sửa ${book.TITLE}`}
                         >
                           <Edit2 size={16} />
                         </button>
@@ -293,6 +336,7 @@ export default function CatalogPage() {
                           onClick={() => handleDelete(book.BOOK_ID)}
                           className="rounded-md p-1.5 text-secondary-foreground hover:bg-error/10 hover:text-error transition-all"
                           title="Ngừng kinh doanh"
+                          aria-label={`Ngừng kinh doanh ${book.TITLE}`}
                         >
                           <Plus size={16} className="rotate-45" />
                         </button>
@@ -314,7 +358,7 @@ export default function CatalogPage() {
         {/* Pagination */}
         <div className="flex items-center justify-between border-t border-border bg-white px-6 py-4 text-sm text-secondary-foreground">
           <span>
-            Hiển thị <span className="font-bold text-foreground">{(page - 1) * limit + 1} - {Math.min(page * limit, pagination.total)}</span> trong tổng số <span className="font-bold text-foreground">{pagination.total}</span> sách
+            Hiển thị <span className="font-bold text-foreground">{pagination.total === 0 ? 0 : (page - 1) * limit + 1} - {Math.min(page * limit, pagination.total)}</span> trong tổng số <span className="font-bold text-foreground">{pagination.total}</span> sách
           </span>
           <div className="flex items-center gap-2">
             <button 
@@ -353,6 +397,15 @@ export default function CatalogPage() {
         onClose={() => setIsDrawerOpen(false)} 
         onRefresh={fetchBooks}
         book={editingBook}
+      />
+
+      {/* Category Manager Modal */}
+      <CategoryManager 
+        categories={categories}
+        onRefresh={fetchCategories}
+        isOpen={isCategoryModalOpen}
+        onOpen={() => setIsCategoryModalOpen(true)}
+        onClose={() => setIsCategoryModalOpen(false)}
       />
     </div>
   );

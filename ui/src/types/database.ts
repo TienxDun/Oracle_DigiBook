@@ -44,6 +44,7 @@ export interface Book {
   VIEW_COUNT: number;
   SOLD_COUNT: number;
   AUTHOR_NAMES: string; // Concatenated author names
+  COVER_URL?: string;
   CREATED_AT: Date;
   UPDATED_AT: Date;
 }

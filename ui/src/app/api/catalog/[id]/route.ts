@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { query } from "@/lib/db";
+import { query, withTransaction } from "@/lib/db";
+import oracledb from "oracledb";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,29 @@ export async function GET(
     const { id: book_id } = await params;
     const sql = `
       SELECT 
-        b.*,
+        b.book_id,
+        b.isbn,
+        b.title,
+        DBMS_LOB.SUBSTR(b.description, 4000, 1) AS description,
+        b.category_id,
+        b.publisher_id,
+        b.price,
+        b.page_count,
+        b.publication_year,
+        b.language,
+        b.cover_type,
+        b.is_featured,
+        b.is_active,
+        b.view_count,
+        b.sold_count,
+        b.created_at,
+        b.updated_at,
+        (
+          SELECT bi.image_url
+          FROM book_images bi
+          WHERE bi.book_id = b.book_id AND bi.is_main = 1
+          AND ROWNUM = 1
+        ) AS cover_url,
         c.category_name,
         p.publisher_name
       FROM books b
@@ -27,8 +50,9 @@ export async function GET(
     }
 
     return NextResponse.json({ success: true, data: result[0] });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ success: false, message }, { status: 500 });
   }
 }
 
@@ -43,7 +67,7 @@ export async function PUT(
     const { 
       title, isbn, price, category_id, publisher_id,
       description, page_count, publication_year, 
-      language, cover_type, is_active 
+      language, cover_type, is_active, cover_url
     } = body;
 
     const sql = `
@@ -78,16 +102,48 @@ export async function PUT(
       is_active: is_active ?? 1
     };
 
-    const result: any = await query(sql, binds, { autoCommit: true });
+    const result = await withTransaction(async (connection: oracledb.Connection) => {
+      await connection.execute(sql, binds);
+
+      if (cover_url && String(cover_url).trim().length > 0) {
+        const updateCoverResult = await connection.execute(
+          `
+            UPDATE book_images
+            SET image_url = :image_url, is_main = 1, sort_order = 0
+            WHERE book_id = :book_id AND is_main = 1
+          `,
+          {
+            book_id: Number(book_id),
+            image_url: String(cover_url).trim(),
+          }
+        );
+
+        if ((updateCoverResult.rowsAffected ?? 0) === 0) {
+          await connection.execute(
+            `
+              INSERT INTO book_images (image_id, book_id, image_url, is_main, sort_order, created_at)
+              VALUES (seq_book_images.NEXTVAL, :book_id, :image_url, 1, 0, SYSDATE)
+            `,
+            {
+              book_id: Number(book_id),
+              image_url: String(cover_url).trim(),
+            }
+          );
+        }
+      }
+
+      return { book_id: Number(book_id) };
+    });
 
     return NextResponse.json({ 
       success: true, 
       message: "Cập nhật thành công",
-      affected: result.rowsAffected 
+      data: result,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Update Book Error:", error);
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ success: false, message }, { status: 500 });
   }
 }
 
@@ -102,7 +158,8 @@ export async function DELETE(
     await query(sql, { book_id }, { autoCommit: true });
 
     return NextResponse.json({ success: true, message: "Đã ngừng kinh doanh sách này" });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ success: false, message }, { status: 500 });
   }
 }

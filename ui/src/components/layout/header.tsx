@@ -137,7 +137,11 @@ export function Header() {
         </div>
 
         {/* Notifications */}
-        <button className="group relative flex h-10 w-10 items-center justify-center rounded-full border border-border bg-white text-secondary-foreground shadow-sm transition-all hover:bg-accent hover:shadow-md active:scale-95">
+        <button 
+          className="group relative flex h-10 w-10 items-center justify-center rounded-full border border-border bg-white text-secondary-foreground shadow-sm transition-all hover:bg-accent hover:shadow-md active:scale-95"
+          title="Thông báo"
+          aria-label="Xem thông báo"
+        >
           <Bell size={20} className="transition-transform group-hover:animate-shake" />
           <span className="absolute right-2.5 top-2.5 h-2.5 w-2.5 rounded-full bg-rose-500 ring-4 ring-white animate-pulse"></span>
         </button>

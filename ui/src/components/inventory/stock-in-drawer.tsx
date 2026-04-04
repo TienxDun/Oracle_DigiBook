@@ -187,6 +187,7 @@ export function StockInDrawer({
                 value={formData.book_id}
                 onChange={(e) => setFormData(prev => ({ ...prev, book_id: e.target.value }))}
                 className="w-full rounded-2xl border border-border bg-accent/10 px-5 py-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-emerald-500/20 focus:bg-white transition-all shadow-sm"
+                aria-label="Chọn sách cần nhập"
                 required
                 disabled={fetching}
               >
@@ -207,6 +208,7 @@ export function StockInDrawer({
                 value={formData.branch_id}
                 onChange={(e) => setFormData(prev => ({ ...prev, branch_id: e.target.value }))}
                 className="w-full rounded-2xl border border-border bg-accent/10 px-5 py-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-emerald-500/20 focus:bg-white transition-all shadow-sm"
+                aria-label="Chọn chi nhánh nhận hàng"
                 required
                 disabled={fetching}
               >
@@ -224,6 +226,7 @@ export function StockInDrawer({
                 <button 
                   type="button"
                   onClick={() => adjustQty(-10)}
+                  aria-label="Giảm 10 cuốn"
                   className="h-12 w-12 flex items-center justify-center rounded-xl bg-accent/20 hover:bg-rose-50 hover:text-rose-600 transition-colors border border-border shadow-sm"
                 >
                   <Minus size={18} strokeWidth={3} />
@@ -234,17 +237,20 @@ export function StockInDrawer({
                   value={formData.quantity}
                   onChange={(e) => setFormData(prev => ({ ...prev, quantity: parseInt(e.target.value) || 1 }))}
                   className="flex-1 rounded-2xl border-2 border-border bg-white px-4 py-4 text-center text-2xl font-black text-foreground outline-none focus:border-emerald-500 transition-all"
+                  aria-label="Nhập số lượng sách"
+                  placeholder="Khối lượng"
                   required
                 />
                 <button 
                   type="button"
                   onClick={() => adjustQty(10)}
+                  aria-label="Tăng 10 cuốn"
                   className="h-12 w-12 flex items-center justify-center rounded-xl bg-accent/20 hover:bg-emerald-50 hover:text-emerald-600 transition-colors border border-border shadow-sm"
                 >
                   <Plus size={18} strokeWidth={3} />
                 </button>
               </div>
-              <p className="text-[10px] text-center text-secondary-foreground font-medium italic italic">Vui lòng kiểm tra kỹ số lượng thực tế khi bàn giao.</p>
+              <p className="text-[10px] text-center text-secondary-foreground font-medium italic">Vui lòng kiểm tra kỹ số lượng thực tế khi bàn giao.</p>
             </div>
 
             {/* Notes */}
@@ -266,7 +272,7 @@ export function StockInDrawer({
               onClick={handleSubmit}
               disabled={loading || fetching || !formData.book_id || !formData.branch_id || !currentUser?.staffId}
               className={cn(
-                "flex w-full items-center justify-center gap-2 items-center rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-all",
+                "flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-all",
                 (loading || fetching || !formData.book_id || !formData.branch_id || !currentUser?.staffId) 
                   ? "bg-slate-300 cursor-not-allowed" 
                   : "bg-emerald-600 hover:bg-emerald-700"

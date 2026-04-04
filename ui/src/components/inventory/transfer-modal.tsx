@@ -119,7 +119,12 @@ export function TransferModal({ isOpen, onClose, onRefresh }: TransferModalProps
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between border-b border-border bg-accent/10 px-6 py-4">
              <h2 className="text-xl font-bold text-foreground">Tạo lệnh điều chuyển mới</h2>
-             <button onClick={onClose} className="rounded-full p-2 text-secondary-foreground hover:bg-accent"><X size={20} /></button>
+             <button 
+               onClick={onClose} 
+               className="rounded-full p-2 text-secondary-foreground hover:bg-accent"
+               title="Đóng"
+               aria-label="Đóng"
+             ><X size={20} /></button>
           </div>
 
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8">
@@ -131,6 +136,7 @@ export function TransferModal({ isOpen, onClose, onRefresh }: TransferModalProps
                     value={fromBranchId}
                     onChange={(e) => setFromBranchId(Number(e.target.value))}
                     className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-primary"
+                    title="Chọn chi nhánh nguồn"
                    >
                      <option value={0}>Chọn nguồn...</option>
                      {branches.map(b => <option key={b.BRANCH_ID} value={b.BRANCH_ID}>{b.BRANCH_NAME}</option>)}
@@ -142,6 +148,7 @@ export function TransferModal({ isOpen, onClose, onRefresh }: TransferModalProps
                     value={toBranchId}
                     onChange={(e) => setToBranchId(Number(e.target.value))}
                     className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-primary"
+                    title="Chọn chi nhánh đích"
                    >
                      <option value={0}>Chọn đích...</option>
                      {branches.map(b => <option key={b.BRANCH_ID} value={b.BRANCH_ID}>{b.BRANCH_NAME}</option>)}
@@ -194,10 +201,16 @@ export function TransferModal({ isOpen, onClose, onRefresh }: TransferModalProps
                                   value={item.quantity}
                                   onChange={(e) => updateQty(item.book_id, Number(e.target.value))}
                                   className="w-full rounded border border-border px-2 py-1 text-center font-bold"
+                                  title="Nhập số lượng"
+                                  placeholder="Số lượng"
                                  />
                               </td>
                               <td className="px-4 py-3 text-right text-error">
-                                 <button onClick={() => removeItem(item.book_id)}><Trash2 size={16} /></button>
+                                 <button 
+                                   onClick={() => removeItem(item.book_id)}
+                                   title="Xóa sản phẩm khỏi lệnh"
+                                   aria-label="Xóa sản phẩm"
+                                 ><Trash2 size={16} /></button>
                               </td>
                            </tr>
                          ))}

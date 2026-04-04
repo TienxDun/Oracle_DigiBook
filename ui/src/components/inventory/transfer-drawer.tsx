@@ -185,6 +185,7 @@ export function TransferDrawer({ isOpen, onClose, onSuccess, initialBookId }: Tr
                 value={formData.book_id}
                 onChange={(e) => setFormData(prev => ({ ...prev, book_id: e.target.value }))}
                 className="w-full rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                title="Chọn sách cần điều chuyển"
                 required
               >
                 <option value="">-- Chọn sách --</option>
@@ -202,6 +203,7 @@ export function TransferDrawer({ isOpen, onClose, onSuccess, initialBookId }: Tr
                   value={formData.from_branch_id}
                   onChange={(e) => setFormData(prev => ({ ...prev, from_branch_id: e.target.value }))}
                   className="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                  title="Chọn chi nhánh nguồn"
                   required
                 >
                   <option value="">Nguồn</option>
@@ -221,6 +223,7 @@ export function TransferDrawer({ isOpen, onClose, onSuccess, initialBookId }: Tr
                   value={formData.to_branch_id}
                   onChange={(e) => setFormData(prev => ({ ...prev, to_branch_id: e.target.value }))}
                   className="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                  title="Chọn chi nhánh đích"
                   required
                 >
                   <option value="">Đích</option>
@@ -255,12 +258,14 @@ export function TransferDrawer({ isOpen, onClose, onSuccess, initialBookId }: Tr
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-wider text-secondary-foreground">Số lượng chuyển</label>
               <input 
-                type="number" 
+                type="number"
                 min="1"
                 max={availableQty || 9999}
                 value={formData.quantity}
                 onChange={(e) => setFormData(prev => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))}
                 className="w-full rounded-xl border border-border bg-white px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                title="Nhập số lượng sách cần chuyển"
+                placeholder="Số lượng"
                 required
               />
               {availableQty !== null && formData.quantity > availableQty && (

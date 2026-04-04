@@ -17,6 +17,23 @@ export function OrderDetailDrawer({ isOpen, onClose, onRefresh, order }: OrderDe
   const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
 
+  const nextStatusMap: Record<string, string | null> = {
+    PENDING: "CONFIRMED",
+    CONFIRMED: "SHIPPING",
+    SHIPPING: "DELIVERED",
+    DELIVERED: null,
+    CANCELLED: null,
+    RETURNED: null,
+  };
+
+  const nextActionLabelMap: Record<string, string> = {
+    CONFIRMED: "Xác nhận đơn",
+    SHIPPING: "Bàn giao vận chuyển",
+    DELIVERED: "Xác nhận đã giao",
+  };
+
+  const nextStatus = nextStatusMap[order?.STATUS_CODE] ?? null;
+
   useEffect(() => {
     if (isOpen && order?.ORDER_ID) {
       fetchOrderItems();
@@ -158,16 +175,16 @@ export function OrderDetailDrawer({ isOpen, onClose, onRefresh, order }: OrderDe
             <div className="flex items-center gap-4">
                <button 
                 onClick={() => handleUpdateStatus('CANCELLED')}
-                disabled={updating || order.STATUS_CODE === 'CANCELLED'}
+               disabled={updating || ["CANCELLED", "DELIVERED"].includes(order.STATUS_CODE)}
                 className="flex-1 rounded-lg border border-border bg-white py-2.5 text-sm font-semibold text-error hover:bg-error/10 disabled:opacity-50 transition-colors"
                >Hủy đơn</button>
                <button 
-                onClick={() => handleUpdateStatus('CONFIRMED')}
-                disabled={updating || order.STATUS_CODE !== 'PENDING'}
+               onClick={() => nextStatus && handleUpdateStatus(nextStatus)}
+               disabled={updating || !nextStatus}
                 className="flex-[2] items-center justify-center flex gap-2 rounded-lg bg-primary py-2.5 text-sm font-bold text-white shadow-md hover:bg-primary-hover disabled:opacity-50 transition-all"
                >
                   {updating && <Loader2 className="animate-spin" size={18} />}
-                  Xác nhận & Giao hàng
+                {nextStatus ? nextActionLabelMap[nextStatus] : "Không còn bước tiếp theo"}
                </button>
             </div>
           </div>

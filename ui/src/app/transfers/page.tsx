@@ -10,7 +10,8 @@ import {
   FileText,
   X,
   Search,
-  Filter
+  Filter,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,6 +24,9 @@ export default function TransfersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedTransfer, setSelectedTransfer] = useState<any>(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  const transferFlow = ["PENDING", "APPROVED", "SHIPPING", "COMPLETED"] as const;
 
   useEffect(() => {
     fetchTransfers();
@@ -55,6 +59,52 @@ export default function TransfersPage() {
   const handleOpenDetails = (transfer: any) => {
     setSelectedTransfer(transfer);
     setIsDetailOpen(true);
+  };
+
+  const getNextStatus = (status: string) => {
+    const index = transferFlow.indexOf(status as (typeof transferFlow)[number]);
+    if (index === -1 || index >= transferFlow.length - 1) {
+      return null;
+    }
+    return transferFlow[index + 1];
+  };
+
+  const getNextStatusLabel = (status: string | null) => {
+    if (!status) return "Không có bước tiếp theo";
+    return `Chuyển sang ${getStatusConfig(status).label}`;
+  };
+
+  const handleUpdateTransferStatus = async () => {
+    if (!selectedTransfer) return;
+
+    const nextStatus = getNextStatus(selectedTransfer.STATUS);
+    if (!nextStatus) return;
+
+    setUpdatingStatus(true);
+    try {
+      const res = await fetch(`/api/transfers/${selectedTransfer.TRANSFER_ID}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        const updatedTransfer = { ...selectedTransfer, STATUS: nextStatus };
+        setSelectedTransfer(updatedTransfer);
+        setTransfers((prev) =>
+          prev.map((item) =>
+            item.TRANSFER_ID === selectedTransfer.TRANSFER_ID ? { ...item, STATUS: nextStatus } : item
+          )
+        );
+      } else {
+        alert(data.message || "Không thể cập nhật trạng thái điều chuyển.");
+      }
+    } catch {
+      alert("Lỗi kết nối máy chủ.");
+    } finally {
+      setUpdatingStatus(false);
+    }
   };
 
   return (
@@ -245,7 +295,47 @@ export default function TransfersPage() {
               </div>
               <div className="flex items-center justify-between rounded-lg bg-accent/30 px-3 py-2">
                 <span className="text-secondary-foreground">Trạng thái</span>
-                <span className="font-medium text-foreground">{getStatusConfig(selectedTransfer.STATUS).label}</span>
+                <span className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider",
+                  getStatusConfig(selectedTransfer.STATUS).color
+                )}>
+                  {React.createElement(getStatusConfig(selectedTransfer.STATUS).icon, { size: 12 })}
+                  {getStatusConfig(selectedTransfer.STATUS).label}
+                </span>
+              </div>
+              <div className="rounded-lg border border-border bg-white p-3">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-secondary-foreground">Tiến trình xử lý</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {transferFlow.map((step) => {
+                    const currentIndex = transferFlow.indexOf((selectedTransfer.STATUS || "PENDING") as (typeof transferFlow)[number]);
+                    const stepIndex = transferFlow.indexOf(step);
+                    const isDone = stepIndex <= currentIndex;
+                    const stepConfig = getStatusConfig(step);
+
+                    return (
+                      <div key={step} className="flex flex-col items-center gap-1">
+                        <div className={cn(
+                          "h-2.5 w-full rounded-full",
+                          isDone ? "bg-primary" : "bg-accent"
+                        )} />
+                        <span className={cn(
+                          "text-[10px] font-semibold uppercase tracking-wide",
+                          isDone ? "text-foreground" : "text-secondary-foreground"
+                        )}>
+                          {stepConfig.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <button
+                  onClick={handleUpdateTransferStatus}
+                  disabled={updatingStatus || !getNextStatus(selectedTransfer.STATUS) || selectedTransfer.STATUS === "CANCELLED"}
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
+                >
+                  {updatingStatus && <Loader2 size={16} className="animate-spin" />}
+                  {getNextStatusLabel(getNextStatus(selectedTransfer.STATUS))}
+                </button>
               </div>
               <div className="flex items-center justify-between rounded-lg bg-accent/30 px-3 py-2">
                 <span className="text-secondary-foreground">Ngày tạo</span>

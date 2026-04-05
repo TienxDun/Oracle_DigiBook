@@ -27,7 +27,9 @@ import { HistoryDrawer } from "@/components/inventory/history-drawer";
 import { TransferDrawer } from "@/components/inventory/transfer-drawer";
 import { StockInDrawer } from "@/components/inventory/stock-in-drawer";
 import { LowStockDrawer } from "@/components/inventory/low-stock-drawer";
+import { ThresholdDrawer } from "@/components/inventory/threshold-drawer";
 import { useBranch } from "@/context/branch-context";
+
 
 export default function InventoryPage() {
   const { currentBranch, currentUser } = useBranch();
@@ -49,7 +51,10 @@ export default function InventoryPage() {
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isStockInOpen, setIsStockInOpen] = useState(false);
   const [isLowStockOpen, setIsLowStockOpen] = useState(false);
+  const [isThresholdOpen, setIsThresholdOpen] = useState(false);
   const [selectedBookId, setSelectedBookId] = useState<number | undefined>(undefined);
+  const [selectedBookForThreshold, setSelectedBookForThreshold] = useState<any>(null);
+
 
   useEffect(() => {
     fetchFilters();
@@ -136,9 +141,11 @@ export default function InventoryPage() {
       acc[item.BOOK_ID].BRANCHES[item.BRANCH_ID.toString()] = {
         name: item.BRANCH_NAME,
         quantity: qty,
+        threshold: threshold,
         isLow: qty <= threshold,
       };
     }
+
     acc[item.BOOK_ID].TOTAL += qty;
     
     // Store LOW_STOCK_THRESHOLD from any row
@@ -463,9 +470,17 @@ export default function InventoryPage() {
                         </div>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-[11px] text-secondary-foreground uppercase font-mono tracking-tighter">ISBN: {item.ISBN}</span>
-                          <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200 font-bold">
+                          <button 
+                            onClick={() => {
+                              setSelectedBookForThreshold(item);
+                              setIsThresholdOpen(true);
+                            }}
+                            className="text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-100 font-bold hover:bg-indigo-600 hover:text-white transition-all cursor-pointer shadow-sm active:scale-95"
+                            title="Nhấn để cấu hình ngưỡng báo động"
+                          >
                             Ngưỡng: {item.LOW_STOCK_THRESHOLD}
-                          </span>
+                          </button>
+
                         </div>
                       </div>
                     </td>
@@ -496,7 +511,7 @@ export default function InventoryPage() {
                         )}>
                           <span className={cn(
                             "inline-block min-w-[2.5rem] rounded-md px-2 py-1 font-bold transition-all", 
-                            qty === 0 ? "bg-rose-50 text-rose-600 scale-95" : qty < 10 ? "bg-amber-50 text-amber-600 shadow-sm shadow-amber-200/50" : "bg-accent/50 text-foreground"
+                            qty === 0 ? "bg-rose-50 text-rose-600 scale-95" : branchData?.isLow ? "bg-amber-50 text-amber-600 shadow-sm shadow-amber-200/50" : "bg-accent/50 text-foreground"
                           )}>
                             {qty}
                           </span>
@@ -575,6 +590,13 @@ export default function InventoryPage() {
         isOpen={isLowStockOpen}
         onClose={() => setIsLowStockOpen(false)}
         branchId={branchFilterId !== "ALL" ? branchFilterId : undefined}
+      />
+
+      <ThresholdDrawer
+        isOpen={isThresholdOpen}
+        onClose={() => setIsThresholdOpen(false)}
+        bookData={selectedBookForThreshold}
+        onSuccess={fetchInventoryData}
       />
     </div>
   );

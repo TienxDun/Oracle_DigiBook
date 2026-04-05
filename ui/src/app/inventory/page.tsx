@@ -461,7 +461,12 @@ export default function InventoryPage() {
                             </div>
                           )}
                         </div>
-                        <span className="text-[11px] text-secondary-foreground uppercase font-mono tracking-tighter">ISBN: {item.ISBN}</span>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[11px] text-secondary-foreground uppercase font-mono tracking-tighter">ISBN: {item.ISBN}</span>
+                          <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200 font-bold">
+                            Ngưỡng: {item.LOW_STOCK_THRESHOLD}
+                          </span>
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">

@@ -82,10 +82,19 @@ export function TransferDrawer({ isOpen, onClose, onSuccess, initialBookId }: Tr
 
   const fetchStockLevel = async () => {
     try {
-      const res = await fetch(`/api/inventory?book_id=${formData.book_id}&branch_id=${formData.from_branch_id}`);
+      const params = new URLSearchParams({
+        book_id: formData.book_id,
+        branch_id: formData.from_branch_id,
+      });
+      const res = await fetch(`/api/inventory?${params.toString()}`);
       const data = await res.json();
       if (data.success && data.data.length > 0) {
-        setAvailableQty(data.data[0].QUANTITY_AVAILABLE);
+        const matched = data.data.find(
+          (row: { BOOK_ID?: number; BRANCH_ID?: number; QUANTITY_AVAILABLE?: number }) =>
+            Number(row.BOOK_ID) === Number(formData.book_id) &&
+            Number(row.BRANCH_ID) === Number(formData.from_branch_id)
+        );
+        setAvailableQty(Number(matched?.QUANTITY_AVAILABLE ?? data.data[0].QUANTITY_AVAILABLE ?? 0));
       } else {
         setAvailableQty(0);
       }

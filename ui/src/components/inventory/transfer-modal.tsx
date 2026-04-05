@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { X, Send, Trash2, Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useBranch } from "@/context/branch-context";
 
 interface Branch {
   BRANCH_ID: number;
@@ -28,6 +29,7 @@ interface TransferModalProps {
 }
 
 export function TransferModal({ isOpen, onClose, onRefresh }: TransferModalProps) {
+  const { currentUser } = useBranch();
   const [loading, setLoading] = useState(false);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [books, setBooks] = useState<Book[]>([]);
@@ -83,6 +85,11 @@ export function TransferModal({ isOpen, onClose, onRefresh }: TransferModalProps
       return;
     }
 
+    if (!currentUser?.staffId && !currentUser?.id) {
+      toast.error("Bạn cần đăng nhập bằng tài khoản nhân viên để tạo phiếu điều chuyển");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch("/api/transfers", {
@@ -92,7 +99,9 @@ export function TransferModal({ isOpen, onClose, onRefresh }: TransferModalProps
           from_branch_id: fromBranchId,
           to_branch_id: toBranchId,
           notes,
-          items: selectedItems
+          items: selectedItems,
+          staff_id: currentUser?.staffId ? Number(currentUser.staffId) : undefined,
+          user_id: currentUser?.id ? Number(currentUser.id) : undefined,
         })
       });
       const data = await res.json();

@@ -22,6 +22,10 @@ export async function GET(request: NextRequest) {
       conditions.push("bi.branch_id = :branchId");
       binds.branchId = Number(branchId);
     }
+    if (bookId) {
+      conditions.push("b.book_id = :bookId");
+      binds.bookId = Number(bookId);
+    }
     if (categoryId && categoryId !== "ALL") {
       conditions.push("b.category_id = :categoryId");
       binds.categoryId = Number(categoryId);

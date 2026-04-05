@@ -55,57 +55,50 @@ export async function PATCH(
         { id: transferId }
       );
 
-      // If transfer was already SHIPPING or COMPLETED, reverse inventory bookings
-      if (transfer.STATUS === "SHIPPING") {
-        // Get transfer items
-        const items = await connection.execute(
-          `SELECT * FROM transfer_details WHERE transfer_id = :id`,
-          { id: transferId }
+      // Source inventory is reduced at transfer creation, so cancelling before COMPLETED must restore source stock.
+      const items = await connection.execute<{ BOOK_ID: number; QUANTITY_REQUESTED: number }>(
+        `
+        SELECT book_id AS BOOK_ID,
+               quantity_requested AS QUANTITY_REQUESTED
+        FROM transfer_details
+        WHERE transfer_id = :id
+        `,
+        { id: transferId },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      const rows = (items.rows ?? []) as Array<{ BOOK_ID: number; QUANTITY_REQUESTED: number }>;
+      for (const item of rows) {
+        await connection.execute(
+          `
+          UPDATE branch_inventory
+          SET quantity_available = quantity_available + :qty,
+              updated_at = SYSDATE
+          WHERE branch_id = :from_branch AND book_id = :book_id
+          `,
+          {
+            qty: item.QUANTITY_REQUESTED,
+            from_branch: transfer.FROM_BRANCH_ID,
+            book_id: item.BOOK_ID,
+          }
         );
 
-        const rows = items.rows as any[];
-        for (const item of rows) {
-          const [, , , quantityRequested] = item; // Adjust based on column order
-
-          // Restore source branch inventory (items were removed when transfer was created)
-          await connection.execute(
-            `UPDATE branch_inventory 
-             SET quantity_available = quantity_available + :qty, updated_at = SYSDATE 
-             WHERE branch_id = :from_branch AND book_id = :book_id`,
-            {
-              qty: quantityRequested,
-              from_branch: transfer.FROM_BRANCH_ID,
-              book_id: item[2] // book_id
-            }
-          );
-
-          // Remove target branch inventory if it was added
-          await connection.execute(
-            `UPDATE branch_inventory 
-             SET quantity_available = quantity_available - :qty, updated_at = SYSDATE 
-             WHERE branch_id = :to_branch AND book_id = :book_id
-               AND quantity_available >= :qty`,
-            {
-              qty: quantityRequested,
-              to_branch: transfer.TO_BRANCH_ID,
-              book_id: item[2]
-            }
-          );
-
-          // Log reversal transaction
-          await connection.execute(
-            `INSERT INTO inventory_transactions 
-             (branch_id, book_id, txn_type, reference_type, quantity, notes, created_by)
-             VALUES (:branch_id, :book_id, 'TRANSFER_CANCELLED', 'TRANSFER', :qty, :notes, :staff_id)`,
-            {
-              branch_id: transfer.FROM_BRANCH_ID,
-              book_id: item[2],
-              qty: quantityRequested,
-              notes: `Cancelled transfer #${transferId}: ${reason || "No reason provided"}`,
-              staff_id: transfer.REQUESTED_BY
-            }
-          );
-        }
+        await connection.execute(
+          `
+          INSERT INTO inventory_transactions
+            (branch_id, book_id, txn_type, reference_id, reference_type, quantity, notes, created_by)
+          VALUES
+            (:branch_id, :book_id, 'ADJUST', :reference_id, 'TRANSFER', :qty, :notes, :staff_id)
+          `,
+          {
+            branch_id: transfer.FROM_BRANCH_ID,
+            book_id: item.BOOK_ID,
+            reference_id: transferId,
+            qty: item.QUANTITY_REQUESTED,
+            notes: `Hoan kho do huy phieu #${transferId}${reason ? `: ${reason}` : ""}`,
+            staff_id: transfer.REQUESTED_BY,
+          }
+        );
       }
     });
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { query, withTransaction } from "@/lib/db";
 import oracledb from "oracledb";
+import { resolveStaffId } from "@/lib/staff";
 
 export const dynamic = "force-dynamic";
 
@@ -42,10 +43,33 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { from_branch_id, to_branch_id, notes, items } = body;
+    const { from_branch_id, to_branch_id, notes, items, staff_id, user_id } = body;
 
     if (!from_branch_id || !to_branch_id || !items || items.length === 0) {
       return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 });
+    }
+
+    if (Number(from_branch_id) === Number(to_branch_id)) {
+      return NextResponse.json(
+        { success: false, message: "Chi nhánh nguồn và đích phải khác nhau." },
+        { status: 400 }
+      );
+    }
+
+    const hasInvalidQty = items.some((item: any) => !item?.book_id || Number(item.quantity) <= 0);
+    if (hasInvalidQty) {
+      return NextResponse.json(
+        { success: false, message: "Danh sách sách điều chuyển không hợp lệ." },
+        { status: 400 }
+      );
+    }
+
+    const resolvedStaffId = await resolveStaffId({ staffId: staff_id, userId: user_id });
+    if (!resolvedStaffId) {
+      return NextResponse.json(
+        { success: false, message: "Không xác định được nhân viên thực hiện điều chuyển." },
+        { status: 401 }
+      );
     }
 
     // Generate transfer code: TRF-YYYYMMDD-RAND
@@ -70,7 +94,7 @@ export async function POST(request: Request) {
         transfer_code,
         from_branch_id,
         to_branch_id,
-        requested_by: 1, // Giả định staff_id = 1 (Admin)
+        requested_by: resolvedStaffId,
         notes,
         total_items,
         total_quantity,

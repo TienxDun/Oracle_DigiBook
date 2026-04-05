@@ -148,7 +148,13 @@ export default function InventoryPage() {
 
     acc[item.BOOK_ID].TOTAL += qty;
     
-    // Store LOW_STOCK_THRESHOLD from any row
+    // Thu thập tất cả các ngưỡng để hiển thị Min - Max
+    if (!acc[item.BOOK_ID].ALL_THRESHOLDS) {
+      acc[item.BOOK_ID].ALL_THRESHOLDS = [];
+    }
+    acc[item.BOOK_ID].ALL_THRESHOLDS.push(threshold);
+
+    // Vẫn giữ lại một ngưỡng đại diện (giá trị đầu tiên)
     if (!acc[item.BOOK_ID].LOW_STOCK_THRESHOLD) {
       acc[item.BOOK_ID].LOW_STOCK_THRESHOLD = threshold;
     }
@@ -156,27 +162,33 @@ export default function InventoryPage() {
     if (qty <= threshold || !item.INVENTORY_ID) {
       acc[item.BOOK_ID].IS_LOW_STOCK = true;
     }
+
     
     return acc;
   }, {});
 
   // Post-processing for suggestions and percentages
   Object.values(groupedData).forEach((book: any) => {
-    // 1. Calculate suggestions
+    // 1. Calculate suggestions using dynamic thresholds
     const branches = Object.entries(book.BRANCHES).map(([id, data]: [string, any]) => ({ id, ...data }));
-    const lowStockBranches = branches.filter(b => b.quantity <= book.LOW_STOCK_THRESHOLD);
-    const healthyBranches = branches.filter(b => b.quantity > book.LOW_STOCK_THRESHOLD * 2.5)
+    const lowStockBranches = branches.filter(b => b.quantity <= b.threshold);
+    // Healthy: More than 2x threshold and at least 20 units
+    const healthyBranches = branches.filter(b => b.quantity > (b.threshold * 2) && b.quantity > 20)
                                     .sort((a, b) => b.quantity - a.quantity);
 
     if (lowStockBranches.length > 0 && healthyBranches.length > 0) {
+      const source = healthyBranches[0];
+      const target = lowStockBranches[0];
       book.SUGGESTION = {
-        from: healthyBranches[0].name,
-        fromId: healthyBranches[0].id,
-        to: lowStockBranches[0].name,
-        toId: lowStockBranches[0].id,
-        amount: Math.floor((healthyBranches[0].quantity - book.LOW_STOCK_THRESHOLD) / 2)
+        from: source.name,
+        fromId: source.id,
+        to: target.name,
+        toId: target.id,
+        // Amount: transfer half of the surplus over threshold
+        amount: Math.max(1, Math.floor((source.quantity - source.threshold) / 2))
       };
     }
+
 
     // 2. Percentages for distribution bar
     branches.forEach((b: any) => {
@@ -478,7 +490,13 @@ export default function InventoryPage() {
                             className="text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-100 font-bold hover:bg-indigo-600 hover:text-white transition-all cursor-pointer shadow-sm active:scale-95"
                             title="Nhấn để cấu hình ngưỡng báo động"
                           >
-                            Ngưỡng: {item.LOW_STOCK_THRESHOLD}
+                            Ngưỡng: {(() => {
+                              const unique = Array.from(new Set(item.ALL_THRESHOLDS || [])) as number[];
+                              if (unique.length <= 1) return unique[0] || 10;
+                              const min = Math.min(...unique);
+                              const max = Math.max(...unique);
+                              return `${min} - ${max}`;
+                            })()}
                           </button>
 
                         </div>

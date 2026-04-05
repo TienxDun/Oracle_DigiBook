@@ -16,13 +16,38 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get("search") ?? "";
   const categoryId = searchParams.get("category_id");
   const sort = searchParams.get("sort") || "newest";
+  const status = searchParams.get("status"); // "1" | "0" | null (all)
+  const stockStatus = searchParams.get("stock_status"); // "in_stock" | "out_of_stock" | "low_stock" | null
   const offset = (page - 1) * limit;
 
   try {
-    const conditions: string[] = ["b.is_active = 1"];
+    const conditions: string[] = [];
+
+    // Lọc theo trạng thái kinh doanh (is_active)
+    if (status === "1") {
+      conditions.push("b.is_active = 1");
+    } else if (status === "0") {
+      conditions.push("b.is_active = 0");
+    }
+    // Nếu status là null/undefined → hiện tất cả
 
     if (search) conditions.push("(UPPER(b.title) LIKE UPPER(:search) OR b.isbn LIKE :search)");
     if (categoryId) conditions.push("b.category_id = :category_id");
+
+    // Lọc theo tình trạng tồn kho (qua subquery)
+    if (stockStatus === "out_of_stock") {
+      conditions.push("(SELECT NVL(SUM(quantity_available), 0) FROM branch_inventory WHERE book_id = b.book_id) = 0");
+    } else if (stockStatus === "in_stock") {
+      conditions.push("(SELECT NVL(SUM(quantity_available), 0) FROM branch_inventory WHERE book_id = b.book_id) > 0");
+    } else if (stockStatus === "low_stock") {
+      // Sách có tổng tồn kho dương nhưng dưới ngưỡng thấp nhất của bất kỳ chi nhánh nào
+      conditions.push(`EXISTS (
+        SELECT 1 FROM branch_inventory bi2
+        WHERE bi2.book_id = b.book_id
+          AND bi2.quantity_available > 0
+          AND bi2.quantity_available <= bi2.low_stock_threshold
+      )`);
+    }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
@@ -128,21 +153,36 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await withTransaction(async (connection: oracledb.Connection) => {
+      const seqResult = await connection.execute<{ NEXTVAL: number }>(`SELECT seq_books.NEXTVAL AS NEXTVAL FROM DUAL`);
+      const newBookId = seqResult.rows?.[0]?.NEXTVAL;
+
+      if (!newBookId) {
+        throw new Error("Không thể tạo ID sách mới.");
+      }
+
       const insertBookSql = `
-        INSERT INTO books (
-          book_id, isbn, title, description, category_id, publisher_id,
-          price, page_count, publication_year, language,
-          cover_type, is_active, created_at
-        )
-        VALUES (
-          seq_books.NEXTVAL, :isbn, :title, :description, :category_id, :publisher_id,
-          :price, :page_count, :publication_year, :language,
-          :cover_type, :is_active, SYSDATE
-        )
-        RETURNING book_id INTO :book_id
+        BEGIN
+          sp_manage_book(
+            p_action => 'ADD',
+            p_book_id => :book_id,
+            p_isbn => :isbn,
+            p_title => :title,
+            p_description => :description,
+            p_category_id => :category_id,
+            p_publisher_id => :publisher_id,
+            p_price => :price,
+            p_stock_quantity => 0,
+            p_publication_year => :publication_year,
+            p_page_count => :page_count,
+            p_language => :language,
+            p_cover_type => :cover_type,
+            p_updated_by => 1
+          );
+        END;
       `;
 
-      const insertBookResult = await connection.execute(insertBookSql, {
+      await connection.execute(insertBookSql, {
+        book_id: { type: oracledb.NUMBER, dir: oracledb.BIND_INOUT, val: newBookId },
         isbn,
         title,
         description: description || null,
@@ -152,13 +192,10 @@ export async function POST(request: NextRequest) {
         page_count: page_count ? Number(page_count) : null,
         publication_year: publication_year ? Number(publication_year) : null,
         language: language || "vi",
-        cover_type: cover_type || "Bìa mềm",
-        is_active: is_active ?? 1,
-        book_id: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT },
+        cover_type: cover_type || "Bìa mềm"
       });
 
-      const outBinds = insertBookResult.outBinds as InsertBookOutBinds | undefined;
-      const book_id = Number(outBinds?.book_id?.[0]);
+      const book_id = newBookId;
 
       if (cover_url && String(cover_url).trim().length > 0) {
         await connection.execute(

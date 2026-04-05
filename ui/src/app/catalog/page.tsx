@@ -7,7 +7,9 @@ import {
   Search,
   ArrowUpDown,
   Download,
-  Edit2
+  Edit2,
+  ShoppingBag,
+  Package
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BookDrawer } from "@/components/catalog/book-drawer";
@@ -39,6 +41,8 @@ export default function CatalogPage() {
   const [categoryTree, setCategoryTree] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedSort, setSelectedSort] = useState<string>("newest");
+  const [selectedStatus, setSelectedStatus] = useState<string>("all"); // all | 1 | 0
+  const [selectedStock, setSelectedStock] = useState<string>("all"); // all | in_stock | out_of_stock | low_stock
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
   const limit = 10;
@@ -49,7 +53,7 @@ export default function CatalogPage() {
 
   useEffect(() => {
     fetchBooks();
-  }, [page, search, selectedCategory, selectedSort]);
+  }, [page, search, selectedCategory, selectedSort, selectedStatus, selectedStock]);
 
   const fetchCategories = async () => {
     try {
@@ -67,9 +71,17 @@ export default function CatalogPage() {
   const fetchBooks = async () => {
     setLoading(true);
     try {
-      const categoryParam = selectedCategory !== "all" ? `&category_id=${selectedCategory}` : "";
-      const sortParam = `&sort=${selectedSort}`;
-      const res = await fetch(`/api/catalog?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}${categoryParam}${sortParam}`);
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+        search: search,
+        sort: selectedSort,
+      });
+      if (selectedCategory !== "all") params.set("category_id", selectedCategory);
+      if (selectedStatus !== "all") params.set("status", selectedStatus);
+      if (selectedStock !== "all") params.set("stock_status", selectedStock);
+
+      const res = await fetch(`/api/catalog?${params.toString()}`);
       const data = await res.json();
       if (data.success) {
         setBooks(data.data);
@@ -194,7 +206,8 @@ export default function CatalogPage() {
               className="w-full rounded-lg border border-border bg-accent/30 py-2 pl-10 pr-4 text-sm outline-none focus:ring-1 focus:ring-primary transition-all"
             />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Lọc theo danh mục */}
             <div className="relative">
               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-foreground pointer-events-none" size={16} />
               <select 
@@ -214,6 +227,45 @@ export default function CatalogPage() {
                 ))}
               </select>
             </div>
+
+            {/* Lọc theo trạng thái kinh doanh */}
+            <div className="relative">
+              <ShoppingBag className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-foreground pointer-events-none" size={14} />
+              <select 
+                value={selectedStatus}
+                aria-label="Lọc theo trạng thái kinh doanh"
+                onChange={(e) => {
+                  setSelectedStatus(e.target.value);
+                  setPage(1);
+                }}
+                className="appearance-none rounded-lg border border-border bg-white py-2 pl-9 pr-8 text-sm font-medium outline-none hover:bg-accent transition-all cursor-pointer"
+              >
+                <option value="all">Tất cả trạng thái</option>
+                <option value="1">Đang bán</option>
+                <option value="0">Ngừng kinh doanh</option>
+              </select>
+            </div>
+
+            {/* Lọc theo tình trạng kho */}
+            <div className="relative">
+              <Package className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-foreground pointer-events-none" size={14} />
+              <select 
+                value={selectedStock}
+                aria-label="Lọc theo tình trạng kho"
+                onChange={(e) => {
+                  setSelectedStock(e.target.value);
+                  setPage(1);
+                }}
+                className="appearance-none rounded-lg border border-border bg-white py-2 pl-9 pr-8 text-sm font-medium outline-none hover:bg-accent transition-all cursor-pointer"
+              >
+                <option value="all">Tất cả tình trạng</option>
+                <option value="in_stock">Còn hàng</option>
+                <option value="out_of_stock">Hết hàng</option>
+                <option value="low_stock">Sắp hết hàng</option>
+              </select>
+            </div>
+
+            {/* Sắp xếp */}
             <div className="relative">
               <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-foreground pointer-events-none" size={14} />
               <select 

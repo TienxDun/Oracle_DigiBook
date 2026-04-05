@@ -40,6 +40,8 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
     is_active: 1
   });
 
+  const [imageError, setImageError] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
       fetchCategories();
@@ -59,6 +61,7 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
           description: book.DESCRIPTION || "",
           is_active: Number(book.IS_ACTIVE ?? 1)
         });
+        setImageError(false);
       } else {
         setFormData({ 
           title: "", 
@@ -74,6 +77,7 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
           description: "",
           is_active: 1 
         });
+        setImageError(false);
       }
     }
   }, [isOpen, book]);
@@ -149,9 +153,27 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
 
           <div className="max-h-[60vh] overflow-y-auto px-6 py-6">
             <div className="space-y-6">
-              <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-accent/30 p-8 text-center transition-all hover:bg-accent/50">
-                <div className="mb-4 rounded-full bg-white p-4 text-primary shadow-sm"><ImageIcon size={32} /></div>
-                <span className="text-sm font-medium text-foreground">Nhập URL ảnh bìa</span>
+              <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-accent/30 p-4 text-center transition-all hover:bg-accent/50 overflow-hidden min-h-[220px]">
+                {formData.cover_url && !imageError ? (
+                  <div className="relative group w-full h-[200px] flex items-center justify-center animate-in fade-in zoom-in duration-300">
+                    <img 
+                      src={formData.cover_url} 
+                      alt="Xem trước bìa sách"
+                      className="max-h-full max-w-full rounded-lg shadow-md object-contain transition-transform group-hover:scale-105"
+                      onError={() => setImageError(true)}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center animate-in fade-in duration-500">
+                    <div className="mb-4 rounded-full bg-white p-4 text-primary shadow-sm shadow-primary/10">
+                      <ImageIcon size={32} />
+                    </div>
+                    <span className="text-sm font-medium text-foreground">
+                      {imageError ? "Không tải được ảnh từ URL này" : "Xem trước ảnh bìa (nhập URL bên dưới)"}
+                    </span>
+                    {imageError && <p className="mt-1 text-xs text-secondary-foreground">Vui lòng kiểm tra lại đường dẫn ảnh</p>}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -159,8 +181,11 @@ export function BookDrawer({ isOpen, onClose, onRefresh, book }: BookDrawerProps
                 <input
                   type="url"
                   value={formData.cover_url}
-                  onChange={(e) => setFormData({ ...formData, cover_url: e.target.value })}
-                  className="w-full rounded-lg border border-border px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-primary"
+                  onChange={(e) => {
+                    setFormData({ ...formData, cover_url: e.target.value });
+                    setImageError(false);
+                  }}
+                  className="w-full rounded-lg border border-border px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-primary transition-all"
                   placeholder="https://example.com/cover.jpg"
                 />
                 <p className="text-xs text-secondary-foreground">Có thể để trống nếu chưa có ảnh.</p>

@@ -41,14 +41,13 @@ export async function GET(request: Request) {
           (SELECT COUNT(*) FROM customers WHERE created_at >= SYSDATE - 60 AND created_at < SYSDATE - 30) AS C_PREV,
           
           (SELECT COUNT(*) FROM orders ${branchWhereCondition} ${branchWhereCondition ? 'AND' : 'WHERE'} status_code = 'PENDING') AS PENDING_ORDERS,
-          (SELECT COUNT(*) FROM (
-            SELECT b.book_id
-            FROM books b
-            LEFT JOIN branch_inventory bi ON b.book_id = bi.book_id
-            WHERE b.is_active = 1 ${branchJoinCondition ? 'AND bi.branch_id = :branchId' : ''}
-            GROUP BY b.book_id
-            HAVING MIN(NVL(bi.quantity_available, 0)) <= 10 OR MIN(bi.inventory_id) IS NULL
-          )) AS LOW_STOCK_COUNT
+          (SELECT COUNT(*) 
+           FROM branch_inventory bi
+           JOIN books b ON b.book_id = bi.book_id
+           WHERE b.is_active = 1 
+           AND bi.quantity_available <= bi.low_stock_threshold
+           ${branchId && branchId !== 'ALL' ? 'AND bi.branch_id = :branchId' : ''}
+          ) AS LOW_STOCK_COUNT
         FROM DUAL
       )
       SELECT 

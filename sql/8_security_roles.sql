@@ -121,9 +121,6 @@ BEGIN
     exec_optional('DROP USER DIGIBOOK_GUEST CASCADE');
     exec_optional('DROP USER DIGIBOOK_STAFF CASCADE');
     exec_optional('DROP USER DIGIBOOK_ADMIN CASCADE');
-    exec_optional('DROP ROLE DIGIBOOK_GUEST');
-    exec_optional('DROP ROLE DIGIBOOK_STAFF');
-    exec_optional('DROP ROLE DIGIBOOK_ADMIN');
     exec_optional('DROP ROLE GUEST_ROLE');
     exec_optional('DROP ROLE STAFF_ROLE');
     exec_optional('DROP ROLE ADMIN_ROLE');
@@ -208,4 +205,14 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('INFO: Hoan tat buoc 8.');
 END;
 /
+
+-- ==========================================================
+-- KIỂM TRA SAU KHI CHẠY (POST-CHECK)
+-- ==========================================================
+
+-- 1. KIEM TRA CAC USER
+SELECT username, account_status, created FROM dba_users WHERE username LIKE 'DIGIBOOK_%';
+
+-- 2. KIEM TRA CAC ROLE
+SELECT role FROM dba_roles WHERE role LIKE '%_ROLE%';
 

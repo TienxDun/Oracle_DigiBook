@@ -9,7 +9,7 @@
 ALTER SESSION SET CONTAINER = ORCLPDB;
 
 -- 2. Xóa User cũ (Chỉ dùng khi muốn cài đặt lại từ đầu)
--- DROP USER DIGIBOOK CASCADE;
+DROP USER DIGIBOOK CASCADE;
 
 -- 3. Tạo User DIGIBOOK
 -- DEFAULT TABLESPACE USERS: Dữ liệu (Bảng, Index) sẽ được lưu vĩnh viễn trên file .dbf của hệ thống.

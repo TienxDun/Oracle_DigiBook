@@ -71,24 +71,30 @@ export async function PUT(
     } = body;
 
     const sql = `
-      UPDATE books SET
-        title = :title,
-        isbn = :isbn,
-        price = :price,
-        category_id = :category_id,
-        publisher_id = :publisher_id,
-        description = :description,
-        page_count = :page_count,
-        publication_year = :publication_year,
-        language = :language,
-        cover_type = :cover_type,
-        is_active = :is_active,
-        updated_at = SYSDATE
-      WHERE book_id = :book_id
+      BEGIN
+        sp_manage_book(
+          p_action => 'UPDATE',
+          p_book_id => :book_id,
+          p_isbn => :isbn,
+          p_title => :title,
+          p_description => :description,
+          p_category_id => :category_id,
+          p_publisher_id => :publisher_id,
+          p_price => :price,
+          p_stock_quantity => NULL, -- To keep existing stock
+          p_publication_year => :publication_year,
+          p_page_count => :page_count,
+          p_language => :language,
+          p_cover_type => :cover_type,
+          p_updated_by => 1
+        );
+        -- Update is_active which is not supported by sp_manage_book
+        UPDATE books SET is_active = :is_active WHERE book_id = :book_id;
+      END;
     `;
 
     const binds = {
-      book_id,
+      book_id: { type: oracledb.NUMBER, dir: oracledb.BIND_INOUT, val: Number(book_id) },
       title,
       isbn,
       price: Number(price),
@@ -154,8 +160,21 @@ export async function DELETE(
 ) {
   try {
     const { id: book_id } = await params;
-    const sql = "UPDATE books SET is_active = 0, updated_at = SYSDATE WHERE book_id = :book_id";
-    await query(sql, { book_id }, { autoCommit: true });
+    const sql = `
+      DECLARE
+        v_book_id NUMBER := :book_id;
+      BEGIN
+        sp_manage_book(
+          p_action => 'DELETE',
+          p_book_id => v_book_id,
+          p_isbn => NULL, p_title => NULL, p_description => NULL, p_category_id => NULL,
+          p_publisher_id => NULL, p_price => NULL, p_stock_quantity => NULL,
+          p_publication_year => NULL, p_page_count => NULL, p_language => NULL,
+          p_cover_type => NULL, p_updated_by => 1
+        );
+      END;
+    `;
+    await query(sql, { book_id: Number(book_id) }, { autoCommit: true });
 
     return NextResponse.json({ success: true, message: "Đã ngừng kinh doanh sách này" });
   } catch (error: unknown) {

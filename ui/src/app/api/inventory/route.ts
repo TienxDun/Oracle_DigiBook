@@ -10,6 +10,9 @@ export async function GET(request: NextRequest) {
   const branchId = searchParams.get("branchId") || searchParams.get("branch_id");
   const lowStockOnly = searchParams.get("low_stock") === "true";
   const bookId = searchParams.get("book_id");
+  const categoryId = searchParams.get("categoryId");
+  const publisherId = searchParams.get("publisherId");
+  const stockStatus = searchParams.get("stockStatus"); // all, in, low, out
 
   try {
     const conditions: string[] = ["b.is_active = 1"];
@@ -19,12 +22,20 @@ export async function GET(request: NextRequest) {
       conditions.push("bi.branch_id = :branchId");
       binds.branchId = Number(branchId);
     }
-    if (bookId) {
-      conditions.push("bi.book_id = :bookId");
-      binds.bookId = Number(bookId);
+    if (categoryId && categoryId !== "ALL") {
+      conditions.push("b.category_id = :categoryId");
+      binds.categoryId = Number(categoryId);
     }
-    if (lowStockOnly) {
+    if (publisherId && publisherId !== "ALL") {
+      conditions.push("b.publisher_id = :publisherId");
+      binds.publisherId = Number(publisherId);
+    }
+    if (lowStockOnly || stockStatus === "low") {
       conditions.push("NVL(bi.quantity_available, 0) <= NVL(bi.low_stock_threshold, 10)");
+    } else if (stockStatus === "out") {
+      conditions.push("NVL(bi.quantity_available, 0) = 0");
+    } else if (stockStatus === "in") {
+      conditions.push("NVL(bi.quantity_available, 0) > NVL(bi.low_stock_threshold, 10)");
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";

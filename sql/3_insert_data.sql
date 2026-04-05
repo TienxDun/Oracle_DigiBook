@@ -264,24 +264,21 @@ INSERT INTO books (isbn, title, description, category_id, publisher_id, price, w
 VALUES ('9786041026748', N'Mắt Biếc', N'Truyện tình yêu tuổi học trò', (SELECT category_id FROM categories WHERE category_name = N'Tiểu thuyết'), (SELECT publisher_id FROM publishers WHERE publisher_name = N'NXB Trẻ'), 105000, 360, '20x14x2.2', 320, 2021, 'vi', 'PAPERBACK', 1, 0, 1);
 
 -- 2.5. Hình ảnh sách (Book Images)
-INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041026700'), 'https://digibook.com/images/nha-gia-kim-1.jpg', 1, 0);
-INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041026700'), 'https://digibook.com/images/nha-gia-kim-2.jpg', 0, 1);
-INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786042088592'), 'https://digibook.com/images/hp-1.jpg', 1, 0);
-INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786042088592'), 'https://digibook.com/images/hp-1-back.jpg', 0, 1);
-INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041026670'), 'https://digibook.com/images/dac-nhan-tam.jpg', 1, 0);
-INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041038796'), 'https://digibook.com/images/day-con-lam-giau.jpg', 1, 0);
-INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041026694'), 'https://digibook.com/images/toi-thay-hoa-vang.jpg', 1, 0);
-INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041063804'), 'https://digibook.com/images/dat-rung-phuong-nam.jpg', 1, 0);
-INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786042086055'), 'https://digibook.com/images/doraemon-1.jpg', 1, 0);
-INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041026717'), 'https://digibook.com/images/think-grow-rich.jpg', 1, 0);
-INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041038802'), 'https://digibook.com/images/sapiens.jpg', 1, 0);
-INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041038802'), 'https://digibook.com/images/sapiens-2.jpg', 0, 1);
-INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041026724'), 'https://digibook.com/images/tam-ly-dam-dong.jpg', 1, 0);
-INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041045022'), 'https://digibook.com/images/vu-trong-phung.jpg', 1, 0);
-INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041050019'), 'https://digibook.com/images/luoc-su-tuong-lai.jpg', 1, 0);
-INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041026731'), 'https://digibook.com/images/ngoi-khoc-tren-cay.jpg', 1, 0);
-INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786042088608'), 'https://digibook.com/images/hp-2.jpg', 1, 0);
-INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041026748'), 'https://digibook.com/images/mat-biec.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041026700'), 'https://cdn1.fahasa.com/media/catalog/product/8/9/8935235236271.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786042088592'), 'https://cdn1.fahasa.com/media/catalog/product/8/9/8934974179672.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041026670'), 'https://cdn1.fahasa.com/media/catalog/product/9/7/9786043949247.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041038796'), 'https://cdn1.fahasa.com/media/catalog/product/i/m/image_66848.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041026694'), 'https://cdn1.fahasa.com/media/catalog/product/n/n/nna-hvtcx.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041063804'), 'https://cdn1.fahasa.com/media/catalog/product/d/a/dat-rung-phuong-nam-bia.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786042086055'), 'https://cdn1.fahasa.com/media/catalog/product/d/o/doraemon-do-vui_tap1_doraemon-xuat-hien_tb-2023.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041026717'), 'https://cdn1.fahasa.com/media/catalog/product/8/9/8935086825754.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041038802'), 'https://cdn1.fahasa.com/media/catalog/product/8/9/8935270703554.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041026724'), 'https://cdn1.fahasa.com/media/catalog/product/8/9/8935270703561.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041045022'), 'https://cdn1.fahasa.com/media/catalog/product/8/9/8936046617570.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041050019'), 'https://cdn1.fahasa.com/media/catalog/product/8/9/8935235239135.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041026731'), 'https://cdn1.fahasa.com/media/catalog/product/i/m/image_244718_1_6181.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786042088608'), 'https://cdn1.fahasa.com/media/catalog/product/8/9/8934974100232.jpg', 1, 0);
+INSERT INTO book_images (book_id, image_url, is_main, sort_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041026748'), 'https://cdn1.fahasa.com/media/catalog/product/8/9/8934974178637.jpg', 1, 0);
 
 -- 2.6. Quan hệ sách - tác giả (Book Authors) - Xử lý nhiều tác giả/đóng góp viên
 INSERT INTO book_authors (book_id, author_id, role, author_order) VALUES ((SELECT book_id FROM books WHERE isbn = '9786041026700'), (SELECT author_id FROM authors WHERE author_name = N'Paulo Coelho'), 'AUTHOR', 1);

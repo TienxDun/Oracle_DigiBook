@@ -15,7 +15,9 @@ import {
   ChartColumn,
   FolderTree,
   Building2,
-  ShieldCheck
+  ShieldCheck,
+  Ticket,
+  History
 } from "lucide-react";
 import { useBranch } from "@/context/branch-context";
 import { cn } from "@/lib/utils";
@@ -28,9 +30,11 @@ const menuItems = [
   { icon: ArrowLeftRight, label: "Transfers", href: "/transfers", roles: ["ADMIN", "MANAGER"] },
   { icon: ShoppingCart, label: "Orders", href: "/orders", roles: ["ADMIN", "MANAGER", "STAFF", "SUPPORT"] },
   { icon: Users, label: "Customers", href: "/customers", roles: ["ADMIN", "MANAGER", "SUPPORT"] },
+  { icon: Ticket, label: "Coupons", href: "/coupons", roles: ["ADMIN", "MANAGER"] },
   { icon: ShieldCheck, label: "Staff", href: "/staff", roles: ["ADMIN", "MANAGER"] },
   { icon: Building2, label: "Branches", href: "/branches", roles: ["ADMIN"] },
   { icon: ChartColumn, label: "Reports", href: "/reports", roles: ["ADMIN", "MANAGER", "SUPPORT"] },
+  { icon: History, label: "Audit Logs", href: "/audit-logs", roles: ["ADMIN"] },
   { icon: Settings, label: "Settings", href: "/settings", roles: ["ADMIN"] },
 ];
 

@@ -219,56 +219,26 @@ END;
 -- Dùng CURSOR để in danh sách tồn kho thấp theo chi nhánh
 -- ==========================================================
 CREATE OR REPLACE PROCEDURE sp_print_low_stock_inventory (
-    p_branch_id IN NUMBER DEFAULT NULL
+    p_branch_id IN NUMBER DEFAULT NULL,
+    p_result    OUT SYS_REFCURSOR
 )
 AS
-    CURSOR c_low_stock IS
-        SELECT bi.branch_id,
-               br.branch_name,
-               bi.book_id,
-               b.title,
-               bi.quantity_available,
-               bi.low_stock_threshold
+BEGIN
+    OPEN p_result FOR
+        SELECT bi.branch_id AS branch_id,
+               br.branch_name AS branch_name,
+               bi.book_id AS book_id,
+               b.title AS title,
+               bi.quantity_available AS quantity_available,
+               bi.low_stock_threshold AS low_stock_threshold
           FROM branch_inventory bi
           JOIN branches br ON br.branch_id = bi.branch_id
           JOIN books b ON b.book_id = bi.book_id
          WHERE bi.quantity_available <= bi.low_stock_threshold
            AND (p_branch_id IS NULL OR bi.branch_id = p_branch_id)
          ORDER BY bi.branch_id, bi.quantity_available, bi.book_id;
-
-    v_row   c_low_stock%ROWTYPE;
-    v_total NUMBER := 0;
-BEGIN
-    DBMS_OUTPUT.PUT_LINE('=== DANH SACH SACH SAP HET HANG ===');
-    IF p_branch_id IS NULL THEN
-        DBMS_OUTPUT.PUT_LINE('Phạm vi: TOAN HE THONG');
-    ELSE
-        DBMS_OUTPUT.PUT_LINE('Phạm vi: CHI NHANH ID = ' || p_branch_id);
-    END IF;
-
-    OPEN c_low_stock;
-    LOOP
-        FETCH c_low_stock INTO v_row;
-        EXIT WHEN c_low_stock%NOTFOUND;
-
-        v_total := v_total + 1;
-        DBMS_OUTPUT.PUT_LINE(
-            'Branch=' || v_row.branch_id ||
-            ' | BranchName=' || v_row.branch_name ||
-            ' | Book=' || v_row.book_id ||
-            ' | Title=' || v_row.title ||
-            ' | Avail=' || v_row.quantity_available ||
-            ' | Threshold=' || v_row.low_stock_threshold
-        );
-    END LOOP;
-    CLOSE c_low_stock;
-
-    DBMS_OUTPUT.PUT_LINE('Tong so dong can canh bao: ' || v_total);
 EXCEPTION
     WHEN OTHERS THEN
-        IF c_low_stock%ISOPEN THEN
-            CLOSE c_low_stock;
-        END IF;
         RAISE_APPLICATION_ERROR(-20201, 'Lỗi sp_print_low_stock_inventory: ' || SQLERRM);
 END;
 /

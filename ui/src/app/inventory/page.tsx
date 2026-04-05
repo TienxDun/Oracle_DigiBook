@@ -12,7 +12,13 @@ import {
   Search,
   Filter,
   RefreshCw,
-  MapPin
+  MapPin,
+  Lightbulb,
+  Building2,
+  Tags,
+  CheckCircle2,
+  XCircle,
+  AlertCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,6 +26,7 @@ import type { BranchInventory, DashboardStats } from "@/types/database";
 import { HistoryDrawer } from "@/components/inventory/history-drawer";
 import { TransferDrawer } from "@/components/inventory/transfer-drawer";
 import { StockInDrawer } from "@/components/inventory/stock-in-drawer";
+import { LowStockDrawer } from "@/components/inventory/low-stock-drawer";
 import { useBranch } from "@/context/branch-context";
 
 export default function InventoryPage() {
@@ -29,22 +36,43 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [branchFilterId, setBranchFilterId] = useState("ALL");
+  const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const [selectedPublisher, setSelectedPublisher] = useState("ALL");
+  const [selectedStockStatus, setSelectedStockStatus] = useState("all");
   const [showLowStockOnly, setShowLowStockOnly] = useState(false);
+  
+  const [categories, setCategories] = useState<any[]>([]);
+  const [publishers, setPublishers] = useState<any[]>([]);
   
   // Drawer states
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isStockInOpen, setIsStockInOpen] = useState(false);
+  const [isLowStockOpen, setIsLowStockOpen] = useState(false);
   const [selectedBookId, setSelectedBookId] = useState<number | undefined>(undefined);
 
   useEffect(() => {
-    if (currentBranch) {
-      setBranchFilterId(currentBranch.id);
-    } else {
-      setBranchFilterId("ALL");
-    }
+    fetchFilters();
+  }, []);
+
+  useEffect(() => {
     fetchInventoryData();
-  }, [currentBranch]);
+  }, [currentBranch, selectedCategory, selectedPublisher, selectedStockStatus]);
+
+  const fetchFilters = async () => {
+    try {
+      const [catRes, pubRes] = await Promise.all([
+        fetch("/api/categories"),
+        fetch("/api/publishers")
+      ]);
+      const cats = await catRes.json();
+      const pubs = await pubRes.json();
+      if (cats.success) setCategories(cats.data);
+      if (pubs.success) setPublishers(pubs.data);
+    } catch (error) {
+      console.error("Failed to fetch filters:", error);
+    }
+  };
 
   // Validate branchFilter whenever inventory data changes
   useEffect(() => {
@@ -68,8 +96,14 @@ export default function InventoryPage() {
       // Always fetch all inventory data for pivot table display
       // Branch filtering is done on frontend via branchFilter
       
+      const params = new URLSearchParams();
+      if (branchIdForStats !== "ALL") params.append("branchId", branchIdForStats as string);
+      if (selectedCategory !== "ALL") params.append("categoryId", selectedCategory);
+      if (selectedPublisher !== "ALL") params.append("publisherId", selectedPublisher);
+      if (selectedStockStatus !== "all") params.append("stockStatus", selectedStockStatus);
+
       const [invRes, statsRes] = await Promise.all([
-        fetch("/api/inventory"),
+        fetch(`/api/inventory?${params.toString()}`),
         fetch(`/api/dashboard/stats?branchId=${branchIdForStats}`)
       ]);
       const invData = await invRes.json();
@@ -109,19 +143,43 @@ export default function InventoryPage() {
     }
     acc[item.BOOK_ID].TOTAL += qty;
     
-    // Store LOW_STOCK_THRESHOLD from any row (should be same for all branches)
+    // Store LOW_STOCK_THRESHOLD from any row
     if (!acc[item.BOOK_ID].LOW_STOCK_THRESHOLD) {
       acc[item.BOOK_ID].LOW_STOCK_THRESHOLD = threshold;
     }
 
-    // Match dashboard stats logic: low stock if any branch qty <= threshold
-    // or book has no inventory row yet.
     if (qty <= threshold || !item.INVENTORY_ID) {
       acc[item.BOOK_ID].IS_LOW_STOCK = true;
     }
     
     return acc;
   }, {});
+
+  // Post-processing for suggestions and percentages
+  Object.values(groupedData).forEach((book: any) => {
+    // 1. Calculate suggestions
+    const branches = Object.entries(book.BRANCHES).map(([id, data]: [string, any]) => ({ id, ...data }));
+    const lowStockBranches = branches.filter(b => b.quantity <= book.LOW_STOCK_THRESHOLD);
+    const healthyBranches = branches.filter(b => b.quantity > book.LOW_STOCK_THRESHOLD * 2.5)
+                                    .sort((a, b) => b.quantity - a.quantity);
+
+    if (lowStockBranches.length > 0 && healthyBranches.length > 0) {
+      book.SUGGESTION = {
+        from: healthyBranches[0].name,
+        fromId: healthyBranches[0].id,
+        to: lowStockBranches[0].name,
+        toId: lowStockBranches[0].id,
+        amount: Math.floor((healthyBranches[0].quantity - book.LOW_STOCK_THRESHOLD) / 2)
+      };
+    }
+
+    // 2. Percentages for distribution bar
+    branches.forEach((b: any) => {
+      if (book.BRANCHES[b.id]) {
+        book.BRANCHES[b.id].percentage = book.TOTAL > 0 ? (b.quantity / book.TOTAL) * 100 : 0;
+      }
+    });
+  });
 
   // Get unique branch names for columns (filter out nulls)
   const branchOptions = Array.from(
@@ -212,15 +270,15 @@ export default function InventoryPage() {
          </div>
 
          <div 
-          onClick={() => setShowLowStockOnly(true)}
-          className={cn(
-            "card-shadow flex flex-col rounded-xl border p-6 cursor-pointer transition-all",
-            showLowStockOnly ? "bg-rose-50/30 border-rose-500 ring-1 ring-rose-500/20" : "bg-white border-border grayscale opacity-70 hover:grayscale-0 hover:opacity-100 border-l-4 border-l-rose-500"
-          )}
+          onClick={() => setIsLowStockOpen(true)}
+          className="card-shadow flex flex-col rounded-xl border p-6 cursor-pointer transition-all bg-rose-50/30 border-rose-500 ring-1 ring-rose-500/20 hover:bg-rose-50"
          >
-            <div className="mb-4 flex items-center gap-3 text-rose-600">
-              <div className="rounded-lg bg-rose-500/10 p-2"><AlertTriangle size={20} /></div>
-              <span className="text-sm font-semibold">Cảnh báo tồn kho</span>
+            <div className="mb-4 flex items-center justify-between text-rose-600">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-rose-500/10 p-2"><AlertTriangle size={20} /></div>
+                <span className="text-sm font-semibold">Cảnh báo tồn kho</span>
+              </div>
+              <span className="text-xs font-semibold bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full animate-pulse border border-rose-200">Test SP</span>
             </div>
             {loading ? <Skeleton className="h-8 w-24" /> : (
               <div className="flex items-end gap-2">
@@ -230,7 +288,7 @@ export default function InventoryPage() {
             )}
          </div>
 
-         <div className="card-shadow flex flex-col rounded-xl border border-border bg-white p-6 border-l-4 border-l-info">
+         <div className="card-shadow flex flex-col rounded-xl border border-border bg-white p-6">
             <div className="mb-4 flex items-center gap-3 text-info">
               <div className="rounded-lg bg-info/10 p-2"><ArrowLeftRight size={20} /></div>
               <span className="text-sm font-semibold">Lệnh chờ xử lý</span>
@@ -242,13 +300,66 @@ export default function InventoryPage() {
 
          <div className="card-shadow flex flex-col rounded-xl border border-border bg-white p-6">
             <div className="mb-4 flex items-center gap-3 text-warning">
-              <div className="rounded-lg bg-warning/10 p-2"><TrendingDown size={20} /></div>
+              <div className="rounded-lg bg-warning/10 p-2"><Tags size={20} /></div>
               <span className="text-sm font-semibold">Đầu sách (Titles)</span>
             </div>
             {loading ? <Skeleton className="h-8 w-24" /> : (
               <span className="text-2xl font-bold">{Object.keys(groupedData).length} <span className="text-xs font-normal text-secondary-foreground">loại</span></span>
             )}
          </div>
+      </div>
+
+      {/* Advanced Filters */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <div className="space-y-2">
+          <label className="text-xs font-bold uppercase text-secondary-foreground flex items-center gap-2">
+            <Tags size={14} /> Danh mục
+          </label>
+          <select 
+            value={selectedCategory}
+            onChange={(e) => {setSelectedCategory(e.target.value); setLoading(true);}}
+            className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none"
+          >
+            <option value="ALL">Tất cả danh mục</option>
+            {categories.map(c => <option key={c.CATEGORY_ID} value={c.CATEGORY_ID}>{c.CATEGORY_NAME}</option>)}
+          </select>
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs font-bold uppercase text-secondary-foreground flex items-center gap-2">
+            <Building2 size={14} /> Nhà xuất bản
+          </label>
+          <select 
+            value={selectedPublisher}
+            onChange={(e) => {setSelectedPublisher(e.target.value); setLoading(true);}}
+            className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none"
+          >
+            <option value="ALL">Tất cả NXB</option>
+            {publishers.map(p => <option key={p.PUBLISHER_ID} value={p.PUBLISHER_ID}>{p.PUBLISHER_NAME}</option>)}
+          </select>
+        </div>
+        <div className="md:col-span-2 space-y-2">
+          <label className="text-xs font-bold uppercase text-secondary-foreground">Tình trạng kho nhanh</label>
+          <div className="flex bg-accent/20 p-1 rounded-lg gap-1">
+            {[
+              { id: "all", label: "Tất cả", icon: Package },
+              { id: "in", label: "Còn hàng", icon: CheckCircle2, color: "text-emerald-600" },
+              { id: "low", label: "Sắp hết", icon: AlertCircle, color: "text-amber-600" },
+              { id: "out", label: "Hết hàng", icon: XCircle, color: "text-rose-600" }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => {setSelectedStockStatus(tab.id); setLoading(true);}}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all",
+                  selectedStockStatus === tab.id ? "bg-white shadow-sm text-primary" : "text-secondary-foreground hover:bg-white/50"
+                )}
+              >
+                <tab.icon size={14} className={tab.color} />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Inventory Table */}
@@ -295,7 +406,8 @@ export default function InventoryPage() {
           <table className="w-full text-left text-sm">
             <thead className="bg-accent/50 text-xs font-semibold uppercase tracking-wider text-secondary-foreground border-b border-border">
               <tr>
-                <th className="px-6 py-4">Sách / ISBN</th>
+                  <th className="px-6 py-4">Sách / ISBN</th>
+                <th className="px-6 py-4 text-center">Phân bổ (%)</th>
                 {branchOptions.map((branch) => (
                   <th key={branch.id} className={cn(
                     "px-6 py-4 text-center transition-all",
@@ -316,6 +428,7 @@ export default function InventoryPage() {
                       <Skeleton className="h-4 w-48" />
                       <Skeleton className="h-3 w-32" />
                     </td>
+                    <td className="px-6 py-4"><Skeleton className="h-2 w-24 mx-auto rounded" /></td>
                     {branchOptions.length > 0 ? branchOptions.map((branch) => (
                       <td key={branch.id} className="px-6 py-4"><Skeleton className="h-6 w-12 mx-auto rounded" /></td>
                     )) : Array(3).fill(0).map((_, j) => (
@@ -329,9 +442,45 @@ export default function InventoryPage() {
                 displayData.map((item: any) => (
                   <tr key={item.ID} className="group transition-colors hover:bg-accent/10">
                     <td className="px-6 py-4">
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-foreground group-hover:text-primary transition-colors cursor-pointer">{item.TITLE}</span>
+                      <div className="flex flex-col relative group">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-foreground group-hover:text-primary transition-colors cursor-pointer">{item.TITLE}</span>
+                          {item.SUGGESTION && (
+                            <div className="relative group/sug">
+                              <Lightbulb size={16} className="text-amber-500 animate-bounce cursor-help" />
+                              <div className="invisible group-hover/sug:visible absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 p-3 bg-slate-800 text-white text-[11px] rounded-lg shadow-xl z-50">
+                                <p className="font-bold mb-1 text-amber-400">💡 Gợi ý điều chuyển</p>
+                                <p>Sắp hết hàng tại <span className="font-bold">{item.SUGGESTION.to}</span>.</p>
+                                <p>Có thể nhập từ <span className="font-bold text-emerald-400">{item.SUGGESTION.from}</span> ({item.BRANCHES[item.SUGGESTION.fromId]?.quantity} cuốn).</p>
+                                <button 
+                                  onClick={() => handleTransferClick(item.ID)}
+                                  className="mt-2 w-full bg-primary py-1 rounded font-bold hover:bg-primary-hover"
+                                >
+                                  Thực hiện ngay
+                                </button>
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-800"></div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                         <span className="text-[11px] text-secondary-foreground uppercase font-mono tracking-tighter">ISBN: {item.ISBN}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex h-2 w-24 overflow-hidden rounded-full bg-slate-100 mx-auto">
+                        {branchOptions.map((branch, idx) => {
+                          const percentage = item.BRANCHES[branch.id]?.percentage || 0;
+                          if (percentage === 0) return null;
+                          const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-violet-500'];
+                          return (
+                            <div 
+                              key={branch.id}
+                              title={`${branch.name}: ${Math.round(percentage)}%`}
+                              className={cn(colors[idx % colors.length], "h-full")}
+                              style={{ width: `${percentage}%` }}
+                            />
+                          );
+                        })}
                       </div>
                     </td>
                     {branchOptions.map((branch) => {
@@ -417,6 +566,12 @@ export default function InventoryPage() {
         onClose={() => setIsStockInOpen(false)}
         onSuccess={fetchInventoryData}
         initialBookId={selectedBookId}
+      />
+
+      <LowStockDrawer
+        isOpen={isLowStockOpen}
+        onClose={() => setIsLowStockOpen(false)}
+        branchId={branchFilterId !== "ALL" ? branchFilterId : undefined}
       />
     </div>
   );

@@ -93,11 +93,9 @@ export default function InventoryPage() {
     setLoading(true);
     try {
       const branchIdForStats = currentBranch?.id || "ALL";
-      // Always fetch all inventory data for pivot table display
-      // Branch filtering is done on frontend via branchFilter
       
       const params = new URLSearchParams();
-      if (branchIdForStats !== "ALL") params.append("branchId", branchIdForStats as string);
+      // Luôn lấy toàn bộ sách để hiển thị bảng Pivot, không lọc ở API theo branchId
       if (selectedCategory !== "ALL") params.append("categoryId", selectedCategory);
       if (selectedPublisher !== "ALL") params.append("publisherId", selectedPublisher);
       if (selectedStockStatus !== "all") params.append("stockStatus", selectedStockStatus);
